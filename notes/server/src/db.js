@@ -1,0 +1,73 @@
+import Database from 'better-sqlite3';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const file = process.env.DATABASE_FILE || path.join(process.cwd(), 'data', 'catatan.db');
+fs.mkdirSync(path.dirname(file), { recursive: true });
+
+export const db = new Database(file);
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+  id           TEXT PRIMARY KEY,
+  email        TEXT NOT NULL UNIQUE,
+  role         TEXT NOT NULL DEFAULT 'member',
+  disabled     INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT NOT NULL,
+  last_seen_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS invites (
+  id         TEXT PRIMARY KEY,
+  token_hash TEXT NOT NULL UNIQUE,
+  email      TEXT,
+  created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at    TEXT,
+  used_by    TEXT REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS login_tokens (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  user_agent TEXT
+);
+
+CREATE TABLE IF NOT EXISTS notes (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL DEFAULT '',
+  content    TEXT NOT NULL DEFAULT '',
+  pinned     INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  deleted_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_notes_user   ON notes(user_id, deleted_at, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sessions_exp ON sessions(expires_at);
+`);
+
+// Housekeeping: buang token dan sesi yang sudah lewat masa berlaku.
+export function purgeExpired() {
+  const now = new Date().toISOString();
+  db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(now);
+  db.prepare('DELETE FROM login_tokens WHERE expires_at < ?').run(now);
+  db.prepare('DELETE FROM invites WHERE expires_at < ? AND used_at IS NULL').run(now);
+  db.prepare("DELETE FROM notes WHERE deleted_at IS NOT NULL AND deleted_at < datetime('now','-30 days')").run();
+}
