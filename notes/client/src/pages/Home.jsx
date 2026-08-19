@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CircleCheck, LogOut, Pin, Plus, Search, Settings, SquarePen } from 'lucide-react';
 import { api } from '../api.js';
 import { readLayout } from '../prefs.js';
+
+const TABS = ['catatan', 'tugas'];
 
 function timeAgo(iso) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -15,7 +17,7 @@ function timeAgo(iso) {
 
 export default function Home({ user, onSignOut }) {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('catatan');
+  const [index, setIndex] = useState(0);
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -25,7 +27,8 @@ export default function Home({ user, onSignOut }) {
   const [newTask, setNewTask] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
-  // Preferensi tampilan bisa diubah dari halaman pengaturan.
+  const pagerRef = useRef(null);
+
   useEffect(() => {
     const sync = () => setLayout(readLayout());
     window.addEventListener('catatan:tampilan', sync);
@@ -36,15 +39,16 @@ export default function Home({ user, onSignOut }) {
     };
   }, []);
 
+  // Kedua panel dimuat bersamaan supaya geseran terasa instan.
   useEffect(() => {
     let alive = true;
     const timer = setTimeout(async () => {
       try {
         setError('');
-        const data = tab === 'catatan' ? await api.listNotes(query) : await api.listTasks();
+        const [noteData, taskData] = await Promise.all([api.listNotes(query), api.listTasks()]);
         if (!alive) return;
-        if (tab === 'catatan') setNotes(data.notes);
-        else setTasks(data.tasks);
+        setNotes(noteData.notes);
+        setTasks(taskData.tasks);
       } catch (err) {
         if (alive) setError(err.message);
       } finally {
@@ -55,7 +59,23 @@ export default function Home({ user, onSignOut }) {
       alive = false;
       clearTimeout(timer);
     };
-  }, [tab, query, reloadKey]);
+  }, [query, reloadKey]);
+
+  /** Menggeser panel saat tombol segmented ditekan. */
+  const goTo = useCallback((next) => {
+    const pager = pagerRef.current;
+    if (!pager) return;
+    pager.scrollTo({ left: next * pager.clientWidth, behavior: 'smooth' });
+    setIndex(next);
+  }, []);
+
+  /** Menyesuaikan tab aktif saat pengguna menggeser dengan jari. */
+  function onPagerScroll(e) {
+    const el = e.currentTarget;
+    if (!el.clientWidth) return;
+    const next = Math.round(el.scrollLeft / el.clientWidth);
+    if (next !== index && next >= 0 && next < TABS.length) setIndex(next);
+  }
 
   async function createNote() {
     try {
@@ -104,31 +124,35 @@ export default function Home({ user, onSignOut }) {
         </button>
       </header>
 
-      {tab === 'catatan' && (
-        <div className="search">
-          <Search size={17} strokeWidth={1.75} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari judul atau isi catatan"
-            aria-label="Cari catatan"
-          />
-        </div>
-      )}
-
-      <div className="segmented" role="group" aria-label="Tampilan">
-        <button aria-pressed={tab === 'catatan'} onClick={() => setTab('catatan')}>
-          Catatan
-        </button>
-        <button aria-pressed={tab === 'tugas'} onClick={() => setTab('tugas')}>
-          Tugas
-        </button>
+      <div className="segmented" role="tablist" aria-label="Tampilan">
+        <span className="thumb" style={{ transform: `translateX(${index * 100}%)` }} aria-hidden="true" />
+        {TABS.map((name, i) => (
+          <button
+            key={name}
+            role="tab"
+            aria-selected={index === i}
+            aria-pressed={index === i}
+            onClick={() => goTo(i)}
+          >
+            {name === 'catatan' ? 'Catatan' : 'Tugas'}
+          </button>
+        ))}
       </div>
 
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
 
-      <div className="scroll">
-        {tab === 'catatan' ? (
+      <div className="pager" ref={pagerRef} onScroll={onPagerScroll}>
+        <section className="pane" role="tabpanel" aria-label="Catatan">
+          <div className="search">
+            <Search size={17} strokeWidth={1.75} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari judul atau isi catatan"
+              aria-label="Cari catatan"
+            />
+          </div>
+
           <div className={`note-list layout-${layout}`}>
             {!loading && notes.length === 0 && (
               <div className="empty">
@@ -155,18 +179,21 @@ export default function Home({ user, onSignOut }) {
               </button>
             ))}
           </div>
-        ) : (
+        </section>
+
+        <section className="pane" role="tabpanel" aria-label="Tugas">
+          <div className="task-add">
+            <Plus size={17} strokeWidth={2} />
+            <input
+              value={newTask}
+              onChange={(e) => setNewTask(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addTask()}
+              placeholder="Tambah tugas lalu tekan Enter"
+              aria-label="Tambah tugas baru"
+            />
+          </div>
+
           <div className="task-group">
-            <div className="task-add">
-              <Plus size={17} strokeWidth={2} />
-              <input
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addTask()}
-                placeholder="Tambah tugas lalu tekan Enter"
-                aria-label="Tambah tugas baru"
-              />
-            </div>
             {!loading && tasks.length === 0 && (
               <div className="empty">
                 <h2>Belum ada tugas</h2>
@@ -182,10 +209,10 @@ export default function Home({ user, onSignOut }) {
               <TaskRow key={`${task.noteId}-${task.line}`} task={task} onToggle={toggleTask} navigate={navigate} />
             ))}
           </div>
-        )}
+        </section>
       </div>
 
-      {tab === 'catatan' && (
+      {index === 0 && (
         <button className="fab" onClick={createNote}>
           <SquarePen size={18} strokeWidth={1.75} />
           Tulis

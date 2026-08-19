@@ -18,8 +18,9 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
 
+/* Tema gelap: mengikuti sistem saat "otomatis", atau dipaksa lewat data-theme. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #15171a;
     --paper: #1b1e22;
     --ink: #e7e8e3;
@@ -31,6 +32,19 @@
     --accent-soft: rgba(111, 191, 180, 0.14);
     --danger: #d9776a;
   }
+}
+
+:root[data-theme='dark'] {
+    --bg: #15171a;
+    --paper: #1b1e22;
+    --ink: #e7e8e3;
+    --ink-soft: #a0a6ad;
+    --ink-faint: #6d747c;
+    --rule: #2a2e33;
+    --rule-strong: #3a3f46;
+    --accent: #6fbfb4;
+    --accent-soft: rgba(111, 191, 180, 0.14);
+    --danger: #d9776a;
 }
 
 * { box-sizing: border-box; }
@@ -686,3 +700,115 @@ a { color: var(--accent); text-underline-offset: 2px; }
   color: var(--ink);
 }
 .task-add input::placeholder { color: var(--ink-faint); }
+
+/* ---------- Panel geser antara Catatan dan Tugas ---------- */
+
+.pager {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.pager::-webkit-scrollbar { display: none; }
+
+.pane {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Segmented control dengan penanda yang bergeser mengikuti panel. */
+.segmented { position: relative; }
+.segmented .thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 9px;
+  background: var(--accent-soft);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+.segmented button { position: relative; z-index: 1; background: none; }
+.segmented button[aria-pressed='true'] { background: none; color: var(--accent); }
+
+/* ---------- Halaman pengaturan bergaya berkelompok ---------- */
+
+.settings-nav {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.settings-nav::-webkit-scrollbar { display: none; }
+.settings-nav button {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  font-size: 14px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.settings-nav button[aria-selected='true'] {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.settings-body { padding: 0 16px 60px; }
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  padding: 18px 16px;
+  margin-bottom: 14px;
+}
+.card > h3 {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+}
+.card > .hint {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.card .field input { background: var(--bg); }
+.card:last-child { margin-bottom: 0; }
+
+.choice-row { display: flex; gap: 8px; }
+.choice {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 13px 6px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 12px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.choice.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
