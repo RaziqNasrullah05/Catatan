@@ -32,7 +32,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login onSignedIn={setUser} />} />
       <Route path="/invite/:token" element={<Invite />} />
       <Route path="/" element={<Home user={user} onSignOut={signOut} />} />
       <Route path="/catatan/:id" element={<NoteEditor />} />

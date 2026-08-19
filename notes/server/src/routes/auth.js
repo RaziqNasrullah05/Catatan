@@ -6,12 +6,14 @@ import { sendInvite, sendLoginLink } from '../mailer.js';
 import {
   createSession,
   destroySession,
+  hashPassword,
   hashToken,
   newId,
   newToken,
   normalizeEmail,
   requireAdmin,
   requireAuth,
+  verifyPassword,
 } from '../security.js';
 
 export const authRouter = Router();
@@ -93,7 +95,58 @@ authRouter.post('/logout', (req, res) => {
 });
 
 authRouter.get('/me', (req, res) => {
-  res.json({ user: req.user || null });
+  if (!req.user) return res.json({ user: null });
+  const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.user.id);
+  res.json({ user: { ...req.user, hasPassword: Boolean(row?.password_hash) } });
+});
+
+/* ---------- Masuk dengan kata sandi ---------- */
+
+const passwordSchema = z.string().min(10).max(200);
+
+// Hash pembanding untuk akun yang tidak ada, supaya waktu respons tidak
+// membocorkan apakah sebuah email terdaftar.
+const DUMMY_HASH = hashPassword('kata-sandi-pembanding-yang-tidak-dipakai');
+
+authRouter.post('/password/login', loginLimiter, (req, res) => {
+  const email = emailSchema.safeParse(req.body?.email);
+  const password = z.string().max(200).safeParse(req.body?.password);
+  const fail = () => res.status(401).json({ error: 'Email atau kata sandi salah.' });
+  if (!email.success || !password.success) return fail();
+
+  const user = db.prepare('SELECT * FROM users WHERE email = ? AND disabled = 0').get(email.data);
+  if (!user?.password_hash) {
+    verifyPassword(password.data, DUMMY_HASH);
+    return fail();
+  }
+  if (!verifyPassword(password.data, user.password_hash)) return fail();
+
+  createSession(res, user.id, req.get('user-agent'));
+  res.json({ ok: true });
+});
+
+/** Memasang atau mengganti kata sandi. Hanya bisa dilakukan dari sesi yang aktif. */
+authRouter.post('/password', requireAuth, (req, res) => {
+  const parsed = passwordSchema.safeParse(req.body?.password);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Kata sandi minimal 10 karakter.' });
+  }
+  const current = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.user.id);
+  // Mengganti kata sandi yang sudah ada wajib menyertakan yang lama.
+  if (current?.password_hash) {
+    const old = z.string().max(200).safeParse(req.body?.currentPassword);
+    if (!old.success || !verifyPassword(old.data, current.password_hash)) {
+      return res.status(403).json({ error: 'Kata sandi lama tidak cocok.' });
+    }
+  }
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(parsed.data), req.user.id);
+  res.json({ ok: true });
+});
+
+/** Melepas kata sandi, kembali ke masuk lewat tautan email saja. */
+authRouter.delete('/password', requireAuth, (req, res) => {
+  db.prepare('UPDATE users SET password_hash = NULL WHERE id = ?').run(req.user.id);
+  res.json({ ok: true });
 });
 
 /* ---------- Undangan ---------- */

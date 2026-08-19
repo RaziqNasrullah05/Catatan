@@ -25,6 +25,11 @@ async function request(path, { method = 'GET', body } = {}) {
 export const api = {
   me: () => request('/auth/me'),
   login: (email) => request('/auth/login', { method: 'POST', body: { email } }),
+  loginWithPassword: (email, password) =>
+    request('/auth/password/login', { method: 'POST', body: { email, password } }),
+  setPassword: (password, currentPassword) =>
+    request('/auth/password', { method: 'POST', body: { password, currentPassword } }),
+  removePassword: () => request('/auth/password', { method: 'DELETE' }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   checkInvite: (token) => request(`/auth/invite/${encodeURIComponent(token)}`),
   acceptInvite: (token, email) =>

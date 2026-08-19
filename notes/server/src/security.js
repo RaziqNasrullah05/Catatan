@@ -1,6 +1,38 @@
 import crypto from 'node:crypto';
 import { db } from './db.js';
 
+/**
+ * Hashing kata sandi memakai scrypt bawaan Node — tidak perlu dependensi native
+ * tambahan, dan parameternya sudah di atas rekomendasi minimum OWASP.
+ */
+const SCRYPT = { N: 2 ** 15, r: 8, p: 1, keylen: 32 };
+
+export function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  const key = crypto.scryptSync(password.normalize('NFKC'), salt, SCRYPT.keylen, {
+    ...SCRYPT,
+    maxmem: 128 * SCRYPT.N * SCRYPT.r * 2,
+  });
+  return `scrypt$${SCRYPT.N}$${SCRYPT.r}$${SCRYPT.p}$${salt.toString('base64')}$${key.toString('base64')}`;
+}
+
+export function verifyPassword(password, stored) {
+  try {
+    const [scheme, N, r, p, salt, key] = String(stored).split('$');
+    if (scheme !== 'scrypt') return false;
+    const expected = Buffer.from(key, 'base64');
+    const actual = crypto.scryptSync(password.normalize('NFKC'), Buffer.from(salt, 'base64'), expected.length, {
+      N: Number(N),
+      r: Number(r),
+      p: Number(p),
+      maxmem: 128 * Number(N) * Number(r) * 2,
+    });
+    return crypto.timingSafeEqual(expected, actual);
+  } catch {
+    return false;
+  }
+}
+
 export const SESSION_COOKIE = 'sid';
 const SESSION_DAYS = 30;
 

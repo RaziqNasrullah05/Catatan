@@ -1,11 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Columns2, Columns3, Copy, Rows3 } from 'lucide-react';
+import { ArrowLeft, Columns2, Columns3, Copy, KeyRound, Rows3 } from 'lucide-react';
 import { api } from '../api.js';
 import { LAYOUTS, readLayout, writeLayout } from '../prefs.js';
 
 export default function Settings({ user }) {
   const navigate = useNavigate();
+  const [pwd, setPwd] = useState('');
+  const [oldPwd, setOldPwd] = useState('');
+  const [hasPassword, setHasPassword] = useState(Boolean(user?.hasPassword));
+  const [pwdMsg, setPwdMsg] = useState('');
+  const [pwdError, setPwdError] = useState('');
+
+  async function savePassword() {
+    setPwdMsg('');
+    setPwdError('');
+    try {
+      await api.setPassword(pwd, oldPwd || undefined);
+      setHasPassword(true);
+      setPwd('');
+      setOldPwd('');
+      setPwdMsg('Kata sandi tersimpan. Lain kali kamu bisa langsung masuk tanpa email.');
+    } catch (err) {
+      setPwdError(err.message);
+    }
+  }
+
   const [email, setEmail] = useState('');
   const [users, setUsers] = useState([]);
   const [lastInvite, setLastInvite] = useState(null);
@@ -57,7 +77,32 @@ export default function Settings({ user }) {
       </header>
 
       <div className="scroll" style={{ padding: '4px 16px 60px' }}>
-        <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 500, margin: '8px 0 2px' }}>Tampilan daftar catatan</h3>
+        <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 500, margin: '8px 0 2px' }}>
+          <KeyRound size={16} strokeWidth={1.8} style={{ verticalAlign: '-2px', marginRight: 7 }} />
+          Kata sandi
+        </h3>
+        <p style={{ color: 'var(--ink-soft)', fontSize: 14, margin: '0 0 12px' }}>
+          {hasPassword
+            ? 'Kata sandi sudah aktif. Isi di bawah untuk menggantinya.'
+            : 'Pasang kata sandi supaya tidak perlu membuka email setiap kali masuk.'}
+        </p>
+        {hasPassword && (
+          <label className="field">
+            <span>Kata sandi lama</span>
+            <input type="password" autoComplete="current-password" value={oldPwd} onChange={(e) => setOldPwd(e.target.value)} />
+          </label>
+        )}
+        <label className="field">
+          <span>Kata sandi baru (minimal 10 karakter)</span>
+          <input type="password" autoComplete="new-password" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+        </label>
+        <button className="btn" onClick={savePassword} disabled={pwd.length < 10}>
+          {hasPassword ? 'Ganti kata sandi' : 'Pasang kata sandi'}
+        </button>
+        {pwdMsg && <p className="notice">{pwdMsg}</p>}
+        {pwdError && <p className="notice bad">{pwdError}</p>}
+
+        <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 500, margin: '26px 0 2px' }}>Tampilan daftar catatan</h3>
         <p style={{ color: 'var(--ink-soft)', fontSize: 14, margin: '0 0 12px' }}>
           Pilihan ini tersimpan di peramban ini saja.
         </p>

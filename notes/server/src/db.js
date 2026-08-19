@@ -63,6 +63,13 @@ CREATE INDEX IF NOT EXISTS idx_notes_user   ON notes(user_id, deleted_at, update
 CREATE INDEX IF NOT EXISTS idx_sessions_exp ON sessions(expires_at);
 `);
 
+// Migrasi: kolom kata sandi ditambahkan belakangan, jadi dicek dulu agar
+// basis data lama tetap bisa dipakai tanpa dibuat ulang.
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+if (!userColumns.includes('password_hash')) {
+  db.exec('ALTER TABLE users ADD COLUMN password_hash TEXT');
+}
+
 // Housekeeping: buang token dan sesi yang sudah lewat masa berlaku.
 export function purgeExpired() {
   const now = new Date().toISOString();
