@@ -12,6 +12,7 @@ import {
   Monitor,
   Moon,
   Palette,
+  Check,
   Rows3,
   ShieldCheck,
   Sun,
@@ -44,24 +45,58 @@ function Row({ icon: Icon, title, desc, action, chip }) {
   );
 }
 
-function ChipGroup({ label, options, icons, value, onChange }) {
+function ChoiceDialog({ title, subtitle, options, icons, value, onPick, onClose }) {
+  // Menutup dialog dengan tombol Esc, seperti dialog bawaan peramban.
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
-    <div className="m3-chips" role="radiogroup" aria-label={label}>
-      {options.map(({ id, label: text }) => {
-        const Icon = icons[id];
-        return (
-          <button
-            key={id}
-            role="radio"
-            aria-checked={value === id}
-            className={`m3-chip ${value === id ? 'is-on' : ''}`}
-            onClick={() => onChange(id)}
-          >
-            <Icon size={16} strokeWidth={1.7} />
-            {text}
+    <div className="m3-scrim" onClick={onClose}>
+      <div
+        className="m3-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3>{title}</h3>
+        {subtitle && <p className="sub">{subtitle}</p>}
+        <div role="radiogroup" aria-label={title}>
+          {options.map(({ id, label }) => {
+            const Icon = icons[id];
+            return (
+              <button
+                key={id}
+                role="radio"
+                aria-checked={value === id}
+                className="m3-option"
+                onClick={() => {
+                  onPick(id);
+                  onClose();
+                }}
+              >
+                <span className="lead">
+                  <Icon size={20} strokeWidth={1.7} />
+                </span>
+                {label}
+                {value === id && (
+                  <span className="tick">
+                    <Check size={19} strokeWidth={2.2} />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="actions">
+          <button className="m3-btn text" onClick={onClose}>
+            Batal
           </button>
-        );
-      })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -235,45 +270,77 @@ function Security({ user }) {
 function Appearance() {
   const [layout, setLayout] = useState(readLayout);
   const [theme, setTheme] = useState(readTheme);
+  const [dialog, setDialog] = useState(null);
+
+  const layoutLabel = LAYOUTS.find((l) => l.id === layout)?.label;
+  const themeLabel = THEMES.find((t) => t.id === theme)?.label;
 
   return (
     <>
       <h2 className="m3-section-title">Tampilan</h2>
       <div className="m3-card">
-        <Row
-          icon={LayoutList}
-          title="Daftar catatan"
-          desc="Cara catatan disusun di halaman utama."
-        />
-        <ChipGroup
-          label="Tampilan daftar catatan"
-          options={LAYOUTS}
-          icons={LAYOUT_ICONS}
-          value={layout}
-          onChange={(id) => {
-            setLayout(id);
-            writeLayout(id);
-          }}
-        />
+        <button className="m3-row tappable" onClick={() => setDialog('layout')}>
+          <span className="m3-icon">
+            <LayoutList size={19} strokeWidth={1.7} />
+          </span>
+          <span className="m3-body">
+            <span className="m3-title">Daftar catatan</span>
+            <p className="m3-desc">Cara catatan disusun di halaman utama.</p>
+          </span>
+          <span className="m3-action">
+            <span className="m3-status">{layoutLabel}</span>
+          </span>
+        </button>
 
         <div className="m3-divider" />
 
-        <Row icon={Palette} title="Mode warna" desc="Otomatis mengikuti pengaturan perangkatmu." />
-        <ChipGroup
-          label="Mode warna"
-          options={THEMES}
-          icons={THEME_ICONS}
-          value={theme}
-          onChange={(id) => {
-            setTheme(id);
-            writeTheme(id);
-          }}
-        />
+        <button className="m3-row tappable" onClick={() => setDialog('theme')}>
+          <span className="m3-icon">
+            <Palette size={19} strokeWidth={1.7} />
+          </span>
+          <span className="m3-body">
+            <span className="m3-title">Mode warna</span>
+            <p className="m3-desc">Otomatis mengikuti pengaturan perangkatmu.</p>
+          </span>
+          <span className="m3-action">
+            <span className="m3-status">{themeLabel}</span>
+          </span>
+        </button>
       </div>
 
       <p className="m3-note" style={{ marginTop: 16 }}>
         Pilihan di halaman ini tersimpan di peramban ini saja, jadi HP dan komputermu bisa berbeda.
       </p>
+
+      {dialog === 'layout' && (
+        <ChoiceDialog
+          title="Daftar catatan"
+          subtitle="Cara catatan disusun di halaman utama."
+          options={LAYOUTS}
+          icons={LAYOUT_ICONS}
+          value={layout}
+          onPick={(id) => {
+            setLayout(id);
+            writeLayout(id);
+          }}
+          onClose={() => setDialog(null)}
+        />
+      )}
+
+      {dialog === 'theme' && (
+        <ChoiceDialog
+          title="Mode warna"
+          subtitle="Otomatis mengikuti pengaturan perangkatmu."
+          options={THEMES}
+          icons={THEME_ICONS}
+          value={theme}
+          onPick={(id) => {
+            setTheme(id);
+            writeTheme(id);
+          }}
+          onClose={() => setDialog(null)}
+        />
+      )}
     </>
   );
 }

@@ -332,4 +332,6 @@ bergeser. Pengaturan dipecah jadi tiga bagian. Mode warna terang/gelap/otomatis.
 
 **v1.5** — Halaman Pengaturan dirombak ke bahasa visual Material 3: latar biru-abu muda, kartu putih
 membulat besar, baris ikon-judul-deskripsi, chip pilihan berbentuk pil, kolom isian *outlined*, dan
-tombol pil. Token warnanya (`--s-*`) dibatasi ke `.settings-page` supaya halaman lain tidak ikut berubah.
+tombol pil. Token `--s-*` dibatasi ke `.settings-page` dan mewarisi nilai dari token global, sehingga warna latar
+sama persis dengan halaman lain — yang membedakan hanya bentuk dan jaraknya. Pilihan tata letak dan mode
+warna dibuka lewat dialog saat barisnya diketuk, bukan chip inline.

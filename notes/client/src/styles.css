@@ -71,6 +71,8 @@ button {
   padding: 0;
   cursor: pointer;
   color: inherit;
+  /* Peramban seluler memberi kilatan biru saat elemen diketuk; kita atur sendiri. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 a { color: var(--accent); text-underline-offset: 2px; }
@@ -811,41 +813,19 @@ a { color: var(--accent); text-underline-offset: 2px; }
    ================================================================ */
 
 .settings-page {
-  --s-bg: #eceff4;
-  --s-surface: #ffffff;
-  --s-on: #1a1c1e;
-  --s-on-variant: #5b6169;
-  --s-outline: #d5dae1;
-  --s-primary: #2e6f6a;
-  --s-container: #dbeae8;
-  --s-danger: #a4443a;
+  /* Warna diambil dari token global agar latar pengaturan sama persis
+     dengan halaman lain; yang membedakan hanya bentuk dan jaraknya. */
+  --s-bg: var(--bg);
+  --s-surface: var(--paper);
+  --s-on: var(--ink);
+  --s-on-variant: var(--ink-soft);
+  --s-outline: var(--rule-strong);
+  --s-primary: var(--accent);
+  --s-container: var(--accent-soft);
+  --s-danger: var(--danger);
 
   background: var(--s-bg);
   color: var(--s-on);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .settings-page {
-    --s-bg: #121417;
-    --s-surface: #1d2024;
-    --s-on: #e3e5e8;
-    --s-on-variant: #a7adb5;
-    --s-outline: #343941;
-    --s-primary: #6fbfb4;
-    --s-container: rgba(111, 191, 180, 0.16);
-    --s-danger: #d9776a;
-  }
-}
-
-:root[data-theme='dark'] .settings-page {
-  --s-bg: #121417;
-  --s-surface: #1d2024;
-  --s-on: #e3e5e8;
-  --s-on-variant: #a7adb5;
-  --s-outline: #343941;
-  --s-primary: #6fbfb4;
-  --s-container: rgba(111, 191, 180, 0.16);
-  --s-danger: #d9776a;
 }
 
 .settings-page .topbar { background: var(--s-bg); }
@@ -876,6 +856,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
   white-space: nowrap;
   transition: background 0.16s, color 0.16s;
 }
+.m3-tabs button:active { background: none; }
 .m3-tabs button[aria-selected='true'] {
   background: var(--s-container);
   border-color: transparent;
@@ -956,31 +937,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
   opacity: 0.7;
 }
 
-/* Chip pilihan dan chip status */
-.m3-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 22px 18px 78px;
-}
-.m3-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 36px;
-  padding: 0 15px;
-  border-radius: 999px;
-  border: 1px solid var(--s-outline);
-  font-size: 13.5px;
-  color: var(--s-on-variant);
-  transition: background 0.16s, color 0.16s, border-color 0.16s;
-}
-.m3-chip.is-on {
-  background: var(--s-container);
-  border-color: transparent;
-  color: var(--s-primary);
-  font-weight: 500;
-}
+/* Chip status */
 .m3-status {
   display: inline-flex;
   align-items: center;
@@ -1068,6 +1025,62 @@ a { color: var(--accent); text-underline-offset: 2px; }
   text-transform: uppercase;
 }
 
-@media (max-width: 420px) {
-  .m3-chips { padding-left: 22px; }
+/* ---------- Dialog pilihan ---------- */
+
+.m3-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 12, 14, 0.42);
+  animation: scrim-in 0.16s ease-out;
+}
+@keyframes scrim-in { from { opacity: 0; } }
+
+.m3-dialog {
+  width: 100%;
+  max-width: 420px;
+  background: var(--s-surface);
+  border-radius: 28px 28px 0 0;
+  padding: 24px 0 calc(12px + var(--safe-b));
+  animation: dialog-in 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes dialog-in { from { transform: translateY(14px); opacity: 0; } }
+
+.m3-dialog h3 {
+  margin: 0 24px 4px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--s-on);
+}
+.m3-dialog .sub {
+  margin: 0 24px 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--s-on-variant);
+}
+
+.m3-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  padding: 13px 24px;
+  text-align: left;
+  color: var(--s-on);
+  font-size: 15px;
+}
+.m3-option .tick { margin-left: auto; color: var(--s-primary); display: flex; }
+.m3-option[aria-checked='true'] { color: var(--s-primary); font-weight: 500; }
+.m3-option .lead { color: var(--s-on-variant); display: flex; }
+.m3-option[aria-checked='true'] .lead { color: var(--s-primary); }
+
+.m3-dialog .actions { display: flex; justify-content: flex-end; padding: 10px 16px 0; }
+
+@media (min-width: 560px) {
+  .m3-scrim { align-items: center; }
+  .m3-dialog { border-radius: 28px; max-width: 400px; }
 }
