@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { api } from './api.js';
+import { NoteListSkeleton } from './components/Skeleton.jsx';
 import Home from './pages/Home.jsx';
 import Invite from './pages/Invite.jsx';
 import Login from './pages/Login.jsx';
@@ -23,8 +24,21 @@ export default function App() {
     setUser(null);
   }
 
+  // Kerangka ringan selagi status sesi diperiksa, agar tidak ada layar kosong.
   if (user === undefined) {
-    return <div className="page"><p className="lede">Memuat…</p></div>;
+    return (
+      <div className="app" aria-hidden="true">
+        <header className="topbar">
+          <span className="sk" style={{ height: 22, width: 96 }} />
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <span className="sk" style={{ width: 34, height: 34, borderRadius: 10 }} />
+            <span className="sk" style={{ width: 34, height: 34, borderRadius: 10 }} />
+          </span>
+        </header>
+        <div className="segmented"><span className="sk" style={{ height: 32, width: '100%' }} /></div>
+        <NoteListSkeleton />
+      </div>
+    );
   }
 
   const publicRoute = location.pathname.startsWith('/login') || location.pathname.startsWith('/invite');

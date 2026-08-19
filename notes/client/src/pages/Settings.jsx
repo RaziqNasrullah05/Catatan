@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api.js';
 import { LAYOUTS, THEMES, readLayout, readTheme, writeLayout, writeTheme } from '../prefs.js';
+import { PeopleSkeleton } from '../components/Skeleton.jsx';
 
 const LAYOUT_ICONS = { list: Rows3, 'grid-2': Columns2, 'grid-3': Columns3 };
 const THEME_ICONS = { auto: Monitor, light: Sun, dark: Moon };
@@ -349,7 +350,7 @@ function Appearance() {
 
 function Invites({ user }) {
   const [email, setEmail] = useState('');
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState(null);
   const [lastInvite, setLastInvite] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -425,10 +426,11 @@ function Invites({ user }) {
       <div className="m3-card">
         <Row
           icon={Users}
-          title={`${users.length} akun`}
+          title={users ? `${users.length} akun` : 'Memuat…'}
           desc="Mencabut akses langsung menghapus semua sesi aktif orang tersebut."
         />
-        {users.map((u) => (
+        {!users && <PeopleSkeleton />}
+        {(users || []).map((u) => (
           <div key={u.id}>
             <div className="m3-divider" />
             <div className="m3-row">

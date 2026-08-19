@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CircleCheck, LogOut, Pin, Plus, Search, Settings, SquarePen } from 'lucide-react';
+import { NoteListSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
 import { readLayout } from '../prefs.js';
 
@@ -26,6 +27,7 @@ export default function Home({ user, onSignOut }) {
   const [layout, setLayout] = useState(readLayout);
   const [newTask, setNewTask] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   const pagerRef = useRef(null);
 
@@ -119,7 +121,7 @@ export default function Home({ user, onSignOut }) {
         <button className="icon-btn" aria-label="Pengaturan" onClick={() => navigate('/pengaturan')}>
           <Settings size={20} strokeWidth={1.75} />
         </button>
-        <button className="icon-btn" aria-label="Keluar" onClick={onSignOut}>
+        <button className="icon-btn" aria-label="Keluar" onClick={() => setConfirmSignOut(true)}>
           <LogOut size={20} strokeWidth={1.75} />
         </button>
       </header>
@@ -153,8 +155,11 @@ export default function Home({ user, onSignOut }) {
             />
           </div>
 
+          {loading ? (
+            <NoteListSkeleton layout={layout} />
+          ) : (
           <div className={`note-list layout-${layout}`}>
-            {!loading && notes.length === 0 && (
+            {notes.length === 0 && (
               <div className="empty">
                 <h2>{query ? 'Tidak ada yang cocok' : 'Belum ada catatan'}</h2>
                 <p>{query ? 'Coba kata kunci lain.' : 'Ketuk Tulis untuk memulai catatan pertama.'}</p>
@@ -179,6 +184,7 @@ export default function Home({ user, onSignOut }) {
               </button>
             ))}
           </div>
+          )}
         </section>
 
         <section className="pane" role="tabpanel" aria-label="Tugas">
@@ -193,8 +199,11 @@ export default function Home({ user, onSignOut }) {
             />
           </div>
 
+          {loading ? (
+            <TaskListSkeleton />
+          ) : (
           <div className="task-group">
-            {!loading && tasks.length === 0 && (
+            {tasks.length === 0 && (
               <div className="empty">
                 <h2>Belum ada tugas</h2>
                 <p>Setiap baris ceklis di catatanmu akan muncul di sini.</p>
@@ -209,8 +218,29 @@ export default function Home({ user, onSignOut }) {
               <TaskRow key={`${task.noteId}-${task.line}`} task={task} onToggle={toggleTask} navigate={navigate} />
             ))}
           </div>
+          )}
         </section>
       </div>
+
+      {confirmSignOut && (
+        <div className="sheet-backdrop" onClick={() => setConfirmSignOut(false)}>
+          <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>Keluar dari akun ini?</h3>
+            <p>
+              Catatanmu tetap tersimpan. Untuk masuk lagi kamu perlu kata sandi, atau tautan yang dikirim ke
+              emailmu.
+            </p>
+            <div className="row">
+              <button className="btn ghost" onClick={() => setConfirmSignOut(false)}>
+                Batal
+              </button>
+              <button className="btn danger" onClick={onSignOut}>
+                Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {index === 0 && (
         <button className="fab" onClick={createNote}>

@@ -335,3 +335,9 @@ membulat besar, baris ikon-judul-deskripsi, chip pilihan berbentuk pil, kolom is
 tombol pil. Token `--s-*` dibatasi ke `.settings-page` dan mewarisi nilai dari token global, sehingga warna latar
 sama persis dengan halaman lain — yang membedakan hanya bentuk dan jaraknya. Pilihan tata letak dan mode
 warna dibuka lewat dialog saat barisnya diketuk, bukan chip inline.
+
+**v1.6** — Kerangka pemuatan (skeleton) di halaman utama, editor catatan, pemeriksaan sesi, dan daftar
+orang. Konfirmasi sebelum keluar akun. Catatan kini dibuka dalam mode baca; menulis dimulai lewat ikon
+pensil. Editor tampil sebagai panel yang naik dari bawah dan bisa ditutup dengan menyeret bilah atasnya
+ke bawah — simpan otomatis dituntaskan lebih dulu sebelum kembali, sehingga daftar di halaman utama
+selalu memuat versi terbaru.
