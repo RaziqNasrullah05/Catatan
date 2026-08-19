@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Prec } from '@codemirror/state';
 import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { livePreview } from '../cm/livePreview.js';
+import { changeIndent } from '../cm/actions.js';
 
 /**
  * Editor markdown. Instance CodeMirror sengaja dibuat sekali saja; perubahan isi
@@ -22,7 +23,13 @@ export default function Editor({ docKey, initialValue, onChange, onReady }) {
         doc: initialValue ?? '',
         extensions: [
           history(),
-          keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+          // Tab menggeser baris keluar-masuk, terutama untuk daftar bersarang.
+          Prec.highest(
+            keymap.of([
+              { key: 'Tab', run: (v) => changeIndent(v, 1), shift: (v) => changeIndent(v, -1) },
+            ])
+          ),
+          keymap.of([...defaultKeymap, ...historyKeymap]),
           markdown({ base: markdownLanguage, addKeymap: true }),
           livePreview,
           EditorView.lineWrapping,

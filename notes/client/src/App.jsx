@@ -36,10 +36,7 @@ export default function App() {
       <Route path="/invite/:token" element={<Invite />} />
       <Route path="/" element={<Home user={user} onSignOut={signOut} />} />
       <Route path="/catatan/:id" element={<NoteEditor />} />
-      <Route
-        path="/pengaturan"
-        element={user?.role === 'admin' ? <Settings user={user} /> : <Navigate to="/" replace />}
-      />
+      <Route path="/pengaturan" element={<Settings user={user} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

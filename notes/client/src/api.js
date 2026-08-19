@@ -37,6 +37,7 @@ export const api = {
   deleteNote: (id) => request(`/notes/${id}`, { method: 'DELETE' }),
 
   listTasks: () => request('/notes/tasks/all'),
+  addTask: (text) => request('/notes/tasks', { method: 'POST', body: { text } }),
   toggleTask: (noteId, line) => request(`/notes/${noteId}/tasks/${line}/toggle`, { method: 'POST' }),
 
   users: () => request('/admin/users'),

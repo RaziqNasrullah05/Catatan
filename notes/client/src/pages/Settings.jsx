@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy } from 'lucide-react';
+import { ArrowLeft, Columns2, Columns3, Copy, Rows3 } from 'lucide-react';
 import { api } from '../api.js';
+import { LAYOUTS, readLayout, writeLayout } from '../prefs.js';
 
 export default function Settings({ user }) {
   const navigate = useNavigate();
@@ -11,10 +12,18 @@ export default function Settings({ user }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  const [layout, setLayout] = useState(readLayout);
+  const isAdmin = user?.role === 'admin';
+
   const refresh = () => api.users().then((d) => setUsers(d.users)).catch((err) => setError(err.message));
   useEffect(() => {
-    refresh();
-  }, []);
+    if (isAdmin) refresh();
+  }, [isAdmin]);
+
+  function chooseLayout(id) {
+    setLayout(id);
+    writeLayout(id);
+  }
 
   async function invite() {
     setError('');
@@ -48,7 +57,31 @@ export default function Settings({ user }) {
       </header>
 
       <div className="scroll" style={{ padding: '4px 16px 60px' }}>
-        <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 500, margin: '8px 0 2px' }}>Undang orang</h3>
+        <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 500, margin: '8px 0 2px' }}>Tampilan daftar catatan</h3>
+        <p style={{ color: 'var(--ink-soft)', fontSize: 14, margin: '0 0 12px' }}>
+          Pilihan ini tersimpan di peramban ini saja.
+        </p>
+        <div className="layout-picker" role="radiogroup" aria-label="Tampilan daftar catatan">
+          {LAYOUTS.map((option) => {
+            const Icon = { list: Rows3, 'grid-2': Columns2, 'grid-3': Columns3 }[option.id];
+            return (
+              <button
+                key={option.id}
+                role="radio"
+                aria-checked={layout === option.id}
+                className={`layout-option ${layout === option.id ? 'is-on' : ''}`}
+                onClick={() => chooseLayout(option.id)}
+              >
+                <Icon size={20} strokeWidth={1.6} />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {!isAdmin ? null : (
+        <>
+        <h3 style={{ fontFamily: 'var(--serif)', fontWeight: 500, margin: '26px 0 2px' }}>Undang orang</h3>
         <p style={{ color: 'var(--ink-soft)', fontSize: 14, margin: '0 0 12px' }}>
           Isi email untuk mengirim undangan langsung, atau kosongkan untuk membuat tautan yang bisa kamu bagikan
           sendiri.
@@ -106,6 +139,8 @@ export default function Settings({ user }) {
             </div>
           ))}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

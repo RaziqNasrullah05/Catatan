@@ -7,6 +7,8 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  IndentDecrease,
+  IndentIncrease,
   Italic,
   Link as LinkIcon,
   List,
@@ -21,7 +23,7 @@ import {
   Table,
   Users,
 } from 'lucide-react';
-import { insertBlock, insertLink, toggleLinePrefix, wrapInline } from '../cm/actions.js';
+import { changeIndent, insertBlock, insertLink, toggleLinePrefix, wrapInline } from '../cm/actions.js';
 import { templates } from '../templates.js';
 
 const TEMPLATE_ICONS = { CalendarCheck, ListChecks, Users, Stethoscope, Table, BookOpen };
@@ -44,6 +46,9 @@ export default function FormatRail({ view }) {
     { key: 'ol', label: 'Daftar bernomor', Icon: ListOrdered, run: (v) => toggleLinePrefix(v, '1. ') },
     { key: 'quote', label: 'Kutipan', Icon: Quote, run: (v) => toggleLinePrefix(v, '> ') },
     { sep: true, key: 'sep3' },
+    { key: 'outdent', label: 'Kurangi indentasi (Shift+Tab)', Icon: IndentDecrease, run: (v) => changeIndent(v, -1) },
+    { key: 'indent', label: 'Tambah indentasi (Tab)', Icon: IndentIncrease, run: (v) => changeIndent(v, 1) },
+    { sep: true, key: 'sep4' },
     { key: 'link', label: 'Tautan', Icon: LinkIcon, run: insertLink },
     { key: 'code', label: 'Kode', Icon: Code, run: (v) => wrapInline(v, '`') },
     {

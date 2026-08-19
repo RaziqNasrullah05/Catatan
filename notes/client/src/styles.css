@@ -619,3 +619,70 @@ a { color: var(--accent); text-underline-offset: 2px; }
   .app { border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
   .cm-content, .preview, .title-input { padding-left: 28px; padding-right: 28px; }
 }
+
+/* ---------- Tampilan kartu ---------- */
+
+.note-list.layout-grid-2,
+.note-list.layout-grid-3 {
+  display: grid;
+  gap: 10px;
+  padding: 10px 16px 96px;
+}
+.note-list.layout-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.note-list.layout-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.note-list.layout-grid-2 .note-row,
+.note-list.layout-grid-3 .note-row {
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--paper);
+  padding: 13px 14px;
+}
+.note-list.layout-grid-2 .note-row h2 { font-size: 16px; }
+.note-list.layout-grid-3 .note-row h2 { font-size: 14.5px; }
+.note-list.layout-grid-3 .note-row p { font-size: 12.5px; -webkit-line-clamp: 3; }
+.note-list.layout-grid-2 .note-row p { -webkit-line-clamp: 3; }
+.note-list.layout-grid-3 .note-meta { font-size: 11px; gap: 6px; }
+
+.layout-picker { display: flex; gap: 8px; }
+.layout-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 12px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.layout-option.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------- Tambah tugas cepat ---------- */
+
+.task-add {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 16px 4px;
+  padding: 10px 13px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  color: var(--accent);
+}
+.task-add input {
+  flex: 1;
+  border: 0;
+  background: none;
+  outline: none;
+  min-width: 0;
+  color: var(--ink);
+}
+.task-add input::placeholder { color: var(--ink-faint); }

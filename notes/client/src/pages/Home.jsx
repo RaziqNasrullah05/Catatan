@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CircleCheck, LogOut, Pin, Search, Settings, SquarePen } from 'lucide-react';
+import { CircleCheck, LogOut, Pin, Plus, Search, Settings, SquarePen } from 'lucide-react';
 import { api } from '../api.js';
+import { readLayout } from '../prefs.js';
 
 function timeAgo(iso) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -20,6 +21,20 @@ export default function Home({ user, onSignOut }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [layout, setLayout] = useState(readLayout);
+  const [newTask, setNewTask] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Preferensi tampilan bisa diubah dari halaman pengaturan.
+  useEffect(() => {
+    const sync = () => setLayout(readLayout());
+    window.addEventListener('catatan:tampilan', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('catatan:tampilan', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -40,12 +55,24 @@ export default function Home({ user, onSignOut }) {
       alive = false;
       clearTimeout(timer);
     };
-  }, [tab, query]);
+  }, [tab, query, reloadKey]);
 
   async function createNote() {
     try {
       const { note } = await api.createNote();
       navigate(`/catatan/${note.id}`);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function addTask() {
+    const text = newTask.trim();
+    if (!text) return;
+    setNewTask('');
+    try {
+      await api.addTask(text);
+      setReloadKey((k) => k + 1);
     } catch (err) {
       setError(err.message);
     }
@@ -69,11 +96,9 @@ export default function Home({ user, onSignOut }) {
     <div className="app">
       <header className="topbar">
         <span className="wordmark">Catatan</span>
-        {user?.role === 'admin' && (
-          <button className="icon-btn" aria-label="Pengaturan" onClick={() => navigate('/pengaturan')}>
-            <Settings size={20} strokeWidth={1.75} />
-          </button>
-        )}
+        <button className="icon-btn" aria-label="Pengaturan" onClick={() => navigate('/pengaturan')}>
+          <Settings size={20} strokeWidth={1.75} />
+        </button>
         <button className="icon-btn" aria-label="Keluar" onClick={onSignOut}>
           <LogOut size={20} strokeWidth={1.75} />
         </button>
@@ -104,7 +129,7 @@ export default function Home({ user, onSignOut }) {
 
       <div className="scroll">
         {tab === 'catatan' ? (
-          <div className="note-list">
+          <div className={`note-list layout-${layout}`}>
             {!loading && notes.length === 0 && (
               <div className="empty">
                 <h2>{query ? 'Tidak ada yang cocok' : 'Belum ada catatan'}</h2>
@@ -132,6 +157,16 @@ export default function Home({ user, onSignOut }) {
           </div>
         ) : (
           <div className="task-group">
+            <div className="task-add">
+              <Plus size={17} strokeWidth={2} />
+              <input
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                placeholder="Tambah tugas lalu tekan Enter"
+                aria-label="Tambah tugas baru"
+              />
+            </div>
             {!loading && tasks.length === 0 && (
               <div className="empty">
                 <h2>Belum ada tugas</h2>

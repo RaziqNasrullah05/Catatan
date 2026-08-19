@@ -62,6 +62,44 @@ export function insertBlock(view, block) {
   view.focus();
 }
 
+const INDENT = '  ';
+
+/**
+ * Menambah atau mengurangi indentasi baris terpilih. Dipakai tombol rail dan
+ * tombol Tab / Shift-Tab, terutama untuk membuat daftar bersarang.
+ */
+export function changeIndent(view, direction) {
+  const { state } = view;
+  const changes = [];
+  const seen = new Set();
+
+  for (const range of state.selection.ranges) {
+    let pos = range.from;
+    while (pos <= range.to) {
+      const line = state.doc.lineAt(pos);
+      if (!seen.has(line.number)) {
+        seen.add(line.number);
+        if (direction > 0) {
+          changes.push({ from: line.from, to: line.from, insert: INDENT });
+        } else {
+          const lead = line.text.match(/^[ \t]+/)?.[0] ?? '';
+          if (lead) {
+            const cut = lead.startsWith('\t') ? 1 : Math.min(INDENT.length, lead.length);
+            changes.push({ from: line.from, to: line.from + cut, insert: '' });
+          }
+        }
+      }
+      if (line.to >= range.to) break;
+      pos = line.to + 1;
+    }
+  }
+
+  if (!changes.length) return false;
+  view.dispatch({ changes });
+  view.focus();
+  return true;
+}
+
 export function insertLink(view) {
   const { state } = view;
   const range = state.selection.main;

@@ -143,6 +143,43 @@ notesRouter.get('/tasks/all', (req, res) => {
   res.json({ tasks });
 });
 
+/**
+ * Menambah tugas tanpa membuka catatan. Semua tugas cepat dikumpulkan di satu
+ * catatan bernama "Tugas", yang dibuat otomatis saat pertama kali dibutuhkan.
+ */
+notesRouter.post('/tasks', (req, res) => {
+  const parsed = z.string().trim().min(1).max(500).safeParse(req.body?.text);
+  if (!parsed.success) return res.status(400).json({ error: 'Teks tugas tidak boleh kosong.' });
+
+  const now = new Date().toISOString();
+  let inbox = db
+    .prepare(
+      `SELECT id, content FROM notes
+        WHERE user_id = ? AND title = 'Tugas' AND deleted_at IS NULL
+        ORDER BY created_at LIMIT 1`
+    )
+    .get(req.user.id);
+
+  if (!inbox) {
+    const id = newId();
+    db.prepare(
+      `INSERT INTO notes (id, user_id, title, content, created_at, updated_at)
+       VALUES (?, ?, 'Tugas', '', ?, ?)`
+    ).run(id, req.user.id, now, now);
+    inbox = { id, content: '' };
+  }
+
+  const line = `- [ ] ${parsed.data.replace(/\r?\n/g, ' ')}`;
+  const content = inbox.content.trim() ? `${inbox.content.replace(/\s+$/, '')}\n${line}` : line;
+  db.prepare('UPDATE notes SET content = ?, updated_at = ? WHERE id = ? AND user_id = ?').run(
+    content,
+    now,
+    inbox.id,
+    req.user.id
+  );
+  res.status(201).json({ ok: true, noteId: inbox.id });
+});
+
 /** Menandai satu baris checkbox selesai / belum, langsung dari layar Tugas. */
 notesRouter.post('/:id/tasks/:line/toggle', (req, res) => {
   const note = getNote(req.user.id, req.params.id);
