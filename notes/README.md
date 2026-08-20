@@ -250,16 +250,21 @@ regex saat dibaca. Ini disengaja: tugas tetap bisa disunting sebagai teks biasa.
 - `ListMark` diganti bullet `•`.
 - Heading, blockquote, blok kode, tabel, dan garis pemisah mendapat kelas per baris.
 
+**Daftar bernomor bersarang** tampil sebagai 1.1, 1.2, 1.2.1 di mode baca — tingkatnya ditentukan
+indentasi di markdown. Diterapkan lewat penghitung CSS di `styles/editor/preview.css`, memakai
+`counters()` (merangkai semua tingkat), bukan `counter()` (hanya tingkat terdalam).
+
 **Tabel** tidak dirender inline di dalam CodeMirror — menyuntingnya lewat penyunting kisi tersendiri
 (`components/TableEditor.jsx`). Ada dua jalan masuk: tombol tabel di rail saat menulis (memuat tabel di posisi kursor,
 atau membuat 3×3 baru), dan tombol "Sunting tabel" di bawah setiap tabel saat mode baca. `TableEditor`
 sendiri tidak tahu-menahu soal CodeMirror — ia menerima data awal dan mengembalikan markdown, sehingga
 dipakai bersama oleh kedua jalur. Mode baca menemukan tabel lewat `node.position.start.line` dari pohon
-markdown; posisi ini terbukti selamat melewati `rehype-sanitize`. Bisa
-tambah/hapus baris dan kolom, serta mengubah perataan tiap kolom. Konversinya ada di `cm/table.js`
+markdown; posisi ini terbukti selamat melewati `rehype-sanitize`. Tiap kepala kolom dan sisi kiri
+baris punya tombol menu untuk menyisipkan kolom/baris **sebelum atau sesudahnya**, mengubah perataan,
+dan menghapus; tombol di bawah kisi menambah di posisi akhir. Konversinya ada di `cm/table.js`
 (`findTableAt`, `serializeTable`) — menangani pipa ter-escape, sel yang jumlahnya kurang, dan penulisan
-ulang dengan lebar kolom yang disamakan. Baris pertama selalu jadi kepala tabel dan tidak bisa dihapus,
-karena markdown mewajibkannya.
+ulang dengan lebar kolom yang disamakan. Baris pertama selalu jadi kepala tabel: tidak bisa dihapus dan tidak
+bisa didahului baris baru, karena markdown mewajibkan kepala berada paling atas.
 
 Tab menambah indentasi 2 spasi, Shift+Tab menguranginya, keduanya bekerja pada seleksi banyak baris.
 Di ponsel tersedia tombol indentasi di rail format.
@@ -426,3 +431,6 @@ aturan demi aturan dengan versi sebelumnya, termasuk urutan relatif selektor yan
 **v1.12** — Bagian struktur berkas di README disusun ulang mengikuti isi folder sebenarnya, termasuk
 modul CSS dan berkas yang belum sempat tercatat. Satu berkas yatim (`src/md/table.js`, versi lama dari
 `cm/table.js` yang tidak diimpor siapa pun) dihapus.
+
+**v1.13** — Penyunting tabel: menyisipkan kolom di kiri/kanan dan baris di atas/bawah lewat menu pada
+kepala kolom dan sisi baris. Daftar bernomor bersarang kini tampil sebagai 1.1, 1.2, 1.2.1 di mode baca.

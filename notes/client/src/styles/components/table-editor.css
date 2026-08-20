@@ -43,20 +43,6 @@
 .table-grid input:focus { border-color: var(--accent); }
 .table-grid tbody tr:first-child input { font-weight: 600; background: var(--accent-soft); }
 
-.col-tools { display: flex; justify-content: center; gap: 2px; }
-.col-tools button,
-.row-tool button {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  color: var(--ink-faint);
-}
-.col-tools button:active,
-.row-tool button:active { background: var(--accent-soft); color: var(--accent); }
-.col-tools button[disabled],
-.row-tool button[disabled] { opacity: 0.3; cursor: default; }
 .row-tool { width: 26px; }
 
 .table-add {
@@ -75,3 +61,46 @@
   color: var(--ink-soft);
 }
 .table-add button:active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* Tombol pemicu menu pada kepala kolom dan sisi kiri baris. */
+.grid-tool {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: 0 auto;
+  border-radius: 7px;
+  color: var(--ink-faint);
+}
+.grid-tool:active { background: var(--accent-soft); color: var(--accent); }
+
+/* Menu kecil untuk sisip / hapus kolom dan baris. */
+.grid-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+.grid-menu {
+  position: fixed;
+  min-width: 208px;
+  padding: 6px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  animation: menu-in 0.14s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.grid-menu button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--ink);
+  text-align: left;
+}
+.grid-menu button:active { background: var(--accent-soft); }
+.grid-menu button.danger { color: var(--danger); }
+.grid-menu button[disabled] { opacity: 0.4; cursor: default; }

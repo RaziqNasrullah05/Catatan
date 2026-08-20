@@ -16,7 +16,35 @@
 .preview h2 { font-size: 1.35em; }
 .preview h3 { font-size: 1.17em; }
 .preview p { margin: 0 0 0.9em; }
-.preview ul, .preview ol { padding-left: 1.3em; margin: 0 0 0.9em; }
+.preview ul { padding-left: 1.3em; margin: 0 0 0.9em; }
+
+/*
+ * Daftar bernomor memakai penghitung bertingkat: yang bersarang tampil sebagai
+ * 1.1, 1.1.1, dan seterusnya — tingkatnya ditentukan indentasi di markdown.
+ * counters() merangkai seluruh tingkat, berbeda dengan counter() yang hanya
+ * mengambil tingkat terdalam.
+ */
+.preview ol {
+  counter-reset: poin;
+  list-style: none;
+  padding-left: 1.9em;
+  margin: 0 0 0.9em;
+}
+.preview ol > li {
+  counter-increment: poin;
+  position: relative;
+}
+.preview ol > li::before {
+  content: counters(poin, '.') '.';
+  position: absolute;
+  left: -1.9em;
+  width: 1.6em;
+  text-align: right;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+/* Daftar bersarang tidak perlu jarak ganda. */
+.preview ol ol, .preview ol ul, .preview ul ol, .preview ul ul { margin-bottom: 0.2em; }
 .preview li { margin-bottom: 0.25em; }
 .preview li input[type='checkbox'] { margin-right: 0.5em; }
 .preview blockquote {
