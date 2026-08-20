@@ -1,9 +1,12 @@
 /* ---------- Tarik untuk muat ulang ---------- */
 
-/* Tinggi nol agar batang mengambang tanpa menggeser isi daftar. */
+/*
+ * Batang duduk tepat di bawah header panel (kolom pencarian / tambah tugas).
+ * Wadahnya bertinggi nol, jadi batang digambar keluar tanpa menggeser tata
+ * letak; yang bergerak adalah .pull-content, lewat transform.
+ */
 .pull-zone {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 5;
   height: 0;
   display: flex;
@@ -13,26 +16,35 @@
 
 .pull-pill {
   display: block;
-  background: var(--accent);
+  /* Hanya garis luar — tanpa isian. */
+  background: none;
+  border: 2px solid var(--accent);
   border-radius: 999px;
+  box-sizing: border-box;
   transform-origin: top center;
   will-change: height, width;
 }
 
-/* Lesatan balik: kurva sengaja melewati titik akhir sedikit lalu kembali. */
-.pull-pill.is-springing {
+.pull-content { will-change: transform; }
+
+/* Lesatan balik: kurva sengaja melewati titik akhir sedikit lalu kembali.
+   Batang dan isi memakai kurva yang sama supaya bergerak sebagai satu kesatuan. */
+.pull-pill.is-springing,
+.pull-content.is-springing {
   transition:
     height 0.52s cubic-bezier(0.16, 1.7, 0.3, 1),
     width 0.52s cubic-bezier(0.16, 1.7, 0.3, 1),
+    transform 0.52s cubic-bezier(0.16, 1.7, 0.3, 1),
     opacity 0.3s ease-out;
 }
 
 .pull-pill.is-busy { animation: pull-busy 0.9s ease-in-out infinite; }
 @keyframes pull-busy {
-  50% { opacity: 0.45; }
+  50% { opacity: 0.4; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pull-pill.is-springing { transition-duration: 0.2s; transition-timing-function: ease-out; }
+  .pull-pill.is-springing,
+  .pull-content.is-springing { transition-duration: 0.2s; transition-timing-function: ease-out; }
   .pull-pill.is-busy { animation: none; }
 }

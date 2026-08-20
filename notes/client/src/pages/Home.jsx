@@ -192,12 +192,20 @@ export default function Home({ user, onSignOut }) {
    * menggulir ke bawah, jadi ruang layar dipakai untuk catatan lebih dulu.
    */
   function onListScroll(e) {
-    const atas = e.currentTarget.scrollTop;
+    const el = e.currentTarget;
+    const batas = el.scrollHeight - el.clientHeight;
+    // Di kedua ujung, peramban seluler memantulkan posisi gulir bolak-balik.
+    // Nilai itu dijepit dulu supaya pantulan tidak terbaca sebagai perubahan arah.
+    const atas = Math.max(0, Math.min(el.scrollTop, batas));
     const selisih = atas - lastScroll.current;
+    lastScroll.current = atas;
+
+    // Sudah mentok di bawah: tidak ada arah baru untuk dibaca, jadi biarkan.
+    if (batas > 0 && atas >= batas - 2) return;
+
     if (atas <= 4) setSearchOpen(true);
     else if (selisih < -8) setSearchOpen(true);
     else if (selisih > 8 && atas > 40) setSearchOpen(false);
-    lastScroll.current = atas;
   }
 
   async function createNote() {
@@ -279,20 +287,26 @@ export default function Home({ user, onSignOut }) {
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
 
       <div className="pager" ref={pagerRef} onScroll={onPagerScroll}>
-        <PullRefresh onRefresh={refresh} onScroll={onListScroll} role="tabpanel" aria-label="Catatan">
-          <div className={`search-slot ${searchOpen ? 'is-open' : ''}`}>
-            <div className="search">
-              <Search size={17} strokeWidth={1.75} />
-              <input
-                ref={searchInput}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Cari judul atau isi catatan"
-                aria-label="Cari catatan"
-              />
+        <PullRefresh
+          onRefresh={refresh}
+          onScroll={onListScroll}
+          role="tabpanel"
+          aria-label="Catatan"
+          header={
+            <div className={`search-slot ${searchOpen ? 'is-open' : ''}`}>
+              <div className="search">
+                <Search size={17} strokeWidth={1.75} />
+                <input
+                  ref={searchInput}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Cari judul atau isi catatan"
+                  aria-label="Cari catatan"
+                />
+              </div>
             </div>
-          </div>
-
+          }
+        >
           {loading ? (
             <NoteListSkeleton layout={layout} />
           ) : (
@@ -359,18 +373,23 @@ export default function Home({ user, onSignOut }) {
           )}
         </PullRefresh>
 
-        <PullRefresh onRefresh={refresh} role="tabpanel" aria-label="Tugas">
-          <div className="task-add">
-            <Plus size={17} strokeWidth={2} />
-            <input
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addTask()}
-              placeholder="Tambah tugas lalu tekan Enter"
-              aria-label="Tambah tugas baru"
-            />
-          </div>
-
+        <PullRefresh
+          onRefresh={refresh}
+          role="tabpanel"
+          aria-label="Tugas"
+          header={
+            <div className="task-add">
+              <Plus size={17} strokeWidth={2} />
+              <input
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                placeholder="Tambah tugas lalu tekan Enter"
+                aria-label="Tambah tugas baru"
+              />
+            </div>
+          }
+        >
           {loading ? (
             <TaskListSkeleton />
           ) : (

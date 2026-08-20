@@ -443,3 +443,9 @@ ke puncak daftar, menyingkir saat menggulir ke bawah, dan tetap bisa dibuka lewa
 dengan tarikan elastis: batang membulat memanjang mengikuti jari dengan hambatan menaik lalu melesat
 balik memakai kurva yang melewati titik akhir. Hambatannya disetel lewat uji numerik agar ambang tercapai
 di sekitar 100px tarikan; nilai awalnya menuntut hampir 180px dan terasa seret.
+
+**v1.15** — Perbaikan dan penyempurnaan tarik-untuk-muat-ulang: tombol cari tidak lagi berkedip saat
+gulir mentok (posisi gulir dijepit ke rentang sah, dan pantulan di ujung diabaikan); batang kini hanya
+bergaris hijau tanpa isian; batang dipindah ke bawah header panel, dan isi daftar digeser dengan
+`transform` mengikuti ujung batang memakai kurva yang sama — transform dipilih agar peramban tidak
+menghitung ulang tata letak seluruh daftar di setiap frame.

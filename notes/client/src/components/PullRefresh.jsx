@@ -11,7 +11,7 @@ const HOLD = 34;        // panjang tetap selagi memuat
  * besar, lalu melesat balik memakai kurva yang sedikit melewati titik akhir —
  * itulah yang memberi kesan ketapel.
  */
-export default function PullRefresh({ onRefresh, onScroll, className = '', children, ...rest }) {
+export default function PullRefresh({ onRefresh, onScroll, header, className = '', children, ...rest }) {
   const scroller = useRef(null);
   const gesture = useRef(null);
   const pullRef = useRef(0);
@@ -99,18 +99,31 @@ export default function PullRefresh({ onRefresh, onScroll, className = '', child
 
   // Makin panjang, makin ramping — seperti karet yang ditarik.
   const lebar = Math.max(24, 44 - pull * 0.15);
+  const spring = springing ? 'is-springing' : '';
 
   return (
     <div className={`pane ${className}`} ref={scroller} onScroll={onScroll} {...rest}>
+      {header}
+
+      {/* Tinggi nol: batang digambar keluar dari sini tanpa menggeser tata letak. */}
       <div className="pull-zone" aria-hidden={!busy}>
         <span
-          className={`pull-pill ${springing ? 'is-springing' : ''} ${busy ? 'is-busy' : ''}`}
+          className={`pull-pill ${spring} ${busy ? 'is-busy' : ''}`}
           style={{ height: pull, width: lebar, opacity: pull > 2 ? 1 : 0 }}
           role={busy ? 'status' : undefined}
           aria-label={busy ? 'Memuat ulang' : undefined}
         />
       </div>
-      {children}
+
+      {/*
+        Isi digeser sejauh tarikan memakai transform, bukan tinggi atau margin,
+        supaya peramban tidak perlu menghitung ulang tata letak seluruh daftar
+        di setiap frame. Jarak batang ke catatan jadi tetap: catatan mengikuti
+        ujung batang.
+      */}
+      <div className={`pull-content ${spring}`} style={{ transform: `translateY(${pull}px)` }}>
+        {children}
+      </div>
     </div>
   );
 }
