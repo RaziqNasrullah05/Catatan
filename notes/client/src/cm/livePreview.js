@@ -1,5 +1,6 @@
 import { syntaxTree } from '@codemirror/language';
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
+import { TableWidget, parseTable } from './tableWidget.js';
 
 /**
  * Pratinjau langsung ala Obsidian: tanda markdown disembunyikan dan teks tampil
@@ -109,7 +110,27 @@ function buildDecorations(view) {
         }
         if (name === 'Blockquote') return tagLines(node.from, node.to, 'cm-quote');
         if (name === 'FencedCode' || name === 'CodeBlock') return tagLines(node.from, node.to, 'cm-codeblock');
-        if (name === 'Table') return tagLines(node.from, node.to, 'cm-table');
+        if (name === 'Table') {
+          // Saat kursor berada di dalam tabel, sintaks aslinya ditampilkan agar
+          // masih bisa disunting sebagai teks biasa.
+          const teks = state.sliceDoc(node.from, node.to);
+          const kursorDiDalam =
+            active.has(state.doc.lineAt(node.from).number) ||
+            active.has(state.doc.lineAt(node.to).number) ||
+            [...active].some((n) => {
+              const line = state.doc.line(Math.min(n, state.doc.lines));
+              return line.from >= node.from && line.to <= node.to;
+            });
+
+          if (kursorDiDalam || !parseTable(teks)) {
+            tagLines(node.from, node.to, 'cm-table');
+            return;
+          }
+          items.push(
+            Decoration.replace({ widget: new TableWidget(teks), block: true }).range(node.from, node.to)
+          );
+          return false;
+        }
         if (name === 'HorizontalRule') return tagLines(node.from, node.to, 'cm-hr');
 
         if (MARK_CLASS[name] && node.to > node.from) {
