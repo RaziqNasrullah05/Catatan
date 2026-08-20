@@ -177,13 +177,20 @@ export default function Home({ user, onSignOut }) {
 
   /** Dipanggil tarik-untuk-muat-ulang; menunggu data benar-benar datang. */
   const refresh = useCallback(async () => {
+    // Kerangka ditampilkan juga saat muat ulang manual, dengan jeda minimum yang
+    // sama seperti pemuatan awal — supaya kedua jalur terasa seragam.
+    setLoading(true);
     try {
-      const [noteData, taskData] = await Promise.all([api.listNotes(query), api.listTasks()]);
+      const [noteData, taskData] = await withMinDelay(
+        Promise.all([api.listNotes(query), api.listTasks()])
+      );
       setNotes(noteData.notes);
       setTasks(taskData.tasks);
       setError('');
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }, [query]);
 

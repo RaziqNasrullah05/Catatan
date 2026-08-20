@@ -30,6 +30,8 @@ Domain produksi: `https://catatan.warkophajisobirin.fun`
 ```
 notes/
 ├── README.md
+├── CONTEXT.md                      # orientasi untuk sesi lanjutan: keputusan,
+│                                   #   cara kerja, dan hal yang masih menggantung
 ├── .gitignore                      # dist/, data/, .env, node_modules/
 ├── client/
 │   ├── package.json                # Vite 8, plugin-react 6, React Router 7
@@ -449,3 +451,6 @@ gulir mentok (posisi gulir dijepit ke rentang sah, dan pantulan di ujung diabaik
 bergaris hijau tanpa isian; batang dipindah ke bawah header panel, dan isi daftar digeser dengan
 `transform` mengikuti ujung batang memakai kurva yang sama — transform dipilih agar peramban tidak
 menghitung ulang tata letak seluruh daftar di setiap frame.
+
+**v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
+sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
