@@ -208,9 +208,13 @@ regex saat dibaca. Ini disengaja: tugas tetap bisa disunting sebagai teks biasa.
 - `ListMark` diganti bullet `•`.
 - Heading, blockquote, blok kode, tabel, dan garis pemisah mendapat kelas per baris.
 
-**Batasan yang disengaja:** tabel tidak dirender inline. Merender tabel di dalam CodeMirror sambil tetap
-bisa disunting jauh lebih rumit daripada nilainya. Tabel tampil monospace saat menulis, dan penuh di mode
-Baca (ikon mata). Obsidian pun begitu.
+**Tabel** tidak dirender inline di dalam CodeMirror — menyuntingnya lewat penyunting kisi tersendiri
+(`components/TableEditor.jsx`). Menekan tombol tabel di rail membuka kisi berisi kolom isian: kalau kursor
+sedang berada di dalam tabel, isinya dimuat untuk disunting; kalau tidak, tabel 3×3 baru dibuat. Bisa
+tambah/hapus baris dan kolom, serta mengubah perataan tiap kolom. Konversinya ada di `cm/table.js`
+(`findTableAt`, `serializeTable`) — menangani pipa ter-escape, sel yang jumlahnya kurang, dan penulisan
+ulang dengan lebar kolom yang disamakan. Baris pertama selalu jadi kepala tabel dan tidak bisa dihapus,
+karena markdown mewajibkannya.
 
 Tab menambah indentasi 2 spasi, Shift+Tab menguranginya, keduanya bekerja pada seleksi banyak baris.
 Di ponsel tersedia tombol indentasi di rail format.
@@ -308,7 +312,6 @@ Tema gelap ditulis dua kali di CSS: satu untuk `@media (prefers-color-scheme: da
 - Mode luring dengan service worker
 - Unggah gambar
 - 2FA (TOTP)
-- Render tabel inline di editor — sengaja ditunda, lihat bagian 7
 
 ---
 
@@ -346,3 +349,7 @@ selalu memuat versi terbaru.
 Seret panel catatan dikendalikan lewat `ref` dan gaya inline, bukan `useState`, sehingga isi catatan
 tidak dirender ulang setiap gerakan jari; animasi tutup kini berlanjut dari posisi jari terakhir alih-alih
 melompat ke posisi awal.
+
+**v1.8** — Tabel disunting lewat kisi sungguhan (`TableEditor.jsx` + `cm/table.js`), lengkap dengan tambah
+dan hapus baris/kolom serta perataan per kolom. Semua lembar konfirmasi kini naik dari bawah dengan
+animasi yang sama seperti panel catatan.

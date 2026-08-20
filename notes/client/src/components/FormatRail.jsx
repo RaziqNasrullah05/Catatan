@@ -25,11 +25,13 @@ import {
 } from 'lucide-react';
 import { changeIndent, insertBlock, insertLink, toggleLinePrefix, wrapInline } from '../cm/actions.js';
 import { templates } from '../templates.js';
+import TableEditor from './TableEditor.jsx';
 
 const TEMPLATE_ICONS = { CalendarCheck, ListChecks, Users, Stethoscope, Table, BookOpen };
 
 export default function FormatRail({ view }) {
   const [showTemplates, setShowTemplates] = useState(false);
+  const [tableOpen, setTableOpen] = useState(false);
   const guard = (fn) => () => view && fn(view);
 
   const buttons = [
@@ -51,12 +53,7 @@ export default function FormatRail({ view }) {
     { sep: true, key: 'sep4' },
     { key: 'link', label: 'Tautan', Icon: LinkIcon, run: insertLink },
     { key: 'code', label: 'Kode', Icon: Code, run: (v) => wrapInline(v, '`') },
-    {
-      key: 'table',
-      label: 'Tabel',
-      Icon: Table,
-      run: (v) => insertBlock(v, '| Kolom 1 | Kolom 2 |\n| --- | --- |\n|  |  |'),
-    },
+    { key: 'table', label: 'Tabel', Icon: Table, run: () => setTableOpen(true) },
     { key: 'hr', label: 'Garis pemisah', Icon: Minus, run: (v) => insertBlock(v, '---') },
   ];
 
@@ -117,6 +114,8 @@ export default function FormatRail({ view }) {
           )
         )}
       </div>
+
+      {tableOpen && view && <TableEditor view={view} onClose={() => setTableOpen(false)} />}
     </div>
   );
 }

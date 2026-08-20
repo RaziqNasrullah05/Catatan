@@ -1142,3 +1142,191 @@ a { color: var(--accent); text-underline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   .sheet-page { animation: none; }
 }
+
+/* ---------- Tabel yang bisa disunting di editor ---------- */
+
+.md-table {
+  margin: 12px 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: var(--sans);
+}
+
+.md-table-scroll { overflow-x: auto; scrollbar-width: thin; }
+
+.md-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88em;
+}
+
+.md-table th,
+.md-table td {
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 0;
+  position: relative;
+  min-width: 108px;
+}
+.md-table tr > *:last-child { border-right: 0; }
+.md-table tbody tr:last-child > * { border-bottom: 0; }
+.md-table th { background: var(--accent-soft); }
+
+.md-cell {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: none;
+  padding: 9px 11px;
+  font: inherit;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.md-table th .md-cell { font-weight: 600; padding-right: 24px; }
+.md-cell:focus { background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--accent); border-radius: 3px; }
+
+.md-table .gutter {
+  width: 34px;
+  min-width: 34px;
+  text-align: center;
+  background: var(--bg);
+}
+
+.md-table-x {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--ink-faint);
+  font-size: 15px;
+  line-height: 1;
+}
+.md-table-x:hover { background: var(--rule); color: var(--danger); }
+.md-table th .col-del {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  transform: translateY(-50%);
+}
+
+.md-table-bar {
+  display: flex;
+  gap: 6px;
+  padding: 7px 9px;
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+}
+.md-table-add {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rule-strong);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.md-table-add:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- Animasi lembar konfirmasi ---------- */
+
+.sheet-backdrop { animation: backdrop-in 0.18s ease-out; }
+@keyframes backdrop-in { from { opacity: 0; } }
+
+.sheet { animation: sheet-rise 0.28s cubic-bezier(0.32, 0.72, 0, 1); }
+@keyframes sheet-rise {
+  from { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-backdrop, .sheet { animation: none; }
+}
+
+/* ---------- Lembar konfirmasi & dialog naik dari bawah ---------- */
+
+.sheet-backdrop { animation: scrim-in 0.16s ease-out; }
+.sheet { animation: sheet-rise 0.28s cubic-bezier(0.32, 0.72, 0, 1); }
+
+@keyframes sheet-rise {
+  from { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-backdrop { animation: none; }
+}
+
+/* ---------- Penyunting tabel ---------- */
+
+.table-sheet {
+  max-width: 620px;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  max-height: 88dvh;
+}
+
+.table-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.table-sheet-head h3 { margin: 0; flex: 1; }
+
+.table-grid-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0 -4px;
+  padding: 0 4px 4px;
+}
+
+.table-grid { border-collapse: separate; border-spacing: 6px; width: 100%; }
+
+.table-grid th { padding: 0; }
+.table-grid td { padding: 0; }
+
+.table-grid input {
+  width: 100%;
+  min-width: 108px;
+  padding: 10px 11px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  outline: none;
+  font-size: 14.5px;
+}
+.table-grid input:focus { border-color: var(--accent); }
+.table-grid tbody tr:first-child input { font-weight: 600; background: var(--accent-soft); }
+
+.col-tools { display: flex; justify-content: center; gap: 2px; }
+.col-tools button,
+.row-tool button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  color: var(--ink-faint);
+}
+.col-tools button:active,
+.row-tool button:active { background: var(--accent-soft); color: var(--accent); }
+.col-tools button[disabled],
+.row-tool button[disabled] { opacity: 0.3; cursor: default; }
+.row-tool { width: 26px; }
+
+.table-add {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+.table-add button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+.table-add button:active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
