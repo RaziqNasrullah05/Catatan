@@ -45,6 +45,22 @@
 
 /* ---------- Pencarian ---------- */
 
+/*
+ * Kolom pencarian disembunyikan sampai pengguna menggulir ke arah atas.
+ * Wadahnya yang dianimasikan, bukan kolomnya, supaya tinggi isi daftar
+ * tidak ikut melompat.
+ */
+.search-slot {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.search-slot.is-open { max-height: 62px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .search-slot { transition: none; }
+}
+
 .search {
   display: flex;
   align-items: center;

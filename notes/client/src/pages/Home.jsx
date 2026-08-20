@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CircleCheck, LogOut, MoreVertical, Pin, Plus, Search, Settings, SquarePen } from 'lucide-react';
 import NoteMenu from '../components/NoteMenu.jsx';
+import PullRefresh from '../components/PullRefresh.jsx';
 import { NoteListSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
 import { readLayout } from '../prefs.js';
@@ -33,6 +34,10 @@ export default function Home({ user, onSignOut }) {
   const [menu, setMenu] = useState(null);
   const [held, setHeld] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const [searchOpen, setSearchOpen] = useState(false);
+  const lastScroll = useRef(0);
+  const searchInput = useRef(null);
 
   const holdTimer = useRef(null);
   const holdStart = useRef(null);
@@ -170,6 +175,31 @@ export default function Home({ user, onSignOut }) {
     }
   }
 
+  /** Dipanggil tarik-untuk-muat-ulang; menunggu data benar-benar datang. */
+  const refresh = useCallback(async () => {
+    try {
+      const [noteData, taskData] = await Promise.all([api.listNotes(query), api.listTasks()]);
+      setNotes(noteData.notes);
+      setTasks(taskData.tasks);
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [query]);
+
+  /**
+   * Kolom pencarian muncul saat menggulir ke arah atas dan menyingkir saat
+   * menggulir ke bawah, jadi ruang layar dipakai untuk catatan lebih dulu.
+   */
+  function onListScroll(e) {
+    const atas = e.currentTarget.scrollTop;
+    const selisih = atas - lastScroll.current;
+    if (atas <= 4) setSearchOpen(true);
+    else if (selisih < -8) setSearchOpen(true);
+    else if (selisih > 8 && atas > 40) setSearchOpen(false);
+    lastScroll.current = atas;
+  }
+
   async function createNote() {
     try {
       const { note } = await api.createNote();
@@ -209,6 +239,20 @@ export default function Home({ user, onSignOut }) {
     <div className="app">
       <header className="topbar">
         <span className="wordmark">Catatan</span>
+        {index === 0 && (
+          <button
+            className={`icon-btn ${searchOpen ? 'is-on' : ''}`}
+            aria-label="Cari catatan"
+            aria-expanded={searchOpen}
+            onClick={() => {
+              const buka = !searchOpen;
+              setSearchOpen(buka);
+              if (buka) setTimeout(() => searchInput.current?.focus(), 220);
+            }}
+          >
+            <Search size={19} strokeWidth={1.75} />
+          </button>
+        )}
         <button className="icon-btn" aria-label="Pengaturan" onClick={() => navigate('/pengaturan')}>
           <Settings size={20} strokeWidth={1.75} />
         </button>
@@ -235,15 +279,18 @@ export default function Home({ user, onSignOut }) {
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
 
       <div className="pager" ref={pagerRef} onScroll={onPagerScroll}>
-        <section className="pane" role="tabpanel" aria-label="Catatan">
-          <div className="search">
-            <Search size={17} strokeWidth={1.75} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari judul atau isi catatan"
-              aria-label="Cari catatan"
-            />
+        <PullRefresh onRefresh={refresh} onScroll={onListScroll} role="tabpanel" aria-label="Catatan">
+          <div className={`search-slot ${searchOpen ? 'is-open' : ''}`}>
+            <div className="search">
+              <Search size={17} strokeWidth={1.75} />
+              <input
+                ref={searchInput}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Cari judul atau isi catatan"
+                aria-label="Cari catatan"
+              />
+            </div>
           </div>
 
           {loading ? (
@@ -310,9 +357,9 @@ export default function Home({ user, onSignOut }) {
             ))}
           </div>
           )}
-        </section>
+        </PullRefresh>
 
-        <section className="pane" role="tabpanel" aria-label="Tugas">
+        <PullRefresh onRefresh={refresh} role="tabpanel" aria-label="Tugas">
           <div className="task-add">
             <Plus size={17} strokeWidth={2} />
             <input
@@ -344,7 +391,7 @@ export default function Home({ user, onSignOut }) {
             ))}
           </div>
           )}
-        </section>
+        </PullRefresh>
       </div>
 
       {menu && (

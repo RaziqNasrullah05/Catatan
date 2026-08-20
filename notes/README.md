@@ -55,6 +55,7 @@ notes/
 │       │   ├── Preview.jsx         # render markdown tersanitasi + tombol sunting tabel
 │       │   ├── TableEditor.jsx     # penyunting tabel berbentuk kisi (tanpa CodeMirror)
 │       │   ├── NoteMenu.jsx        # menu kontekstual: sematkan / hapus
+│       │   ├── PullRefresh.jsx     # tarik untuk muat ulang, efek ketapel
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
 │       │   └── ErrorBoundary.jsx   # menangkap error render agar layar tak kosong
 │       │
@@ -89,6 +90,7 @@ notes/
 │               ├── sheet.css       # lembar konfirmasi
 │               ├── dialog.css      # dialog pilihan (tata letak, mode warna)
 │               ├── table-editor.css
+│               ├── pull-refresh.css
 │               └── skeleton.css
 └── server/
     ├── package.json                # Express, better-sqlite3, helmet, nodemailer
@@ -434,3 +436,10 @@ modul CSS dan berkas yang belum sempat tercatat. Satu berkas yatim (`src/md/tabl
 
 **v1.13** — Penyunting tabel: menyisipkan kolom di kiri/kanan dan baris di atas/bawah lewat menu pada
 kepala kolom dan sisi baris. Daftar bernomor bersarang kini tampil sebagai 1.1, 1.2, 1.2.1 di mode baca.
+
+**v1.14** — Kolom pencarian tersembunyi secara bawaan: muncul saat menggulir ke arah atas atau kembali
+ke puncak daftar, menyingkir saat menggulir ke bawah, dan tetap bisa dibuka lewat ikon cari di bilah atas
+(penting untuk layar lebar yang daftarnya tidak cukup panjang untuk digulir). Tarik-untuk-muat-ulang
+dengan tarikan elastis: batang membulat memanjang mengikuti jari dengan hambatan menaik lalu melesat
+balik memakai kurva yang melewati titik akhir. Hambatannya disetel lewat uji numerik agar ambang tercapai
+di sekitar 100px tarikan; nilai awalnya menuntut hampir 180px dan terasa seret.

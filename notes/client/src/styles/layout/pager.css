@@ -13,6 +13,9 @@
 .pager::-webkit-scrollbar { display: none; }
 
 .pane {
+  /* contain menahan gulir agar tidak diteruskan ke peramban, sehingga
+     tarik-untuk-muat-ulang bawaannya tidak ikut aktif. */
+  overscroll-behavior-y: contain;
   flex: 0 0 100%;
   width: 100%;
   min-width: 0;

@@ -1,0 +1,38 @@
+/* ---------- Tarik untuk muat ulang ---------- */
+
+/* Tinggi nol agar batang mengambang tanpa menggeser isi daftar. */
+.pull-zone {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.pull-pill {
+  display: block;
+  background: var(--accent);
+  border-radius: 999px;
+  transform-origin: top center;
+  will-change: height, width;
+}
+
+/* Lesatan balik: kurva sengaja melewati titik akhir sedikit lalu kembali. */
+.pull-pill.is-springing {
+  transition:
+    height 0.52s cubic-bezier(0.16, 1.7, 0.3, 1),
+    width 0.52s cubic-bezier(0.16, 1.7, 0.3, 1),
+    opacity 0.3s ease-out;
+}
+
+.pull-pill.is-busy { animation: pull-busy 0.9s ease-in-out infinite; }
+@keyframes pull-busy {
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-pill.is-springing { transition-duration: 0.2s; transition-timing-function: ease-out; }
+  .pull-pill.is-busy { animation: none; }
+}
