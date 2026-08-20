@@ -1117,15 +1117,8 @@ a { color: var(--accent); text-underline-offset: 2px; }
 @keyframes sheet-up {
   from { transform: translateY(100%); }
 }
-.sheet-page.is-closing {
-  animation: sheet-down 0.26s cubic-bezier(0.4, 0, 1, 1) forwards;
-}
-@keyframes sheet-down {
-  to { transform: translateY(100%); }
-}
-/* Saat jari sedang menyeret, posisi diatur inline — animasi dimatikan. */
-.sheet-page.is-dragging { animation: none; transition: none; }
-.sheet-page.is-settling { animation: none; transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1); }
+/* Menutup dan menyeret dikendalikan lewat gaya inline di NoteEditor.jsx,
+   supaya animasinya selalu berlanjut dari posisi panel saat itu. */
 
 .sheet-page .topbar {
   position: relative;
@@ -1147,5 +1140,5 @@ a { color: var(--accent); text-underline-offset: 2px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sheet-page, .sheet-page.is-closing { animation: none; }
+  .sheet-page { animation: none; }
 }

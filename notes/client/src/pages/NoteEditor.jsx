@@ -5,6 +5,7 @@ import { api } from '../api.js';
 import Editor from '../components/Editor.jsx';
 import FormatRail from '../components/FormatRail.jsx';
 import { NoteEditorSkeleton } from '../components/Skeleton.jsx';
+import { withMinDelay } from '../utils.js';
 
 // Pratinjau dimuat saat dibutuhkan agar berkas awal tetap ringan.
 const Preview = lazy(() => import('../components/Preview.jsx'));
@@ -24,17 +25,16 @@ export default function NoteEditor() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
   const [view, setView] = useState(null);
-  const [closing, setClosing] = useState(false);
-  const [drag, setDrag] = useState(null);
 
   const draft = useRef({ title: '', content: '' });
   const timer = useRef(null);
   const dirty = useRef(false);
+  const sheet = useRef(null);
+  const drag = useRef(null);
 
   useEffect(() => {
     let alive = true;
-    api
-      .getNote(id)
+    withMinDelay(api.getNote(id))
       .then(({ note }) => {
         if (!alive) return;
         setNote(note);
@@ -74,13 +74,32 @@ export default function NoteEditor() {
    * Menutup panel. Perubahan yang belum sempat tersimpan dituntaskan lebih dulu,
    * supaya daftar di halaman utama sudah memuat versi terbaru saat muncul.
    */
+  /** Menurunkan panel dari posisinya saat ini, bukan dari awal. */
+  const slideOut = useCallback(() => {
+    const el = sheet.current;
+    if (!el) return;
+    el.style.animation = 'none';
+    el.style.transition = `transform ${CLOSE_ANIM}ms cubic-bezier(0.4, 0, 1, 1)`;
+    // Satu frame jeda supaya peramban mencatat posisi awal transisi.
+    requestAnimationFrame(() => {
+      el.style.transform = 'translateY(100%)';
+    });
+  }, []);
+
+  /**
+   * Menutup panel. Perubahan yang belum sempat tersimpan dituntaskan lebih dulu,
+   * supaya daftar di halaman utama sudah memuat versi terbaru saat muncul.
+   * Penyimpanan dan animasi berjalan bersamaan, jadi tidak ada jeda tambahan.
+   */
   const close = useCallback(async () => {
     clearTimeout(timer.current);
-    setClosing(true);
-    const flush = dirty.current ? api.updateNote(id, { ...draft.current }).catch(() => {}) : Promise.resolve();
+    slideOut();
+    const flush = dirty.current
+      ? api.updateNote(id, { ...draft.current }).catch(() => {})
+      : Promise.resolve();
     await Promise.all([flush, new Promise((r) => setTimeout(r, CLOSE_ANIM))]);
     navigate('/', { replace: true });
-  }, [id, navigate]);
+  }, [id, navigate, slideOut]);
 
   // Jaring pengaman kalau tab ditutup mendadak.
   useEffect(() => {
@@ -97,26 +116,37 @@ export default function NoteEditor() {
 
   function onPointerDown(e) {
     if (e.target.closest('button')) return;
-    setDrag({ startY: e.clientY, dy: 0, settling: false });
+    const el = sheet.current;
+    if (!el) return;
+    drag.current = { startY: e.clientY, dy: 0 };
+    // Animasi masuk dimatikan agar tidak beradu dengan posisi jari.
+    el.style.animation = 'none';
+    el.style.transition = 'none';
     e.currentTarget.setPointerCapture?.(e.pointerId);
   }
 
+  // Posisi diubah langsung lewat DOM, tanpa setState, supaya isi catatan
+  // tidak ikut dirender ulang setiap gerakan jari — inilah sumber kedipan.
   function onPointerMove(e) {
-    if (!drag || drag.settling) return;
-    const dy = e.clientY - drag.startY;
-    if (dy > 0) setDrag((d) => ({ ...d, dy }));
+    if (!drag.current) return;
+    const dy = Math.max(0, e.clientY - drag.current.startY);
+    drag.current.dy = dy;
+    sheet.current.style.transform = `translateY(${dy}px)`;
   }
 
   function onPointerUp() {
-    if (!drag) return;
-    if (drag.dy > DRAG_THRESHOLD) {
-      setDrag(null);
+    const info = drag.current;
+    if (!info) return;
+    drag.current = null;
+
+    if (info.dy > DRAG_THRESHOLD) {
       close();
-    } else {
-      // Kembali ke posisi semula dengan animasi, bukan lompat.
-      setDrag((d) => ({ ...d, dy: 0, settling: true }));
-      setTimeout(() => setDrag(null), CLOSE_ANIM);
+      return;
     }
+    // Kembali ke posisi semula dari titik jari terakhir, bukan melompat.
+    const el = sheet.current;
+    el.style.transition = `transform ${CLOSE_ANIM}ms cubic-bezier(0.32, 0.72, 0, 1)`;
+    el.style.transform = 'translateY(0px)';
   }
 
   async function togglePin() {
@@ -128,7 +158,7 @@ export default function NoteEditor() {
   async function remove() {
     try {
       await api.deleteNote(id);
-      setClosing(true);
+      slideOut();
       setTimeout(() => navigate('/', { replace: true }), CLOSE_ANIM);
     } catch (err) {
       setError(err.message);
@@ -144,21 +174,8 @@ export default function NoteEditor() {
     gagal: 'Gagal menyimpan',
   }[status];
 
-  const sheetClass = [
-    'app',
-    'sheet-page',
-    closing && 'is-closing',
-    drag && !drag.settling && 'is-dragging',
-    drag?.settling && 'is-settling',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <div
-      className={sheetClass}
-      style={drag ? { transform: `translateY(${drag.dy}px)` } : undefined}
-    >
+    <div className="app sheet-page" ref={sheet}>
       <header
         className="topbar"
         onPointerDown={onPointerDown}

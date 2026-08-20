@@ -22,6 +22,7 @@ import {
 import { api } from '../api.js';
 import { LAYOUTS, THEMES, readLayout, readTheme, writeLayout, writeTheme } from '../prefs.js';
 import { PeopleSkeleton } from '../components/Skeleton.jsx';
+import { withMinDelay } from '../utils.js';
 
 const LAYOUT_ICONS = { list: Rows3, 'grid-2': Columns2, 'grid-3': Columns3 };
 const THEME_ICONS = { auto: Monitor, light: Sun, dark: Moon };
@@ -355,7 +356,10 @@ function Invites({ user }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const refresh = () => api.users().then((d) => setUsers(d.users)).catch((err) => setError(err.message));
+  const refresh = () =>
+    withMinDelay(api.users())
+      .then((d) => setUsers(d.users))
+      .catch((err) => setError(err.message));
   useEffect(() => {
     refresh();
   }, []);

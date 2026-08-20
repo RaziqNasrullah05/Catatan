@@ -4,6 +4,7 @@ import { CircleCheck, LogOut, Pin, Plus, Search, Settings, SquarePen } from 'luc
 import { NoteListSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
 import { readLayout } from '../prefs.js';
+import { withMinDelay } from '../utils.js';
 
 const TABS = ['catatan', 'tugas'];
 
@@ -47,7 +48,9 @@ export default function Home({ user, onSignOut }) {
     const timer = setTimeout(async () => {
       try {
         setError('');
-        const [noteData, taskData] = await Promise.all([api.listNotes(query), api.listTasks()]);
+        const [noteData, taskData] = await withMinDelay(
+          Promise.all([api.listNotes(query), api.listTasks()])
+        );
         if (!alive) return;
         setNotes(noteData.notes);
         setTasks(taskData.tasks);

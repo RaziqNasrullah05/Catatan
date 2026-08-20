@@ -341,3 +341,8 @@ orang. Konfirmasi sebelum keluar akun. Catatan kini dibuka dalam mode baca; menu
 pensil. Editor tampil sebagai panel yang naik dari bawah dan bisa ditutup dengan menyeret bilah atasnya
 ke bawah — simpan otomatis dituntaskan lebih dulu sebelum kembali, sehingga daftar di halaman utama
 selalu memuat versi terbaru.
+
+**v1.7** — Kerangka pemuatan ditahan minimal 500 ms (`utils.js`) agar tidak berkedip saat respons cepat.
+Seret panel catatan dikendalikan lewat `ref` dan gaya inline, bukan `useState`, sehingga isi catatan
+tidak dirender ulang setiap gerakan jari; animasi tutup kini berlanjut dari posisi jari terakhir alih-alih
+melompat ke posisi awal.

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { api } from './api.js';
 import { NoteListSkeleton } from './components/Skeleton.jsx';
+import { withMinDelay } from './utils.js';
 import Home from './pages/Home.jsx';
 import Invite from './pages/Invite.jsx';
 import Login from './pages/Login.jsx';
@@ -13,8 +14,7 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
-    api
-      .me()
+    withMinDelay(api.me())
       .then((d) => setUser(d.user))
       .catch(() => setUser(null));
   }, []);
