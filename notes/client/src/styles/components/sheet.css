@@ -1,0 +1,36 @@
+/* ---------- Lembar konfirmasi yang naik dari bawah ---------- */
+
+/* Dipakai oleh konfirmasi hapus, konfirmasi keluar, dan penyunting tabel. */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(12, 14, 16, 0.4);
+  animation: scrim-in 0.16s ease-out;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--paper);
+  border-radius: 18px 18px 0 0;
+  padding: 20px 20px calc(20px + var(--safe-b));
+  animation: sheet-rise 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes sheet-rise {
+  from { transform: translateY(100%); }
+}
+
+.sheet h3 { margin: 0 0 6px; font-family: var(--serif); font-size: 19px; font-weight: 500; }
+.sheet p { margin: 0 0 16px; color: var(--ink-soft); font-size: 14px; }
+.sheet .row { display: flex; gap: 10px; }
+.sheet .row .btn { flex: 1; }
+.sheet .btn.danger { background: var(--danger); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-backdrop { animation: none; }
+}
