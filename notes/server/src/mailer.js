@@ -1,8 +1,8 @@
 import nodemailer from 'nodemailer';
 
-const hasSmtp = Boolean(process.env.SMTP_HOST);
+export const mailAktif = Boolean(process.env.SMTP_HOST);
 
-const transport = hasSmtp
+const transport = mailAktif
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT || 587),
@@ -12,6 +12,21 @@ const transport = hasSmtp
         : undefined,
     })
   : null;
+
+/**
+ * Menguji sambungan SMTP saat server start. Tanpa ini, kesalahan kredensial baru
+ * ketahuan ketika orang pertama gagal menerima tautan masuk — dan yang terlihat
+ * cuma 502 di layarnya, bukan penyebabnya.
+ */
+export async function verifikasiSmtp() {
+  if (!transport) return { ok: false, alasan: 'SMTP_HOST kosong' };
+  try {
+    await transport.verify();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, alasan: err.message };
+  }
+}
 
 /**
  * Mengirim tautan masuk. Tanpa konfigurasi SMTP, tautan dicetak ke log server

@@ -155,6 +155,12 @@ port 3000 saja.
 | `ADMIN_EMAIL` | Akun admin dibuat otomatis saat start. |
 | `SMTP_*`, `MAIL_FROM` | Kalau `SMTP_HOST` kosong, tautan dicetak ke log server. |
 
+Saat start, server memeriksa konfigurasi ini dan mencetak peringatan `[konfigurasi]` untuk `APP_URL`
+yang masih `http://` di produksi, `API_URL` yang terisi padahal satu origin, `ADMIN_EMAIL` kosong,
+`client/dist` yang belum dibangun, dan sambungan SMTP yang gagal. Server tetap jalan — peringatannya
+ada supaya salah konfigurasi terlihat di log, bukan baru ketahuan sebagai halaman kosong di layar
+orang lain.
+
 ---
 
 ## 4. Autentikasi
@@ -454,3 +460,11 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
+
+**v1.17** — Persiapan multi-pengguna, tahap nol: pengiriman email diaktifkan dan salah konfigurasi
+dibuat terlihat. Sambungan SMTP diuji saat start (`verifikasiSmtp`), dan server mencetak peringatan
+`[konfigurasi]` untuk `APP_URL` yang masih `http://` di produksi, `API_URL` yang terisi padahal satu
+origin, `ADMIN_EMAIL` kosong, serta `client/dist` yang belum dibangun. Sekalian ditutup satu kebocoran
+enumerasi akun: `POST /api/auth/login` dulu membalas 502 kalau pengiriman email gagal, sehingga email
+terdaftar bisa dibedakan dari yang tidak lewat kode statusnya; sekarang kegagalan hanya dicatat ke log
+dan jawabannya tetap seragam.

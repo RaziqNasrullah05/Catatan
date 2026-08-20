@@ -64,8 +64,10 @@ authRouter.post('/login', loginLimiter, async (req, res) => {
     try {
       await sendLoginLink(user.email, issueLoginLink(user));
     } catch (err) {
+      // Kegagalan dicatat, tapi jawabannya tetap sama. Membalas 502 di sini akan
+      // membuat email terdaftar dan tidak terdaftar bisa dibedakan dari kode
+      // statusnya — persis yang dijaga oleh jawaban seragam di atas.
       console.error('Gagal mengirim tautan masuk:', err);
-      return res.status(502).json({ error: 'Email gagal dikirim. Coba lagi sebentar lagi.' });
     }
   }
   res.json(generic);
