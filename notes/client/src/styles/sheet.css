@@ -1,0 +1,36 @@
+/* ---------- Catatan sebagai panel yang naik dari bawah ---------- */
+
+.sheet-page {
+  border-radius: 22px 22px 0 0;
+  overflow: hidden;
+  will-change: transform;
+  animation: sheet-up 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+}
+/* Menutup dan menyeret dikendalikan lewat gaya inline di NoteEditor.jsx,
+   supaya animasinya selalu berlanjut dari posisi panel saat itu. */
+
+.sheet-page .topbar {
+  position: relative;
+  touch-action: none;
+  cursor: grab;
+  padding-top: 14px;
+}
+.sheet-page .topbar:active { cursor: grabbing; }
+
+.grabber {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--rule-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-page { animation: none; }
+}

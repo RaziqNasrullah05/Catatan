@@ -1,0 +1,77 @@
+/* ---------- Penyunting tabel ---------- */
+
+.table-sheet {
+  max-width: 620px;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  max-height: 88dvh;
+}
+
+.table-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.table-sheet-head h3 { margin: 0; flex: 1; }
+
+.table-grid-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0 -4px;
+  padding: 0 4px 4px;
+}
+
+.table-grid { border-collapse: separate; border-spacing: 6px; width: 100%; }
+
+.table-grid th { padding: 0; }
+.table-grid td { padding: 0; }
+
+.table-grid input {
+  width: 100%;
+  min-width: 108px;
+  padding: 10px 11px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  outline: none;
+  font-size: 14.5px;
+}
+.table-grid input:focus { border-color: var(--accent); }
+.table-grid tbody tr:first-child input { font-weight: 600; background: var(--accent-soft); }
+
+.col-tools { display: flex; justify-content: center; gap: 2px; }
+.col-tools button,
+.row-tool button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  color: var(--ink-faint);
+}
+.col-tools button:active,
+.row-tool button:active { background: var(--accent-soft); color: var(--accent); }
+.col-tools button[disabled],
+.row-tool button[disabled] { opacity: 0.3; cursor: default; }
+.row-tool { width: 26px; }
+
+.table-add {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+.table-add button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+.table-add button:active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }

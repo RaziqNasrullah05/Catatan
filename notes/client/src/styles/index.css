@@ -1,0 +1,47 @@
+/*
+ * Titik masuk seluruh gaya aplikasi.
+ *
+ * URUTAN IMPOR ITU PENTING. CSS menentukan pemenang lewat urutan dan kekhususan
+ * selektor, bukan lewat nama berkas. Menukar urutan di bawah ini bisa mengubah
+ * tampilan tanpa memunculkan satu pun pesan error.
+ *
+ * Ketergantungan urutan yang sudah diketahui:
+ *   - pager.css menimpa .segmented milik notes-list.css → harus setelahnya.
+ *   - responsive.css menimpa .app, .preview, .title-input → harus paling akhir.
+ *
+ * Menambah modul: buat berkas di folder yang sesuai, lalu daftarkan pada
+ * kelompok yang tepat di bawah. Kalau modul baru menimpa selektor milik modul
+ * lain, catat di daftar di atas.
+ */
+
+/* Token warna, tipografi, dan ukuran — dipakai semua modul lain. */
+@import './base/tokens.css';
+@import './base/reset.css';
+
+/* Kerangka umum yang membungkus hampir semua halaman. */
+@import './layout/shell.css';
+
+/* Per halaman. */
+@import './pages/notes-list.css';
+@import './pages/tasks.css';
+@import './pages/auth.css';
+@import './pages/settings.css';
+
+/* Panel geser Catatan/Tugas — menimpa .segmented milik notes-list.css. */
+@import './layout/pager.css';
+
+/* Menulis dan membaca catatan. */
+@import './editor/editor.css';
+@import './editor/codemirror.css';
+@import './editor/table-widget.css';
+@import './editor/preview.css';
+@import './editor/sheet.css';
+
+/* Komponen mengambang — tampil di atas yang lain. */
+@import './components/sheet.css';
+@import './components/dialog.css';
+@import './components/table-editor.css';
+@import './components/skeleton.css';
+
+/* Penyesuaian layar lebar — paling akhir, menimpa gaya di atasnya. */
+@import './layout/responsive.css';

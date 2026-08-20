@@ -1,0 +1,92 @@
+/* ---------- Editor ---------- */
+
+.editor-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+}
+
+.title-input {
+  width: 100%;
+  border: 0;
+  background: none;
+  outline: none;
+  padding: 18px 20px 6px;
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.title-input::placeholder { color: var(--ink-faint); }
+
+.editor-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+
+.save-state {
+  padding: 0 20px 8px;
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Rail format ---------- */
+
+.rail {
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+  padding-bottom: var(--safe-b);
+}
+.rail-scroll {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--rail-h);
+  padding: 0 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rail-scroll::-webkit-scrollbar { display: none; }
+
+.rail-btn {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 38px;
+  border-radius: 9px;
+  color: var(--ink-soft);
+}
+.rail-btn:active { background: var(--accent-soft); color: var(--accent); }
+.rail-btn.is-on { color: var(--accent); background: var(--accent-soft); }
+.rail-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 20px;
+  margin: 0 6px;
+  background: var(--rule);
+}
+
+.template-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-top: 1px solid var(--rule);
+  scrollbar-width: none;
+}
+.template-row::-webkit-scrollbar { display: none; }
+.template-chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.template-chip:active { background: var(--accent-soft); border-color: var(--accent); }

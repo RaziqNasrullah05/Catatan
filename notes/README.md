@@ -287,13 +287,16 @@ permintaan ke HTTPS. Pastikan Certbot sudah jalan.
 
 - Seluruh teks antarmuka, pesan error, dan komentar kode dalam **Bahasa Indonesia**.
 - Komentar hanya ditulis untuk menjelaskan **kenapa**, bukan mengulang apa yang sudah jelas dari kode.
-- Tidak ada framework CSS. Semua gaya di `styles.css`, memakai variabel CSS di `:root`.
+- Tidak ada framework CSS. Gaya dipecah per modul di `client/src/styles/`, dimuat lewat `styles/index.css`.
+  **Urutan impor di berkas itu menentukan pemenang kaskade** — ketergantungan yang sudah diketahui
+  dicatat sebagai komentar di sana. Modul baru: buat berkas di folder yang sesuai (`base/`, `layout/`,
+  `pages/`, `editor/`, `components/`), lalu daftarkan pada kelompok yang tepat.
 - Tidak ada state management library. `useState` + prop cukup untuk ukuran aplikasi ini.
 - Warna diambil dari variabel (`var(--accent)`), jangan pernah hardcode nilai heksadesimal di komponen.
 - Preferensi per-perangkat (tema, tata letak) di `localStorage` lewat `prefs.js`; data yang perlu ikut
   pindah perangkat masuk ke server.
 
-### Token desain (`styles.css`)
+### Token desain (`styles/base/tokens.css`)
 
 ```
 --bg          latar aplikasi          --ink        teks utama
@@ -303,7 +306,7 @@ permintaan ke HTTPS. Pastikan Certbot sudah jalan.
 --danger      merah bata (hapus)
 ```
 
-Tema gelap ditulis dua kali di CSS: satu untuk `@media (prefers-color-scheme: dark)` dengan selektor
+Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-color-scheme: dark)` dengan selektor
 `:root:not([data-theme='light'])`, satu lagi untuk `:root[data-theme='dark']`. `applyTheme()` di
 `main.jsx` dipanggil sebelum render agar tidak ada kedipan warna.
 
@@ -371,3 +374,9 @@ goyang halus sebagai umpan balik. Pada tampilan daftar tersedia tombol tiga titi
 **v1.10** — Perbaikan: kedipan latar saat berpindah tab lewat tombol (bentrok `scroll-snap` dengan
 `scrollTo` smooth), dan teks kartu catatan yang ikut terblok saat ditekan lama (`user-select` dan
 `-webkit-touch-callout` dimatikan pada kartu; pratinjau dan editor tetap bisa disalin).
+
+**v1.11** — `styles.css` (1.429 baris) dipecah jadi 18 modul di `client/src/styles/`, dikelompokkan
+menjadi `base`, `layout`, `pages`, `editor`, dan `components`, dimuat lewat `styles/index.css`. Sekalian
+dibersihkan: satu blok 63 baris yang terduplikasi persis, tujuh aturan sisa halaman pengaturan lama yang
+sudah tidak dipakai komponen mana pun, dan satu keyframes mati. CSS hasil build diverifikasi setara
+aturan demi aturan dengan versi sebelumnya, termasuk urutan relatif selektor yang saling menimpa.

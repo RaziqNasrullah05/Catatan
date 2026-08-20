@@ -1,0 +1,20 @@
+/* ---------- Kerangka pemuatan ---------- */
+
+.sk {
+  border-radius: 7px;
+  background: linear-gradient(
+    90deg,
+    var(--rule) 0%,
+    var(--rule-strong) 42%,
+    var(--rule) 84%
+  );
+  background-size: 220% 100%;
+  animation: sk-shimmer 1.5s linear infinite;
+}
+@keyframes sk-shimmer {
+  from { background-position-x: 110%; }
+  to { background-position-x: -110%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk { animation: none; background: var(--rule); }
+}

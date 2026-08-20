@@ -1,0 +1,8 @@
+/* ---------- Penyesuaian layar lebar ---------- */
+
+/* Dimuat paling akhir agar menang atas gaya per-halaman di atasnya. */
+
+@media (min-width: 700px) {
+  .app { border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+  .cm-content, .preview, .title-input { padding-left: 28px; padding-right: 28px; }
+}

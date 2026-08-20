@@ -1,0 +1,59 @@
+/* ---------- Dialog pilihan ---------- */
+
+.m3-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 12, 14, 0.42);
+  animation: scrim-in 0.16s ease-out;
+}
+@keyframes scrim-in { from { opacity: 0; } }
+
+.m3-dialog {
+  width: 100%;
+  max-width: 420px;
+  background: var(--s-surface);
+  border-radius: 28px 28px 0 0;
+  padding: 24px 0 calc(12px + var(--safe-b));
+  animation: dialog-in 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes dialog-in { from { transform: translateY(14px); opacity: 0; } }
+
+.m3-dialog h3 {
+  margin: 0 24px 4px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--s-on);
+}
+.m3-dialog .sub {
+  margin: 0 24px 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--s-on-variant);
+}
+
+.m3-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  padding: 13px 24px;
+  text-align: left;
+  color: var(--s-on);
+  font-size: 15px;
+}
+.m3-option .tick { margin-left: auto; color: var(--s-primary); display: flex; }
+.m3-option[aria-checked='true'] { color: var(--s-primary); font-weight: 500; }
+.m3-option .lead { color: var(--s-on-variant); display: flex; }
+.m3-option[aria-checked='true'] .lead { color: var(--s-primary); }
+
+.m3-dialog .actions { display: flex; justify-content: flex-end; padding: 10px 16px 0; }
+
+@media (min-width: 560px) {
+  .m3-scrim { align-items: center; }
+  .m3-dialog { border-radius: 28px; max-width: 400px; }
+}

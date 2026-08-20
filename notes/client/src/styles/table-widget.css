@@ -1,0 +1,82 @@
+/* ---------- Tabel yang bisa disunting di editor ---------- */
+
+.md-table {
+  margin: 12px 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: var(--sans);
+}
+
+.md-table-scroll { overflow-x: auto; scrollbar-width: thin; }
+
+.md-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88em;
+}
+
+.md-table th,
+.md-table td {
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 0;
+  position: relative;
+  min-width: 108px;
+}
+.md-table tr > *:last-child { border-right: 0; }
+.md-table tbody tr:last-child > * { border-bottom: 0; }
+.md-table th { background: var(--accent-soft); }
+
+.md-cell {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: none;
+  padding: 9px 11px;
+  font: inherit;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.md-table th .md-cell { font-weight: 600; padding-right: 24px; }
+.md-cell:focus { background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--accent); border-radius: 3px; }
+
+.md-table .gutter {
+  width: 34px;
+  min-width: 34px;
+  text-align: center;
+  background: var(--bg);
+}
+
+.md-table-x {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--ink-faint);
+  font-size: 15px;
+  line-height: 1;
+}
+.md-table-x:hover { background: var(--rule); color: var(--danger); }
+.md-table th .col-del {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  transform: translateY(-50%);
+}
+
+.md-table-bar {
+  display: flex;
+  gap: 6px;
+  padding: 7px 9px;
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+}
+.md-table-add {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rule-strong);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.md-table-add:hover { border-color: var(--accent); color: var(--accent); }

@@ -1,0 +1,58 @@
+/* ---------- Halaman masuk & admin ---------- */
+
+.page {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 12vh 24px 40px;
+}
+.page .mark {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+.page .lede { margin: 0 0 26px; color: var(--ink-soft); }
+
+.field { display: block; margin-bottom: 14px; }
+.field span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 11px;
+  outline: none;
+}
+.field input:focus { border-color: var(--accent); }
+
+.btn {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 11px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+.btn[disabled] { opacity: 0.55; cursor: default; }
+.btn.ghost {
+  background: none;
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+}
+
+.notice {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 14px;
+}
+.notice.bad { background: rgba(164, 68, 58, 0.12); color: var(--danger); }

@@ -1,0 +1,217 @@
+/* ================================================================
+   Halaman Pengaturan — bahasa visual Material 3
+   Token dibatasi ke .settings-page agar halaman lain tidak berubah.
+   ================================================================ */
+
+.settings-page {
+  /* Warna diambil dari token global agar latar pengaturan sama persis
+     dengan halaman lain; yang membedakan hanya bentuk dan jaraknya. */
+  --s-bg: var(--bg);
+  --s-surface: var(--paper);
+  --s-on: var(--ink);
+  --s-on-variant: var(--ink-soft);
+  --s-outline: var(--rule-strong);
+  --s-primary: var(--accent);
+  --s-container: var(--accent-soft);
+  --s-danger: var(--danger);
+
+  background: var(--s-bg);
+  color: var(--s-on);
+}
+
+.settings-page .topbar { background: var(--s-bg); }
+.settings-page .topbar .wordmark { color: var(--s-on); font-family: var(--sans); font-size: 19px; font-weight: 600; }
+.settings-page .icon-btn { color: var(--s-on-variant); }
+.settings-page .scroll { background: var(--s-bg); }
+
+/* Navigasi bagian — chip Material */
+.m3-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 2px 20px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.m3-tabs::-webkit-scrollbar { display: none; }
+.m3-tabs button {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--s-outline);
+  font-size: 14px;
+  color: var(--s-on-variant);
+  white-space: nowrap;
+  transition: background 0.16s, color 0.16s;
+}
+.m3-tabs button:active { background: none; }
+.m3-tabs button[aria-selected='true'] {
+  background: var(--s-container);
+  border-color: transparent;
+  color: var(--s-primary);
+  font-weight: 500;
+}
+
+/* Kontainer terpusat */
+.m3-container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 16px 72px;
+}
+
+.m3-section-title {
+  margin: 26px 6px 12px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--s-on);
+}
+.m3-section-title:first-child { margin-top: 6px; }
+
+/* Kartu besar membulat, tanpa garis tepi tebal maupun bayangan */
+.m3-card {
+  background: var(--s-surface);
+  border-radius: 26px;
+  padding: 8px 0;
+  overflow: hidden;
+}
+.m3-card + .m3-card { margin-top: 16px; }
+.m3-card.pad { padding: 22px 22px 24px; }
+
+/* Baris pengaturan: ikon · teks · aksi */
+.m3-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 22px;
+}
+.m3-row.tappable { width: 100%; text-align: left; }
+.m3-row.tappable:active { background: var(--s-container); }
+
+.m3-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--s-container);
+  color: var(--s-primary);
+}
+.m3-body { flex: 1; min-width: 0; }
+.m3-title {
+  font-size: 15.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--s-on);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.m3-desc {
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--s-on-variant);
+  word-break: break-word;
+}
+.m3-action { flex: none; align-self: center; }
+
+.m3-divider {
+  height: 1px;
+  margin: 2px 22px;
+  background: var(--s-outline);
+  opacity: 0.7;
+}
+
+/* Chip status */
+.m3-status {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--s-container);
+  color: var(--s-primary);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.m3-status.muted { background: rgba(164, 68, 58, 0.12); color: var(--s-danger); }
+
+/* Kolom isian bergaya outlined */
+.m3-field { display: block; margin-bottom: 16px; }
+.m3-field > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--s-on-variant);
+}
+.m3-field input {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--s-outline);
+  background: transparent;
+  color: var(--s-on);
+  outline: none;
+  transition: border-color 0.16s;
+}
+.m3-field input:focus { border-color: var(--s-primary); border-width: 1.5px; }
+
+/* Tombol */
+.m3-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 26px;
+  border-radius: 999px;
+  background: var(--s-primary);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+.m3-btn[disabled] { opacity: 0.45; cursor: default; }
+.m3-btn.tonal { background: var(--s-container); color: var(--s-primary); }
+.m3-btn.text { background: none; color: var(--s-primary); padding: 0 14px; height: 38px; }
+.m3-btn.danger-text { background: none; color: var(--s-danger); padding: 0 14px; height: 38px; }
+
+.m3-note {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--s-container);
+  color: var(--s-on);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.m3-note.bad { background: rgba(164, 68, 58, 0.11); color: var(--s-danger); }
+.m3-note code {
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  word-break: break-all;
+  color: var(--s-on-variant);
+}
+
+.m3-avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--s-container);
+  color: var(--s-primary);
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
