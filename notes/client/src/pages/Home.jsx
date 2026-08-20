@@ -39,6 +39,9 @@ export default function Home({ user, onSignOut }) {
   const suppressClick = useRef(false);
 
   const pagerRef = useRef(null);
+  // Menandai geseran yang dipicu tombol, bukan jari pengguna.
+  const programmatic = useRef(false);
+  const settleTimer = useRef(null);
 
   useEffect(() => {
     const sync = () => setLayout(readLayout());
@@ -74,16 +77,35 @@ export default function Home({ user, onSignOut }) {
     };
   }, [query, reloadKey]);
 
-  /** Menggeser panel saat tombol segmented ditekan. */
+  /**
+   * Menggeser panel saat tombol segmented ditekan.
+   * scroll-snap dimatikan sementara karena ia beradu dengan animasi scrollTo —
+   * snap menarik balik posisi sementara animasi masih berjalan, dan itulah
+   * yang terlihat sebagai kedipan.
+   */
   const goTo = useCallback((next) => {
     const pager = pagerRef.current;
     if (!pager) return;
+
+    programmatic.current = true;
+    pager.style.scrollSnapType = 'none';
     pager.scrollTo({ left: next * pager.clientWidth, behavior: 'smooth' });
     setIndex(next);
+
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      pager.style.scrollSnapType = '';
+      programmatic.current = false;
+    }, 420);
   }, []);
+
+  useEffect(() => () => clearTimeout(settleTimer.current), []);
 
   /** Menyesuaikan tab aktif saat pengguna menggeser dengan jari. */
   function onPagerScroll(e) {
+    // Selama geseran otomatis, posisi sudah ditentukan — abaikan agar tidak
+    // memicu render ulang di setiap frame.
+    if (programmatic.current) return;
     const el = e.currentTarget;
     if (!el.clientWidth) return;
     const next = Math.round(el.scrollLeft / el.clientWidth);
@@ -94,6 +116,8 @@ export default function Home({ user, onSignOut }) {
 
   function openMenu(note, el) {
     setHeld(null);
+    // Kalau peramban terlanjur memblok teks sebelum menu muncul, lepaskan.
+    window.getSelection?.()?.removeAllRanges?.();
     setMenu({ note, anchor: el.getBoundingClientRect() });
   }
 

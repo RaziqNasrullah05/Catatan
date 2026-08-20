@@ -273,6 +273,11 @@ klik tautan email".
 **`WorkingDirectory` di systemd** harus menunjuk folder `server`, karena `CLIENT_DIR` relatif terhadap
 direktori kerja. Alternatifnya pakai jalur absolut.
 
+**`scroll-snap` beradu dengan `scrollTo({behavior:'smooth'})`.** Snap menarik balik posisi sementara
+animasi masih berjalan, terlihat sebagai kedipan. `Home.jsx` mematikan `scrollSnapType` selama geseran
+yang dipicu tombol, lalu memulihkannya. Kejadian scroll juga diabaikan selama itu agar tidak memicu
+render ulang tiap frame.
+
 **`NODE_ENV=production` tanpa HTTPS = layar putih.** Header `upgrade-insecure-requests` memaksa semua
 permintaan ke HTTPS. Pastikan Certbot sudah jalan.
 
@@ -362,3 +367,7 @@ dilepas dari CodeMirror agar dipakai bersama oleh mode tulis dan mode baca (`cm/
 pada teks biasa lewat `findTableAtLine` / `findTableAtOffset`). Menekan lama kartu catatan memunculkan
 menu Sematkan dan Hapus, diposisikan di ruang kosong terdekat agar tidak menutupi kartu, dengan animasi
 goyang halus sebagai umpan balik. Pada tampilan daftar tersedia tombol tiga titik.
+
+**v1.10** — Perbaikan: kedipan latar saat berpindah tab lewat tombol (bentrok `scroll-snap` dengan
+`scrollTo` smooth), dan teks kartu catatan yang ikut terblok saat ditekan lama (`user-select` dan
+`-webkit-touch-callout` dimatikan pada kartu; pratinjau dan editor tetap bisa disalin).

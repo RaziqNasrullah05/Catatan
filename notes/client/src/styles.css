@@ -183,6 +183,10 @@ a { color: var(--accent); text-underline-offset: 2px; }
   text-align: left;
   padding: 14px 16px;
   border-bottom: 1px solid var(--rule);
+  /* Tekan lama tidak boleh memicu blok teks atau menu bawaan peramban. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .note-row:active { background: var(--accent-soft); }
 
@@ -514,6 +518,9 @@ a { color: var(--accent); text-underline-offset: 2px; }
   color: var(--ink-faint);
 }
 .task-row {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   display: flex;
   align-items: flex-start;
   gap: 11px;
@@ -1342,6 +1349,8 @@ a { color: var(--accent); text-underline-offset: 2px; }
 }
 
 .note-menu {
+  user-select: none;
+  -webkit-user-select: none;
   position: fixed;
   min-width: 186px;
   padding: 6px;
