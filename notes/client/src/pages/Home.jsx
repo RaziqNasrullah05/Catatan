@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CircleCheck, LogOut, Pin, Plus, Search, Settings, SquarePen } from 'lucide-react';
+import { CircleCheck, LogOut, MoreVertical, Pin, Plus, Search, Settings, SquarePen } from 'lucide-react';
+import NoteMenu from '../components/NoteMenu.jsx';
 import { NoteListSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
 import { readLayout } from '../prefs.js';
@@ -29,6 +30,13 @@ export default function Home({ user, onSignOut }) {
   const [newTask, setNewTask] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [menu, setMenu] = useState(null);
+  const [held, setHeld] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const holdTimer = useRef(null);
+  const holdStart = useRef(null);
+  const suppressClick = useRef(false);
 
   const pagerRef = useRef(null);
 
@@ -80,6 +88,62 @@ export default function Home({ user, onSignOut }) {
     if (!el.clientWidth) return;
     const next = Math.round(el.scrollLeft / el.clientWidth);
     if (next !== index && next >= 0 && next < TABS.length) setIndex(next);
+  }
+
+  /* ---------- Tekan lama pada kartu catatan ---------- */
+
+  function openMenu(note, el) {
+    setHeld(null);
+    setMenu({ note, anchor: el.getBoundingClientRect() });
+  }
+
+  function onCardPointerDown(note, e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.target.closest('.row-more')) return;
+    const el = e.currentTarget;
+    holdStart.current = { x: e.clientX, y: e.clientY };
+    setHeld(note.id);
+    holdTimer.current = setTimeout(() => {
+      suppressClick.current = true;
+      // Getaran singkat sebagai penanda, kalau perangkat mendukung.
+      navigator.vibrate?.(12);
+      openMenu(note, el);
+    }, 480);
+  }
+
+  function cancelHold() {
+    clearTimeout(holdTimer.current);
+    setHeld(null);
+  }
+
+  function onCardPointerMove(e) {
+    const awal = holdStart.current;
+    if (!awal) return;
+    if (Math.hypot(e.clientX - awal.x, e.clientY - awal.y) > 10) cancelHold();
+  }
+
+  async function pinFromMenu() {
+    const note = menu.note;
+    setMenu(null);
+    setNotes((list) => list.map((n) => (n.id === note.id ? { ...n, pinned: !n.pinned } : n)));
+    try {
+      await api.updateNote(note.id, { pinned: !note.pinned });
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function deleteFromMenu() {
+    const note = confirmDelete;
+    setConfirmDelete(null);
+    setNotes((list) => list.filter((n) => n.id !== note.id));
+    try {
+      await api.deleteNote(note.id);
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function createNote() {
@@ -169,7 +233,41 @@ export default function Home({ user, onSignOut }) {
               </div>
             )}
             {notes.map((note) => (
-              <button key={note.id} className="note-row" onClick={() => navigate(`/catatan/${note.id}`)}>
+              <button
+                key={note.id}
+                className={`note-row ${held === note.id ? 'is-held' : ''}`}
+                onPointerDown={(e) => onCardPointerDown(note, e)}
+                onPointerMove={onCardPointerMove}
+                onPointerUp={cancelHold}
+                onPointerCancel={cancelHold}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  suppressClick.current = true;
+                  openMenu(note, e.currentTarget);
+                }}
+                onClick={(e) => {
+                  if (suppressClick.current) {
+                    suppressClick.current = false;
+                    e.preventDefault();
+                    return;
+                  }
+                  navigate(`/catatan/${note.id}`);
+                }}
+              >
+                {layout === 'list' && (
+                  <span
+                    className="row-more"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Tindakan untuk ${note.title || 'catatan tanpa judul'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openMenu(note, e.currentTarget.closest('.note-row'));
+                    }}
+                  >
+                    <MoreVertical size={18} strokeWidth={1.9} />
+                  </span>
+                )}
                 <h2>
                   {note.pinned && <Pin size={14} strokeWidth={2} />}
                   {note.title || 'Tanpa judul'}
@@ -224,6 +322,39 @@ export default function Home({ user, onSignOut }) {
           )}
         </section>
       </div>
+
+      {menu && (
+        <NoteMenu
+          anchor={menu.anchor}
+          note={menu.note}
+          onPin={pinFromMenu}
+          onDelete={() => {
+            setConfirmDelete(menu.note);
+            setMenu(null);
+          }}
+          onClose={() => setMenu(null)}
+        />
+      )}
+
+      {confirmDelete && (
+        <div className="sheet-backdrop" onClick={() => setConfirmDelete(null)}>
+          <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>Hapus catatan ini?</h3>
+            <p>
+              “{confirmDelete.title || 'Tanpa judul'}” dipindahkan ke tempat sampah dan dihapus permanen
+              setelah 30 hari.
+            </p>
+            <div className="row">
+              <button className="btn ghost" onClick={() => setConfirmDelete(null)}>
+                Batal
+              </button>
+              <button className="btn danger" onClick={deleteFromMenu}>
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmSignOut && (
         <div className="sheet-backdrop" onClick={() => setConfirmSignOut(false)}>

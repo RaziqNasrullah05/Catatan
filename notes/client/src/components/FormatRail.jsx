@@ -26,13 +26,37 @@ import {
 import { changeIndent, insertBlock, insertLink, toggleLinePrefix, wrapInline } from '../cm/actions.js';
 import { templates } from '../templates.js';
 import TableEditor from './TableEditor.jsx';
+import { emptyTable, findTableAtOffset } from '../cm/table.js';
 
 const TEMPLATE_ICONS = { CalendarCheck, ListChecks, Users, Stethoscope, Table, BookOpen };
 
 export default function FormatRail({ view }) {
   const [showTemplates, setShowTemplates] = useState(false);
-  const [tableOpen, setTableOpen] = useState(false);
+  const [table, setTable] = useState(null);
   const guard = (fn) => () => view && fn(view);
+
+  /** Membuka penyunting kisi: memuat tabel di posisi kursor, atau membuat yang baru. */
+  function openTable(v) {
+    const text = v.state.doc.toString();
+    const found = findTableAtOffset(text, v.state.selection.main.head);
+    setTable(found ? { data: found, range: { from: found.from, to: found.to } } : { data: emptyTable() });
+  }
+
+  /** Menulis hasil suntingan kembali ke dokumen. */
+  function applyTable(markdown) {
+    if (!view) return;
+    if (table.range) {
+      view.dispatch({ changes: { ...table.range, insert: markdown } });
+    } else {
+      const line = view.state.doc.lineAt(view.state.selection.main.head);
+      const perluBaris = line.text.trim().length > 0;
+      const at = perluBaris ? line.to : line.from;
+      view.dispatch({
+        changes: { from: at, to: at, insert: `${perluBaris ? '\n\n' : ''}${markdown}\n` },
+      });
+    }
+    view.focus();
+  }
 
   const buttons = [
     { key: 'b', label: 'Tebal', Icon: Bold, run: (v) => wrapInline(v, '**') },
@@ -53,7 +77,7 @@ export default function FormatRail({ view }) {
     { sep: true, key: 'sep4' },
     { key: 'link', label: 'Tautan', Icon: LinkIcon, run: insertLink },
     { key: 'code', label: 'Kode', Icon: Code, run: (v) => wrapInline(v, '`') },
-    { key: 'table', label: 'Tabel', Icon: Table, run: () => setTableOpen(true) },
+    { key: 'table', label: 'Tabel', Icon: Table, run: openTable },
     { key: 'hr', label: 'Garis pemisah', Icon: Minus, run: (v) => insertBlock(v, '---') },
   ];
 
@@ -115,7 +139,14 @@ export default function FormatRail({ view }) {
         )}
       </div>
 
-      {tableOpen && view && <TableEditor view={view} onClose={() => setTableOpen(false)} />}
+      {table && (
+        <TableEditor
+          initial={table.data}
+          isNew={!table.range}
+          onApply={applyTable}
+          onClose={() => setTable(null)}
+        />
+      )}
     </div>
   );
 }

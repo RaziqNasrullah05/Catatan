@@ -1,26 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlignCenter, AlignLeft, AlignRight, Plus, Trash2, X } from 'lucide-react';
-import { emptyTable, findTableAt, serializeTable } from '../cm/table.js';
+import { serializeTable } from '../cm/table.js';
 
 const ALIGN_ICONS = { left: AlignLeft, center: AlignCenter, right: AlignRight };
 const NEXT_ALIGN = { left: 'center', center: 'right', right: 'left' };
 
 /**
  * Menyunting tabel sebagai kisi, bukan sebagai teks berisi tanda pipa.
- * Data dibaca dari tabel tempat kursor berada; kalau tidak ada, tabel baru dibuat.
+ * Komponen ini tidak tahu-menahu soal CodeMirror: ia menerima data awal dan
+ * menyerahkan hasilnya sebagai markdown lewat onApply, sehingga bisa dipakai
+ * baik dari editor maupun dari mode baca.
  */
-export default function TableEditor({ view, onClose }) {
-  const target = useRef(null);
-  const [align, setAlign] = useState([]);
-  const [rows, setRows] = useState([]);
-
-  useEffect(() => {
-    const found = findTableAt(view.state, view.state.selection.main.head);
-    target.current = found ? { from: found.from, to: found.to } : null;
-    const data = found || emptyTable();
-    setAlign(data.align);
-    setRows(data.rows);
-  }, [view]);
+export default function TableEditor({ initial, isNew = false, onApply, onClose }) {
+  const [align, setAlign] = useState(initial.align);
+  const [rows, setRows] = useState(initial.rows);
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -51,22 +44,7 @@ export default function TableEditor({ view, onClose }) {
   const cycleAlign = (c) => setAlign((a) => a.map((v, i) => (i === c ? NEXT_ALIGN[v] : v)));
 
   function save() {
-    const markdown = serializeTable(rows, align);
-    const spot = target.current;
-    if (spot) {
-      view.dispatch({ changes: { from: spot.from, to: spot.to, insert: markdown } });
-    } else {
-      const line = view.state.doc.lineAt(view.state.selection.main.head);
-      const perluBaris = line.text.trim().length > 0;
-      view.dispatch({
-        changes: {
-          from: perluBaris ? line.to : line.from,
-          to: perluBaris ? line.to : line.to,
-          insert: `${perluBaris ? '\n\n' : ''}${markdown}\n`,
-        },
-      });
-    }
-    view.focus();
+    onApply(serializeTable(rows, align));
     onClose();
   }
 
@@ -80,7 +58,7 @@ export default function TableEditor({ view, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="table-sheet-head">
-          <h3>{target.current ? 'Sunting tabel' : 'Tabel baru'}</h3>
+          <h3>{isNew ? 'Tabel baru' : 'Sunting tabel'}</h3>
           <button className="icon-btn" aria-label="Tutup" onClick={onClose}>
             <X size={19} strokeWidth={1.75} />
           </button>

@@ -209,8 +209,11 @@ regex saat dibaca. Ini disengaja: tugas tetap bisa disunting sebagai teks biasa.
 - Heading, blockquote, blok kode, tabel, dan garis pemisah mendapat kelas per baris.
 
 **Tabel** tidak dirender inline di dalam CodeMirror — menyuntingnya lewat penyunting kisi tersendiri
-(`components/TableEditor.jsx`). Menekan tombol tabel di rail membuka kisi berisi kolom isian: kalau kursor
-sedang berada di dalam tabel, isinya dimuat untuk disunting; kalau tidak, tabel 3×3 baru dibuat. Bisa
+(`components/TableEditor.jsx`). Ada dua jalan masuk: tombol tabel di rail saat menulis (memuat tabel di posisi kursor,
+atau membuat 3×3 baru), dan tombol "Sunting tabel" di bawah setiap tabel saat mode baca. `TableEditor`
+sendiri tidak tahu-menahu soal CodeMirror — ia menerima data awal dan mengembalikan markdown, sehingga
+dipakai bersama oleh kedua jalur. Mode baca menemukan tabel lewat `node.position.start.line` dari pohon
+markdown; posisi ini terbukti selamat melewati `rehype-sanitize`. Bisa
 tambah/hapus baris dan kolom, serta mengubah perataan tiap kolom. Konversinya ada di `cm/table.js`
 (`findTableAt`, `serializeTable`) — menangani pipa ter-escape, sel yang jumlahnya kurang, dan penulisan
 ulang dengan lebar kolom yang disamakan. Baris pertama selalu jadi kepala tabel dan tidak bisa dihapus,
@@ -353,3 +356,9 @@ melompat ke posisi awal.
 **v1.8** — Tabel disunting lewat kisi sungguhan (`TableEditor.jsx` + `cm/table.js`), lengkap dengan tambah
 dan hapus baris/kolom serta perataan per kolom. Semua lembar konfirmasi kini naik dari bawah dengan
 animasi yang sama seperti panel catatan.
+
+**v1.9** — Tabel yang sudah ada bisa disunting dari mode baca lewat tombol di bawah tabel; `TableEditor`
+dilepas dari CodeMirror agar dipakai bersama oleh mode tulis dan mode baca (`cm/table.js` kini bekerja
+pada teks biasa lewat `findTableAtLine` / `findTableAtOffset`). Menekan lama kartu catatan memunculkan
+menu Sematkan dan Hapus, diposisikan di ruang kosong terdekat agar tidak menutupi kartu, dengan animasi
+goyang halus sebagai umpan balik. Pada tampilan daftar tersedia tombol tiga titik.

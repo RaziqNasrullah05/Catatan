@@ -6,6 +6,8 @@ import Editor from '../components/Editor.jsx';
 import FormatRail from '../components/FormatRail.jsx';
 import { NoteEditorSkeleton } from '../components/Skeleton.jsx';
 import { withMinDelay } from '../utils.js';
+import TableEditor from '../components/TableEditor.jsx';
+import { findTableAtLine } from '../cm/table.js';
 
 // Pratinjau dimuat saat dibutuhkan agar berkas awal tetap ringan.
 const Preview = lazy(() => import('../components/Preview.jsx'));
@@ -25,6 +27,9 @@ export default function NoteEditor() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
   const [view, setView] = useState(null);
+  const [table, setTable] = useState(null);
+  // Dinaikkan setiap isi berubah dari luar editor, agar pratinjau ikut segar.
+  const [rev, setRev] = useState(0);
 
   const draft = useRef({ title: '', content: '' });
   const timer = useRef(null);
@@ -149,6 +154,20 @@ export default function NoteEditor() {
     el.style.transform = 'translateY(0px)';
   }
 
+  /** Membuka penyunting kisi untuk tabel yang diketuk di mode baca. */
+  function editTableAtLine(line) {
+    const found = findTableAtLine(draft.current.content, line);
+    if (found) setTable(found);
+  }
+
+  function applyTable(markdown) {
+    const { from, to } = table;
+    const isi = draft.current.content;
+    draft.current.content = isi.slice(0, from) + markdown + isi.slice(to);
+    setRev((n) => n + 1);
+    queueSave();
+  }
+
   async function togglePin() {
     const pinned = !note.pinned;
     setNote((n) => ({ ...n, pinned }));
@@ -233,7 +252,7 @@ export default function NoteEditor() {
             <div className="editor-scroll">
               {mode === 'baca' ? (
                 <Suspense fallback={<NoteEditorSkeleton />}>
-                  <Preview content={draft.current.content} />
+                  <Preview key={rev} content={draft.current.content} onEditTable={editTableAtLine} />
                 </Suspense>
               ) : (
                 <Editor
@@ -252,6 +271,14 @@ export default function NoteEditor() {
           </>
         )}
       </div>
+
+      {table && (
+        <TableEditor
+          initial={table}
+          onApply={applyTable}
+          onClose={() => setTable(null)}
+        />
+      )}
 
       {confirmDelete && (
         <div className="sheet-backdrop" onClick={() => setConfirmDelete(false)}>

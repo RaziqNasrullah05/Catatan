@@ -26,33 +26,52 @@ function readAlign(text) {
   });
 }
 
-/** Mencari tabel yang memuat posisi kursor. Mengembalikan null bila tidak ada. */
-export function findTableAt(state, pos) {
-  const doc = state.doc;
-  const here = doc.lineAt(pos);
-  if (!isRow(here.text)) return null;
+/** Memecah teks jadi baris beserta posisi karakternya. */
+function indexLines(text) {
+  const out = [];
+  let from = 0;
+  for (const t of text.split('\n')) {
+    out.push({ text: t, from, to: from + t.length });
+    from += t.length + 1;
+  }
+  return out;
+}
 
-  let first = here.number;
-  while (first > 1 && isRow(doc.line(first - 1).text)) first--;
-  let last = here.number;
-  while (last < doc.lines && isRow(doc.line(last + 1).text)) last++;
+/**
+ * Mencari tabel yang memuat baris ke-`lineNo` (mulai dari 1).
+ * Mengembalikan rentang karakter beserta isinya, atau null bila bukan tabel.
+ */
+export function findTableAtLine(text, lineNo) {
+  const lines = indexLines(text);
+  const idx = lineNo - 1;
+  if (!lines[idx] || !isRow(lines[idx].text)) return null;
 
-  const lines = [];
-  for (let n = first; n <= last; n++) lines.push(doc.line(n));
+  let first = idx;
+  while (first > 0 && isRow(lines[first - 1].text)) first--;
+  let last = idx;
+  while (last < lines.length - 1 && isRow(lines[last + 1].text)) last++;
 
-  const dividerAt = lines.findIndex((line) => isDivider(line.text));
+  const block = lines.slice(first, last + 1);
+  const dividerAt = block.findIndex((line) => isDivider(line.text));
   if (dividerAt < 1) return null;
 
-  const align = readAlign(lines[dividerAt].text);
-  const rows = lines.filter((_, i) => i !== dividerAt).map((line) => splitCells(line.text));
+  const align = readAlign(block[dividerAt].text);
+  const rows = block.filter((_, i) => i !== dividerAt).map((line) => splitCells(line.text));
   const width = Math.max(align.length, ...rows.map((r) => r.length));
 
   return {
-    from: lines[0].from,
-    to: lines[lines.length - 1].to,
+    from: block[0].from,
+    to: block[block.length - 1].to,
     align: Array.from({ length: width }, (_, i) => align[i] || 'left'),
     rows: rows.map((r) => Array.from({ length: width }, (_, i) => r[i] ?? '')),
   };
+}
+
+/** Mencari tabel pada posisi karakter tertentu. */
+export function findTableAtOffset(text, offset) {
+  const lines = indexLines(text);
+  const idx = lines.findIndex((l) => offset >= l.from && offset <= l.to);
+  return idx < 0 ? null : findTableAtLine(text, idx + 1);
 }
 
 /** Mengubah data kisi kembali menjadi teks tabel markdown yang rapi. */
