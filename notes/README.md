@@ -29,41 +29,83 @@ Domain produksi: `https://catatan.warkophajisobirin.fun`
 
 ```
 notes/
+├── README.md
+├── .gitignore                      # dist/, data/, .env, node_modules/
 ├── client/
-│   ├── index.html              # font Google, meta theme-color
-│   ├── vite.config.js          # proxy /api, allowedHosts, manualChunks (fungsi!)
+│   ├── package.json                # Vite 8, plugin-react 6, React Router 7
+│   ├── index.html                  # font Google, meta theme-color
+│   ├── vite.config.js              # proxy /api, allowedHosts, manualChunks (fungsi!)
 │   └── src/
-│       ├── main.jsx            # entry; applyTheme() dipanggil sebelum render
-│       ├── App.jsx             # routing + status sesi
-│       ├── api.js              # klien fetch, menyisipkan header anti-CSRF
-│       ├── prefs.js            # preferensi tampilan & tema (localStorage)
-│       ├── templates.js        # 6 template catatan siap pakai
-│       ├── styles.css          # SELURUH gaya aplikasi + token desain
-│       ├── cm/
-│       │   ├── livePreview.js  # ViewPlugin dekorasi CodeMirror
-│       │   └── actions.js      # perintah format (bold, heading, indent, dll)
+│       ├── main.jsx                # entry; applyTheme() dipanggil sebelum render
+│       ├── App.jsx                 # routing + status sesi + kerangka pemuatan awal
+│       ├── api.js                  # klien fetch, menyisipkan header anti-CSRF
+│       ├── prefs.js                # preferensi tata letak & tema (localStorage)
+│       ├── utils.js                # withMinDelay — jeda minimum kerangka pemuatan
+│       ├── templates.js            # 6 template catatan siap pakai
+│       │
+│       ├── cm/                     # semua yang menempel ke CodeMirror
+│       │   ├── livePreview.js      # ViewPlugin dekorasi: sembunyikan sintaks, checkbox, tabel
+│       │   ├── actions.js          # perintah format (tebal, heading, indent, dll)
+│       │   ├── tableWidget.js      # widget tabel yang bisa disunting di dalam editor
+│       │   └── table.js            # baca/tulis tabel markdown ⇄ data kisi
+│       │
 │       ├── components/
-│       │   ├── Editor.jsx      # instance CodeMirror
-│       │   ├── FormatRail.jsx  # rail format bawah + baris template
-│       │   ├── Preview.jsx     # render markdown tersanitasi
-│       │   └── ErrorBoundary.jsx
-│       └── pages/
-│           ├── Home.jsx        # daftar catatan + tugas, panel geser
-│           ├── NoteEditor.jsx  # menulis, simpan otomatis
-│           ├── Login.jsx       # kata sandi / magic link
-│           ├── Invite.jsx      # penerimaan undangan
-│           └── Settings.jsx    # Keamanan / Tampilan / Undang orang
+│       │   ├── Editor.jsx          # instance CodeMirror
+│       │   ├── FormatRail.jsx      # rail format bawah + baris template
+│       │   ├── Preview.jsx         # render markdown tersanitasi + tombol sunting tabel
+│       │   ├── TableEditor.jsx     # penyunting tabel berbentuk kisi (tanpa CodeMirror)
+│       │   ├── NoteMenu.jsx        # menu kontekstual: sematkan / hapus
+│       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
+│       │   └── ErrorBoundary.jsx   # menangkap error render agar layar tak kosong
+│       │
+│       ├── pages/
+│       │   ├── Home.jsx            # daftar catatan + tugas, panel geser, tekan lama
+│       │   ├── NoteEditor.jsx      # panel naik dari bawah, mode baca/tulis, simpan otomatis
+│       │   ├── Login.jsx           # kata sandi / magic link
+│       │   ├── Invite.jsx          # penerimaan undangan
+│       │   └── Settings.jsx        # Keamanan / Tampilan / Undang orang (Material 3)
+│       │
+│       └── styles/                 # URUTAN IMPOR PENTING — lihat index.css
+│           ├── index.css           # titik masuk; mendaftarkan semua modul
+│           ├── base/
+│           │   ├── tokens.css      # variabel warna, font, ukuran; tema gelap
+│           │   └── reset.css       # dasar dokumen, tipografi, elemen mentah
+│           ├── layout/
+│           │   ├── shell.css       # kerangka .app, topbar, pencarian
+│           │   ├── pager.css       # panel geser Catatan/Tugas (menimpa .segmented)
+│           │   └── responsive.css  # penyesuaian layar lebar — dimuat paling akhir
+│           ├── pages/
+│           │   ├── notes-list.css  # kartu catatan, tata letak grid, menu kontekstual
+│           │   ├── tasks.css       # daftar tugas + tambah tugas cepat
+│           │   ├── auth.css        # halaman masuk dan undangan
+│           │   └── settings.css    # komponen Material 3 (token --s-* di sini)
+│           ├── editor/
+│           │   ├── editor.css      # kerangka editor, judul, rail format
+│           │   ├── codemirror.css  # penimpaan kelas .cm-* dan gaya live preview
+│           │   ├── table-widget.css# tabel yang disunting langsung di editor
+│           │   ├── preview.css     # render markdown mode baca
+│           │   └── sheet.css       # animasi panel catatan naik dari bawah
+│           └── components/
+│               ├── sheet.css       # lembar konfirmasi
+│               ├── dialog.css      # dialog pilihan (tata letak, mode warna)
+│               ├── table-editor.css
+│               └── skeleton.css
 └── server/
+    ├── package.json                # Express, better-sqlite3, helmet, nodemailer
     ├── .env.example
     └── src/
-        ├── index.js            # middleware keamanan, penyajian dist
-        ├── db.js               # skema + migrasi + pembersihan token
-        ├── security.js         # sesi, hashing, guard CSRF & peran
-        ├── mailer.js           # nodemailer, fallback ke log
+        ├── index.js                # middleware keamanan, penyajian client/dist
+        ├── db.js                   # skema + migrasi + pembersihan token kedaluwarsa
+        ├── security.js             # sesi, scrypt, guard CSRF & peran
+        ├── mailer.js               # nodemailer, fallback cetak ke log
         └── routes/
-            ├── auth.js         # masuk, kata sandi, undangan, admin
-            └── notes.js        # CRUD catatan + tugas
+            ├── auth.js             # masuk, kata sandi, undangan, admin
+            └── notes.js            # CRUD catatan + agregasi tugas
 ```
+
+Dua berkas bernama mirip dan mudah tertukar: `cm/table.js` mengurai teks tabel markdown menjadi data
+kisi (dipakai `TableEditor` dan widget editor), sementara `cm/tableWidget.js` adalah widget CodeMirror
+yang menampilkan tabel itu di dalam editor.
 
 ---
 
@@ -380,3 +422,7 @@ menjadi `base`, `layout`, `pages`, `editor`, dan `components`, dimuat lewat `sty
 dibersihkan: satu blok 63 baris yang terduplikasi persis, tujuh aturan sisa halaman pengaturan lama yang
 sudah tidak dipakai komponen mana pun, dan satu keyframes mati. CSS hasil build diverifikasi setara
 aturan demi aturan dengan versi sebelumnya, termasuk urutan relatif selektor yang saling menimpa.
+
+**v1.12** — Bagian struktur berkas di README disusun ulang mengikuti isi folder sebenarnya, termasuk
+modul CSS dan berkas yang belum sempat tercatat. Satu berkas yatim (`src/md/table.js`, versi lama dari
+`cm/table.js` yang tidak diimpor siapa pun) dihapus.
