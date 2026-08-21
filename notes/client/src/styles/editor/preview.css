@@ -102,3 +102,14 @@
   color: var(--ink-soft);
 }
 .table-edit:active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+/* Gambar di dalam catatan tidak boleh melebihi lebar kolom, dan tingginya
+   dibatasi agar foto potret tidak mendorong seluruh tulisan ke bawah layar. */
+.preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  height: auto;
+  margin: 14px auto;
+  border-radius: 10px;
+  background: var(--rule);
+}

@@ -105,6 +105,7 @@ notes/
         └── routes/
             ├── auth.js             # masuk, kata sandi, profil, undangan, admin
             ├── events.js           # agenda: acara dan pengulangannya
+            ├── images.js           # unggah, sajikan, hapus gambar
             ├── group.js            # grup, anggota, undangan, catatan di grup
             ├── notification.js     # daftar, terima, tolak, tandai dibaca
             └── notes.js            # CRUD catatan + agregasi tugas
@@ -156,6 +157,7 @@ port 3000 saja.
 | `DATABASE_FILE` | Default `./data/catatan.db`. |
 | `CLIENT_DIR` | Default `../client/dist`, relatif terhadap direktori kerja. |
 | `ADMIN_EMAIL` | Akun admin dibuat otomatis saat start. |
+| `UPLOAD_DIR` | Folder berkas gambar. Bawaan `./data/uploads`. Harus ikut dicadangkan. |
 | `SMTP_*`, `MAIL_FROM` | Kalau `SMTP_HOST` kosong, tautan dicetak ke log server. |
 
 Saat start, server memeriksa konfigurasi ini dan mencetak peringatan `[konfigurasi]` untuk `APP_URL`
@@ -252,6 +254,14 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | POST | `/read` | Tandai semuanya sudah dilihat. |
 | POST | `/:id/accept`, `/:id/reject` | Menjawab yang berstatus `menunggu`. |
 
+### Gambar (`/api/images`, semua butuh sesi)
+
+| Metode | Jalur | Keterangan |
+| --- | --- | --- |
+| POST | `/?noteId=` | Badan permintaan adalah berkasnya apa adanya, bukan multipart. Maksimal 2 MB. |
+| GET | `/:id` | Menyajikan gambar bila catatannya boleh dibaca. |
+| DELETE | `/:id` | Hapus (pemiliknya). |
+
 ### Agenda (`/api/events`, semua butuh sesi)
 
 | Metode | Jalur | Keterangan |
@@ -270,7 +280,7 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 ## 6. Basis data
 
 Tabel: `users`, `invites`, `login_tokens`, `sessions`, `notes`, `grup`, `grup_anggota`, `grup_catatan`,
-`catatan_kolaborator`, `notifikasi`, `acara`.
+`catatan_kolaborator`, `notifikasi`, `acara`, `gambar`.
 Tabel domain baru dinamai dalam Bahasa Indonesia — sekalian menghindari `groups`, yang sejak SQLite
 3.28 dipakai sebagai kata kunci window function. Skema dibuat lewat `CREATE TABLE IF NOT
 EXISTS` di `db.js`, jadi aman dijalankan berulang.
@@ -506,6 +516,27 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
+
+**v1.28** — Tambah gambar, maksimal 2 MB. Tombol di rail format membuka pemilih berkas; gambarnya
+diunggah lalu disisipkan sebagai `![nama](/api/images/ID)`.
+
+Berkasnya disimpan di cakram (`UPLOAD_DIR`, bawaan `./data/uploads`), sedangkan barisnya di tabel
+`gambar` hanya keterangan. **Ini mengubah cerita cadangan:** sejak sekarang mencadangkan berkas SQLite
+saja tidak lagi cukup, folder unggahan harus ikut.
+
+Izin gambar menumpang catatan tempat ia diunggah, dan dihitung ulang tiap permintaan lewat
+`aksesCatatan` — jadi anggota grup yang boleh membaca catatannya otomatis boleh melihat gambarnya, dan
+kehilangan akses begitu catatan itu keluar dari grup.
+
+Jenis berkas ditentukan dari beberapa byte pertama isinya (`src/imagetype.js`), bukan dari header
+`Content-Type` yang datang dari klien dan bisa diisi apa saja. **SVG sengaja ditolak:** ia dokumen XML
+yang bisa memuat skrip, dan menyajikannya dari domain sendiri berarti membuka jalan skrip pihak ketiga.
+Yang diterima hanya PNG, JPEG, GIF, dan WebP.
+
+Batas 2 MB dijaga `express.raw` sebelum satu byte pun menyentuh cakram, dengan penangan galat sendiri
+supaya jawabannya 413 beserta pesan yang jelas, bukan 500. Klien juga memeriksanya lebih dulu agar kuota
+data penggunanya tidak terbuang. Pembersihan berkala kini ikut menghapus berkas gambar yang catatannya
+sudah lenyap setelah 30 hari.
 
 **v1.27** — Kurung menutup sendiri, dan saran sebutan muncul saat mengetik.
 

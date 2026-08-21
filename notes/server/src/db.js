@@ -139,6 +139,21 @@ CREATE TABLE IF NOT EXISTS acara (
 );
 
 CREATE INDEX IF NOT EXISTS idx_acara_user ON acara(user_id, tanggal);
+
+-- Gambar disimpan sebagai berkas di cakram; barisnya hanya keterangan. Izinnya
+-- menumpang catatan tempat gambar itu diunggah, jadi anggota grup yang boleh
+-- membaca catatannya otomatis boleh melihat gambarnya.
+CREATE TABLE IF NOT EXISTS gambar (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  note_id    TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  berkas     TEXT NOT NULL,
+  mime       TEXT NOT NULL,
+  ukuran     INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_gambar_note ON gambar(note_id);
 `);
 
 // Migrasi: kolom-kolom ini ditambahkan belakangan, jadi dicek dulu agar
@@ -178,5 +193,17 @@ export function purgeExpired() {
   db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(now);
   db.prepare('DELETE FROM login_tokens WHERE expires_at < ?').run(now);
   db.prepare('DELETE FROM invites WHERE expires_at < ? AND used_at IS NULL').run(now);
+  // Gambar milik catatan yang akan lenyap dikumpulkan dulu, karena setelah
+  // barisnya terhapus tidak ada lagi yang tahu berkas mana yang jadi yatim.
+  const yatim = db
+    .prepare(
+      `SELECT g.berkas FROM gambar g JOIN notes n ON n.id = g.note_id
+        WHERE n.deleted_at IS NOT NULL AND n.deleted_at < datetime('now','-30 days')`
+    )
+    .all()
+    .map((r) => r.berkas);
+
   db.prepare("DELETE FROM notes WHERE deleted_at IS NOT NULL AND deleted_at < datetime('now','-30 days')").run();
+
+  return yatim;
 }

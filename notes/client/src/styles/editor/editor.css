@@ -156,3 +156,14 @@
   color: var(--ink-soft);
   font-size: 13.5px;
 }
+
+/* Kabar unggahan gambar, muncul tepat di atas rail format. */
+.rail-kabar {
+  margin: 0;
+  padding: 7px 16px;
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.rail-kabar.bad { color: var(--danger); }

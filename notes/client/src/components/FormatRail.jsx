@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Bold,
   BookOpen,
@@ -21,6 +21,7 @@ import {
   Stethoscope,
   Strikethrough,
   Link2 as LinkIcon2,
+  ImagePlus,
   Search,
   Table,
   Users,
@@ -31,12 +32,18 @@ import TableEditor from './TableEditor.jsx';
 import { emptyTable, findTableAtOffset } from '../cm/table.js';
 import { api } from '../api.js';
 
+/** 2 MB, sama dengan batas di server. */
+const BATAS_GAMBAR = 2 * 1024 * 1024;
+
 const TEMPLATE_ICONS = { CalendarCheck, ListChecks, Users, Stethoscope, Table, BookOpen };
 
-export default function FormatRail({ view }) {
+export default function FormatRail({ view, noteId }) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [table, setTable] = useState(null);
   const [sebutan, setSebutan] = useState(null);
+  const [gambarSibuk, setGambarSibuk] = useState(false);
+  const [gambarError, setGambarError] = useState('');
+  const berkasRef = useRef(null);
   const guard = (fn) => () => view && fn(view);
 
   /** Membuka penyunting kisi: memuat tabel di posisi kursor, atau membuat yang baru. */
@@ -62,6 +69,28 @@ export default function FormatRail({ view }) {
     view.focus();
   }
 
+  async function unggah(file) {
+    setGambarError('');
+    if (!noteId) return setGambarError('Simpan catatannya dulu sebelum menambahkan gambar.');
+
+    // Diperiksa juga di sini, bukan hanya di server: menolak 2 MB setelah
+    // terkirim berarti membuang kuota data penggunanya lebih dulu.
+    if (file.size > BATAS_GAMBAR) {
+      return setGambarError(`Gambar terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB). Maksimal 2 MB.`);
+    }
+
+    setGambarSibuk(true);
+    try {
+      const g = await api.unggahGambar(noteId, file);
+      const nama = file.name?.replace(/\.[^.]+$/, '') || 'gambar';
+      insertBlock(view, `![${nama}](${g.url})`);
+    } catch (err) {
+      setGambarError(err.message);
+    } finally {
+      setGambarSibuk(false);
+    }
+  }
+
   const buttons = [
     { key: 'b', label: 'Tebal', Icon: Bold, run: (v) => wrapInline(v, '**') },
     { key: 'i', label: 'Miring', Icon: Italic, run: (v) => wrapInline(v, '*') },
@@ -81,6 +110,7 @@ export default function FormatRail({ view }) {
     { sep: true, key: 'sep4' },
     { key: 'link', label: 'Tautan', Icon: LinkIcon, run: insertLink },
     { key: 'sebut', label: 'Sebut catatan', Icon: LinkIcon2, run: () => setSebutan({ daftar: null, cari: '' }) },
+    { key: 'gambar', label: 'Tambah gambar', Icon: ImagePlus, run: () => berkasRef.current?.click() },
     { key: 'code', label: 'Kode', Icon: Code, run: (v) => wrapInline(v, '`') },
     { key: 'table', label: 'Tabel', Icon: Table, run: openTable },
     { key: 'hr', label: 'Garis pemisah', Icon: Minus, run: (v) => insertBlock(v, '---') },
@@ -143,6 +173,27 @@ export default function FormatRail({ view }) {
           )
         )}
       </div>
+
+      {/* Pemilih berkas disembunyikan; tombol di rail yang membukanya, supaya
+          tampilannya seragam dengan tombol format lain. */}
+      <input
+        ref={berkasRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          // Nilai dikosongkan agar memilih berkas yang sama dua kali tetap memicu.
+          e.target.value = '';
+          if (file) unggah(file);
+        }}
+      />
+
+      {(gambarSibuk || gambarError) && (
+        <p className={`rail-kabar ${gambarError ? 'bad' : ''}`} aria-live="polite">
+          {gambarError || 'Mengunggah gambar…'}
+        </p>
+      )}
 
       {sebutan && (
         <PemilihSebutan

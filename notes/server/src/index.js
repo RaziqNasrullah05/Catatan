@@ -16,6 +16,7 @@ import { notesRouter } from './routes/notes.js';
 import { groupRouter } from './routes/group.js';
 import { notificationRouter } from './routes/notification.js';
 import { eventsRouter } from './routes/events.js';
+import { imagesRouter, hapusBerkasYatim } from './routes/images.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -64,6 +65,7 @@ app.use('/api/notes', notesRouter);
 app.use('/api/groups', groupRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/images', imagesRouter);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Alamat tidak dikenal.' }));
 
@@ -125,8 +127,13 @@ async function periksaKonfigurasi() {
 }
 
 bootstrapAdmin();
-purgeExpired();
-setInterval(purgeExpired, 60 * 60 * 1000).unref();
+/** Pembersihan berkala: baris kedaluwarsa, lalu berkas gambar yang jadi yatim. */
+function bersihkan() {
+  hapusBerkasYatim(purgeExpired());
+}
+
+bersihkan();
+setInterval(bersihkan, 60 * 60 * 1000).unref();
 
 app.listen(PORT, () => {
   console.log(`Server berjalan di http://localhost:${PORT}`);

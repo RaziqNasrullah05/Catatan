@@ -78,6 +78,23 @@ export const api = {
 
   indeksCatatan: () => request('/notes/index'),
 
+  /**
+   * Berkas dikirim apa adanya sebagai badan permintaan, bukan multipart, sesuai
+   * yang diterima server. Karena itu tidak lewat `request` yang selalu memasang
+   * Content-Type JSON.
+   */
+  unggahGambar: async (noteId, file) => {
+    const res = await fetch(`${BASE}/images?noteId=${encodeURIComponent(noteId)}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'catatan-app', 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Gambar gagal diunggah.');
+    return data.gambar;
+  },
+
   listAcara: (dari, sampai) => request(`/events?dari=${dari}&sampai=${sampai}`),
   buatAcara: (isi) => request('/events', { method: 'POST', body: isi }),
   ubahAcara: (id, isi) => request(`/events/${id}`, { method: 'PATCH', body: isi }),

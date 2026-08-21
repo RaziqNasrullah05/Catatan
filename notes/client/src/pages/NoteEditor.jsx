@@ -374,7 +374,7 @@ export default function NoteEditor() {
               )}
             </div>
 
-            {mode === 'tulis' && <FormatRail view={view} />}
+            {mode === 'tulis' && <FormatRail view={view} noteId={note?.id} />}
           </>
         )}
       </div>
