@@ -13,6 +13,7 @@ const noteSchema = z.object({
   title: z.string().max(300).optional(),
   content: z.string().max(MAX_CONTENT).optional(),
   pinned: z.boolean().optional(),
+  version: z.number().int().optional(),
 });
 
 const excerpt = (content) =>
@@ -93,6 +94,7 @@ function getNote(userId, id) {
     pinned: Boolean(n.pinned),
     createdAt: n.created_at,
     updatedAt: n.updated_at,
+    version: n.version,
   };
 }
 
@@ -101,7 +103,9 @@ notesRouter.get('/:id', (req, res) => {
   if (!akses) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
 
   if (akses === 'pemilik') {
-    return res.json({ note: { ...getNote(req.user.id, req.params.id), bisaSunting: true } });
+    return res.json({
+      note: { ...getNote(req.user.id, req.params.id), bisaSunting: true, milikSendiri: true },
+    });
   }
 
   // Milik orang lain, dibaca lewat grup bersama. Penulisnya disebut supaya
@@ -116,7 +120,9 @@ notesRouter.get('/:id', (req, res) => {
       pinned: false,
       createdAt: n.created_at,
       updatedAt: n.updated_at,
-      bisaSunting: false,
+      version: n.version,
+      bisaSunting: akses === 'tulis',
+      milikSendiri: false,
       penulis: sebutan(penulis),
       grup: grupCatatan(req.user.id, n.id).map((g) => g.nama),
     },
@@ -173,22 +179,64 @@ notesRouter.put('/:id/groups', (req, res) => {
 notesRouter.patch('/:id', (req, res) => {
   const parsed = noteSchema.safeParse(req.body ?? {});
   if (!parsed.success) return res.status(400).json({ error: 'Isi catatan tidak valid.' });
-  const current = getNote(req.user.id, req.params.id);
-  if (!current) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
 
-  const next = { ...current, ...parsed.data };
+  const akses = aksesCatatan(req.user.id, req.params.id);
+  if (akses !== 'pemilik' && akses !== 'tulis') {
+    return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
+  }
+
+  const current = db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
+
+  /**
+   * Penjaga versi. Simpan otomatis mengirim seluruh isi catatan, jadi tanpa ini
+   * orang yang menyimpan belakangan menimpa pekerjaan yang lain tanpa jejak.
+   * Klien mengirim versi yang sedang dipegangnya; kalau di server sudah bergerak,
+   * simpanannya ditolak dan isi terbaru dikembalikan agar bisa ditampilkan.
+   */
+  if (req.body?.version !== undefined && Number(req.body.version) !== current.version) {
+    const penulis = db.prepare('SELECT email, username FROM users WHERE id = ?').get(current.user_id);
+    return res.status(409).json({
+      error: 'Catatan ini baru diubah orang lain. Muat ulang dulu supaya tulisanmu tidak menimpanya.',
+      note: {
+        id: current.id,
+        title: current.title,
+        content: current.content,
+        version: current.version,
+        updatedAt: current.updated_at,
+        penulis: sebutan(penulis),
+      },
+    });
+  }
+
+  // Sematan milik pemilik; kolaborator tidak ikut mengubahnya.
+  const pinned = akses === 'pemilik' && parsed.data.pinned !== undefined
+    ? parsed.data.pinned
+    : Boolean(current.pinned);
+
+  const title = parsed.data.title ?? current.title;
+  const content = parsed.data.content ?? current.content;
+  const berubah = title !== current.title || content !== current.content;
+
   db.prepare(
-    `UPDATE notes SET title = ?, content = ?, pinned = ?, updated_at = ?
-      WHERE id = ? AND user_id = ?`
-  ).run(
-    next.title,
-    next.content,
-    next.pinned ? 1 : 0,
-    new Date().toISOString(),
-    req.params.id,
-    req.user.id
-  );
-  res.json({ note: getNote(req.user.id, req.params.id) });
+    `UPDATE notes SET title = ?, content = ?, pinned = ?, updated_at = ?,
+            version = version + ?
+      WHERE id = ?`
+  ).run(title, content, pinned ? 1 : 0, new Date().toISOString(), berubah ? 1 : 0, req.params.id);
+
+  const n = db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
+  res.json({
+    note: {
+      id: n.id,
+      title: n.title,
+      content: n.content,
+      pinned: Boolean(n.pinned),
+      createdAt: n.created_at,
+      updatedAt: n.updated_at,
+      version: n.version,
+      bisaSunting: true,
+      milikSendiri: akses === 'pemilik',
+    },
+  });
 });
 
 notesRouter.delete('/:id', (req, res) => {
@@ -278,11 +326,11 @@ notesRouter.post('/:id/tasks/:line/toggle', (req, res) => {
   if (!m) return res.status(400).json({ error: 'Baris ini bukan tugas.' });
 
   lines[lineNo] = `${m[1]}${m[2] === ' ' ? 'x' : ' '}${m[3]}`;
-  db.prepare('UPDATE notes SET content = ?, updated_at = ? WHERE id = ? AND user_id = ?').run(
-    lines.join('\n'),
-    new Date().toISOString(),
-    note.id,
-    req.user.id
-  );
+  // Versinya ikut naik: ini mengubah isi catatan, sama seperti menyunting biasa,
+  // jadi penyunting yang sedang membuka catatan ini harus tahu.
+  db.prepare(
+    `UPDATE notes SET content = ?, updated_at = ?, version = version + 1
+      WHERE id = ? AND user_id = ?`
+  ).run(lines.join('\n'), new Date().toISOString(), note.id, req.user.id);
   res.json({ ok: true });
 });

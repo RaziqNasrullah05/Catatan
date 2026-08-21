@@ -237,8 +237,10 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | POST | `/:id/leave` | Keluar dari grup. Pemimpin harus mengalihkan jabatan dulu. |
 | DELETE | `/:id/members/:userId` | Keluarkan anggota (pemimpin). |
 | POST | `/:id/leader/:userId` | Alihkan jabatan pemimpin. |
-| GET | `/:id/notes` | Catatan yang disimpan di grup ini, beserta penulisnya. |
+| GET | `/:id/notes` | Catatan yang disimpan di grup ini, beserta penulis dan kolaboratornya. |
 | DELETE | `/:id/notes/:noteId` | Keluarkan catatan dari grup (penulisnya atau pemimpin). |
+| POST | `/:id/notes/:noteId/collaborators` | Pemimpin mengusulkan seorang anggota jadi kolaborator. Membalas `langsung: true` bila pengusulnya penulis sendiri. |
+| DELETE | `/:id/notes/:noteId/collaborators/:userId` | Cabut izin (penulis atau pemimpin). |
 
 ### Pemberitahuan (`/api/notifications`, semua butuh sesi)
 
@@ -258,7 +260,7 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 ## 6. Basis data
 
 Tabel: `users`, `invites`, `login_tokens`, `sessions`, `notes`, `grup`, `grup_anggota`, `grup_catatan`,
-`notifikasi`.
+`catatan_kolaborator`, `notifikasi`.
 Tabel domain baru dinamai dalam Bahasa Indonesia — sekalian menghindari `groups`, yang sejak SQLite
 3.28 dipakai sebagai kata kunci window function. Skema dibuat lewat `CREATE TABLE IF NOT
 EXISTS` di `db.js`, jadi aman dijalankan berulang.
@@ -494,6 +496,26 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
+
+**v1.22** — Kolaborasi dan penjaga versi.
+
+Izin menyunting catatan orang lain hidup di `catatan_kolaborator`. Pemimpin grup **mengusulkan**,
+penulisnya **menyetujui** lewat pemberitahuan — tidak ada tulisan yang bisa disunting orang lain tanpa
+sepengetahuan penulisnya. Bila pengusulnya kebetulan penulis sendiri, izinnya langsung berlaku tanpa
+usulan. Kolaborator boleh membaca dan menulis, tapi tidak menghapus, menyematkan, atau mengatur grup
+catatan itu. Kolom `notifikasi.target_id` menyimpan orang yang dibicarakan usulan, berbeda dari pengirim
+dan penerimanya.
+
+Kolom `notes.version` naik tiap penyimpanan. `PATCH /api/notes/:id` yang menyertakan `version` basi
+dibalas **409** beserta salinan terbaru dari server, dan penyunting menampilkan kedua versi
+berdampingan supaya penggunanya memilih, bukan kehilangan tulisan diam-diam. Permintaan tanpa `version`
+tetap diterima demi kompatibilitas.
+
+Satu lubang ditemukan lewat pengujian dan ditutup di versi yang sama: izin kolaborasi dulu diperiksa
+sebelum keanggotaan grup, sehingga seseorang yang sudah keluar grup — atau catatan yang sudah
+dikeluarkan dari grup — masih bisa disunting. Sekarang `aksesCatatan` memastikan lebih dulu bahwa
+catatan dan orangnya masih berbagi grup; baru setelah itu ditentukan `tulis` atau `baca`. Grup adalah
+wadah yang membuat berbagi mungkin, jadi hilangnya wadah menggugurkan kedua izin sekaligus.
 
 **v1.21** — Catatan bisa disimpan ke grup, dan berkas rute dinamai ulang ke Bahasa Inggris.
 

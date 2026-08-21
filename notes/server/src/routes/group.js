@@ -241,10 +241,24 @@ groupRouter.get('/:id/notes', (req, res) => {
     )
     .all(req.params.id);
 
+  const kolab = db
+    .prepare(
+      `SELECT k.note_id, u.email, u.username FROM catatan_kolaborator k
+         JOIN users u ON u.id = k.user_id
+        WHERE k.note_id IN (SELECT note_id FROM grup_catatan WHERE grup_id = ?)`
+    )
+    .all(req.params.id);
+  const perCatatan = new Map();
+  for (const k of kolab) {
+    if (!perCatatan.has(k.note_id)) perCatatan.set(k.note_id, []);
+    perCatatan.get(k.note_id).push(sebutan(k));
+  }
+
   res.json({
     catatan: rows.map((n) => ({
       id: n.id,
       title: n.title,
+      kolaborator: perCatatan.get(n.id) || [],
       excerpt: n.content
         .replace(/^#{1,6}\s+/gm, '')
         .replace(/[*_`>~]/g, '')
@@ -272,6 +286,96 @@ groupRouter.delete('/:id/notes/:noteId', (req, res) => {
   db.prepare('DELETE FROM grup_catatan WHERE grup_id = ? AND note_id = ?').run(
     req.params.id,
     req.params.noteId
+  );
+  res.json({ ok: true });
+});
+
+/* ---------- Kolaborasi ---------- */
+
+/**
+ * Pemimpin grup mengusulkan seseorang jadi kolaborator sebuah catatan. Usulannya
+ * dikirim ke penulis catatan, dan izinnya baru berlaku setelah ia menyetujui —
+ * pemimpin menggerakkan, penulis yang memutuskan atas tulisannya sendiri.
+ */
+groupRouter.post('/:id/notes/:noteId/collaborators', (req, res) => {
+  const ada = ambilGrup(req.params.id, req.user.id);
+  if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
+  if (ada.peran !== 'leader') {
+    return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa mengatur kolaborasi.' });
+  }
+
+  const diGrup = db
+    .prepare('SELECT 1 FROM grup_catatan WHERE grup_id = ? AND note_id = ?')
+    .get(req.params.id, req.params.noteId);
+  if (!diGrup) return res.status(404).json({ error: 'Catatan itu tidak ada di grup ini.' });
+
+  const note = db
+    .prepare('SELECT id, user_id, title FROM notes WHERE id = ? AND deleted_at IS NULL')
+    .get(req.params.noteId);
+  if (!note) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
+
+  const targetId = String(req.body?.userId || '');
+  if (!peranDi(req.params.id, targetId)) {
+    return res.status(400).json({ error: 'Orang itu bukan anggota grup ini.' });
+  }
+  if (targetId === note.user_id) {
+    return res.status(400).json({ error: 'Dia penulisnya sendiri, sudah bisa menyunting.' });
+  }
+
+  const sudah = db
+    .prepare('SELECT 1 FROM catatan_kolaborator WHERE note_id = ? AND user_id = ?')
+    .get(note.id, targetId);
+  if (sudah) return res.status(409).json({ error: 'Dia sudah jadi kolaborator catatan ini.' });
+
+  const now = new Date().toISOString();
+
+  // Kalau pemimpin adalah penulisnya sendiri, tidak ada yang perlu disetujui.
+  if (note.user_id === req.user.id) {
+    db.transaction(() => {
+      db.prepare(
+        `INSERT INTO catatan_kolaborator (note_id, user_id, granted_by, granted_at)
+         VALUES (?, ?, ?, ?)`
+      ).run(note.id, targetId, req.user.id, now);
+      db.prepare(
+        `INSERT INTO notifikasi (id, penerima_id, aktor_id, jenis, grup_id, note_id, status, created_at)
+         VALUES (?, ?, ?, 'kolaborasi_aktif', ?, ?, 'info', ?)`
+      ).run(newId(), targetId, req.user.id, req.params.id, note.id, now);
+    })();
+    return res.status(201).json({ ok: true, langsung: true });
+  }
+
+  const menggantung = db
+    .prepare(
+      `SELECT id FROM notifikasi
+        WHERE note_id = ? AND target_id = ? AND jenis = 'usul_kolaborasi' AND status = 'menunggu'`
+    )
+    .get(note.id, targetId);
+  if (menggantung) {
+    return res.status(409).json({ error: 'Usulan untuk orang itu sudah dikirim dan belum dijawab.' });
+  }
+
+  db.prepare(
+    `INSERT INTO notifikasi (id, penerima_id, aktor_id, target_id, jenis, grup_id, note_id, status, created_at)
+     VALUES (?, ?, ?, ?, 'usul_kolaborasi', ?, ?, 'menunggu', ?)`
+  ).run(newId(), note.user_id, req.user.id, targetId, req.params.id, note.id, now);
+
+  res.status(201).json({ ok: true, langsung: false });
+});
+
+/** Mencabut izin kolaborasi. Boleh oleh penulis catatan atau pemimpin grup. */
+groupRouter.delete('/:id/notes/:noteId/collaborators/:userId', (req, res) => {
+  const ada = ambilGrup(req.params.id, req.user.id);
+  if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
+
+  const note = db.prepare('SELECT user_id FROM notes WHERE id = ?').get(req.params.noteId);
+  if (!note) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
+  if (note.user_id !== req.user.id && ada.peran !== 'leader') {
+    return res.status(403).json({ error: 'Hanya penulisnya atau pemimpin grup yang bisa mencabut izin.' });
+  }
+
+  db.prepare('DELETE FROM catatan_kolaborator WHERE note_id = ? AND user_id = ?').run(
+    req.params.noteId,
+    req.params.userId
   );
   res.json({ ok: true });
 });

@@ -18,7 +18,14 @@ async function request(path, { method = 'GET', body } = {}) {
   } catch {
     data = null;
   }
-  if (!res.ok) throw new Error(data?.error || 'Permintaan gagal. Periksa koneksi lalu coba lagi.');
+  if (!res.ok) {
+    const err = new Error(data?.error || 'Permintaan gagal. Periksa koneksi lalu coba lagi.');
+    // Status dan badan balasan dibawa serta: penjaga versi membalas 409 beserta
+    // isi catatan terbaru, dan pemanggilnya perlu keduanya.
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
   return data;
 }
 
@@ -63,6 +70,11 @@ export const api = {
   catatanGrup: (grupId) => request(`/groups/${grupId}/notes`),
   keluarkanCatatan: (grupId, noteId) =>
     request(`/groups/${grupId}/notes/${noteId}`, { method: 'DELETE' }),
+
+  usulKolaborasi: (grupId, noteId, userId) =>
+    request(`/groups/${grupId}/notes/${noteId}/collaborators`, { method: 'POST', body: { userId } }),
+  cabutKolaborasi: (grupId, noteId, userId) =>
+    request(`/groups/${grupId}/notes/${noteId}/collaborators/${userId}`, { method: 'DELETE' }),
 
   listNotifikasi: () => request('/notifications'),
   jumlahNotifikasi: () => request('/notifications/count'),

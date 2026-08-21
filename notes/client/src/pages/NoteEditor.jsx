@@ -29,6 +29,9 @@ export default function NoteEditor() {
   // Server juga menolaknya, jadi ini semata agar antarmukanya tidak menjanjikan
   // sesuatu yang akan ditolak.
   const milikOrangLain = note ? note.bisaSunting === false : false;
+  // Kolaborator boleh menyunting, tapi menyematkan dan menghapus tetap hak penulis.
+  const bukanPenulis = note ? note.milikSendiri === false : false;
+  const [bentrok, setBentrok] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
   const [view, setView] = useState(null);
@@ -37,6 +40,8 @@ export default function NoteEditor() {
   const [rev, setRev] = useState(0);
 
   const draft = useRef({ title: '', content: '' });
+  // Versi catatan yang sedang dipegang layar ini; dikirim tiap simpan.
+  const versi = useRef(1);
   const timer = useRef(null);
   const dirty = useRef(false);
   const sheet = useRef(null);
@@ -48,6 +53,7 @@ export default function NoteEditor() {
       .then(({ note }) => {
         if (!alive) return;
         setNote(note);
+        versi.current = note.version;
         draft.current = { title: note.title, content: note.content };
         setStatus('tersimpan');
       })
@@ -61,13 +67,20 @@ export default function NoteEditor() {
     async (patch) => {
       setStatus('menyimpan');
       try {
-        await api.updateNote(id, patch);
+        const { note: baru } = await api.updateNote(id, { ...patch, version: versi.current });
+        versi.current = baru.version;
         dirty.current = false;
         setStatus('tersimpan');
         setError('');
       } catch (err) {
         setStatus('gagal');
-        setError(err.message);
+        // 409 berarti orang lain menyimpan lebih dulu. Tulisan yang sedang
+        // diketik tidak dibuang — pengguna yang memutuskan mana yang dipakai.
+        if (err.status === 409 && err.data?.note) {
+          setBentrok({ server: err.data.note, milikku: { ...draft.current } });
+        } else {
+          setError(err.message);
+        }
       }
     },
     [id]
@@ -215,10 +228,14 @@ export default function NoteEditor() {
           <span className="baca-saja" style={{ marginRight: 'auto' }}>
             Catatan {note.penulis} · baca saja
           </span>
+        ) : bukanPenulis ? (
+          <span className="baca-saja" style={{ marginRight: 'auto' }}>
+            Catatan {note.penulis} · kamu boleh menyunting
+          </span>
         ) : (
           <span style={{ marginRight: 'auto' }} />
         )}
-        {!milikOrangLain && (
+        {!bukanPenulis && (
         <button
           className={`icon-btn ${note?.pinned ? 'is-on' : ''}`}
           aria-label={note?.pinned ? 'Lepas sematan' : 'Sematkan catatan'}
@@ -238,7 +255,7 @@ export default function NoteEditor() {
           {mode === 'baca' ? <Pencil size={19} strokeWidth={1.75} /> : <Eye size={19} strokeWidth={1.75} />}
         </button>
         )}
-        {!milikOrangLain && (
+        {!bukanPenulis && (
         <button className="icon-btn" aria-label="Hapus catatan" onClick={() => setConfirmDelete(true)}>
           <Trash2 size={19} strokeWidth={1.75} />
         </button>
@@ -295,6 +312,58 @@ export default function NoteEditor() {
           onApply={applyTable}
           onClose={() => setTable(null)}
         />
+      )}
+
+      {bentrok && (
+        <div className="sheet-backdrop">
+          <div className="sheet" role="dialog" aria-modal="true">
+            <h3>Catatan ini baru diubah orang lain</h3>
+            <p>
+              Simpananmu ditahan supaya tidak menimpa tulisan yang masuk lebih dulu. Tulisanmu masih
+              utuh — pilih mana yang dipakai.
+            </p>
+
+            <div className="bentrok-kotak">
+              <span className="label">Versi di server</span>
+              <pre>{bentrok.server.content.slice(0, 600) || '(kosong)'}</pre>
+            </div>
+            <div className="bentrok-kotak">
+              <span className="label">Tulisanmu yang belum tersimpan</span>
+              <pre>{bentrok.milikku.content.slice(0, 600) || '(kosong)'}</pre>
+            </div>
+
+            <div className="row">
+              <button
+                className="btn ghost"
+                onClick={() => {
+                  // Ambil versi server: tulisan sendiri dilepas, layar disegarkan.
+                  const s = bentrok.server;
+                  versi.current = s.version;
+                  draft.current = { title: s.title, content: s.content };
+                  setNote((n) => ({ ...n, title: s.title, content: s.content, version: s.version }));
+                  setRev((r) => r + 1);
+                  dirty.current = false;
+                  setStatus('tersimpan');
+                  setBentrok(null);
+                }}
+              >
+                Pakai punya mereka
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  // Timpa dengan tulisan sendiri: versinya disamakan dulu supaya
+                  // simpanan berikutnya diterima server.
+                  versi.current = bentrok.server.version;
+                  setBentrok(null);
+                  save({ ...draft.current });
+                }}
+              >
+                Pakai punyaku
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {confirmDelete && (

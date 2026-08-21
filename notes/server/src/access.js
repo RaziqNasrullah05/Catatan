@@ -4,6 +4,8 @@ import { db } from './db.js';
  * Menjawab satu pertanyaan: boleh apa orang ini atas catatan ini.
  *
  *   'pemilik' → baca, tulis, hapus, atur grupnya
+ *   'tulis'   → baca dan menyunting, karena diberi izin kolaborasi. Tidak boleh
+ *               menghapus, menyematkan, atau mengatur grup catatan itu.
  *   'baca'    → hanya membaca, karena catatannya ada di grup yang sama-sama diikuti
  *   null      → tidak ada akses
  *
@@ -17,6 +19,10 @@ export function aksesCatatan(userId, noteId) {
   if (!n) return null;
   if (n.user_id === userId) return 'pemilik';
 
+  // Catatan ini masih berada di grup yang juga diikuti orang ini? Pertanyaan
+  // yang sama menopang izin baca maupun izin sunting: grup adalah wadah yang
+  // membuat berbagi mungkin, jadi begitu wadahnya hilang — orangnya keluar
+  // grup, atau catatannya dikeluarkan — kedua izin ikut gugur.
   const bersama = db
     .prepare(
       `SELECT 1 FROM grup_catatan gc
@@ -25,8 +31,13 @@ export function aksesCatatan(userId, noteId) {
         LIMIT 1`
     )
     .get(noteId, userId);
+  if (!bersama) return null;
 
-  return bersama ? 'baca' : null;
+  const kolaborator = db
+    .prepare('SELECT 1 FROM catatan_kolaborator WHERE note_id = ? AND user_id = ?')
+    .get(noteId, userId);
+
+  return kolaborator ? 'tulis' : 'baca';
 }
 
 /** Grup mana saja yang memuat catatan ini dan juga diikuti orang ini. */

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Crown, FileText, LogOut, Trash2, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Crown, FileText, LogOut, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
 import { PeopleSkeleton } from '../components/Skeleton.jsx';
@@ -14,6 +14,7 @@ export default function GroupDetail({ user }) {
   const [error, setError] = useState('');
   const [konfirmasi, setKonfirmasi] = useState(null);
   const [catatan, setCatatan] = useState(null);
+  const [kolabUntuk, setKolabUntuk] = useState(null);
 
   const muat = () =>
     withMinDelay(api.getGrup(id))
@@ -121,9 +122,23 @@ export default function GroupDetail({ user }) {
                     {c.milikku && <span className="tanda samar">Punyamu</span>}
                   </span>
                   <span className="sub">{c.penulis}{c.excerpt ? ` · ${c.excerpt}` : ''}</span>
+                  {c.kolaborator?.length > 0 && (
+                    <span className="sub kolab">
+                      <Users size={12} strokeWidth={2} /> {c.kolaborator.join(', ')}
+                    </span>
+                  )}
                 </button>
                 {(c.milikku || pemimpin) && (
                   <span className="grup-aksi">
+                    {pemimpin && (
+                      <button
+                        className="icon-btn"
+                        aria-label={`Atur kolaborasi untuk ${c.title || 'catatan'}`}
+                        onClick={() => setKolabUntuk(c)}
+                      >
+                        <Users size={17} strokeWidth={1.8} />
+                      </button>
+                    )}
                     <button
                       className="icon-btn"
                       aria-label={`Keluarkan ${c.title || 'catatan'} dari grup`}
@@ -210,6 +225,71 @@ export default function GroupDetail({ user }) {
           </>
         )}
       </div>
+
+      {kolabUntuk && (
+        <div className="sheet-backdrop" onClick={() => setKolabUntuk(null)}>
+          <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>Siapa yang boleh ikut menyunting?</h3>
+            <p>
+              {kolabUntuk.milikku
+                ? `Izin langsung berlaku karena “${kolabUntuk.title || 'Tanpa judul'}” tulisanmu sendiri.`
+                : `Usulan dikirim ke ${kolabUntuk.penulis}. Izinnya berlaku setelah dia menyetujui.`}
+            </p>
+
+            <div className="pilih-grup">
+              {grup.anggota
+                .filter((a) => a.nama !== kolabUntuk.penulis)
+                .map((a) => {
+                  const sudah = kolabUntuk.kolaborator?.includes(a.nama);
+                  return (
+                    <div key={a.id} className="pilih-baris">
+                      <span style={{ flex: 1 }}>{a.nama}</span>
+                      {sudah ? (
+                        <button
+                          className="btn ghost kecil"
+                          onClick={async () => {
+                            await jalankan(
+                              () => api.cabutKolaborasi(id, kolabUntuk.id, a.id),
+                              `Izin ${a.nama} dicabut.`
+                            );
+                            setKolabUntuk(null);
+                            const d = await api.catatanGrup(id).catch(() => ({ catatan: [] }));
+                            setCatatan(d.catatan);
+                          }}
+                        >
+                          Cabut
+                        </button>
+                      ) : (
+                        <button
+                          className="btn kecil"
+                          onClick={async () => {
+                            await jalankan(
+                              () => api.usulKolaborasi(id, kolabUntuk.id, a.id),
+                              kolabUntuk.milikku
+                                ? `${a.nama} kini bisa menyunting.`
+                                : `Usulan dikirim ke ${kolabUntuk.penulis}.`
+                            );
+                            setKolabUntuk(null);
+                            const d = await api.catatanGrup(id).catch(() => ({ catatan: [] }));
+                            setCatatan(d.catatan);
+                          }}
+                        >
+                          Ajak
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+
+            <div className="row">
+              <button className="btn ghost" onClick={() => setKolabUntuk(null)}>
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {konfirmasi && (
         <Konfirmasi

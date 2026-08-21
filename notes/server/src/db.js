@@ -106,6 +106,18 @@ CREATE TABLE IF NOT EXISTS grup_catatan (
 );
 
 CREATE INDEX IF NOT EXISTS idx_grup_catatan_note ON grup_catatan(note_id);
+
+-- Izin menyunting catatan orang lain. Diusulkan pemimpin grup, berlaku hanya
+-- setelah penulisnya menyetujui.
+CREATE TABLE IF NOT EXISTS catatan_kolaborator (
+  note_id    TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  granted_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  granted_at TEXT NOT NULL,
+  PRIMARY KEY (note_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_kolaborator_user ON catatan_kolaborator(user_id);
 `);
 
 // Migrasi: kolom-kolom ini ditambahkan belakangan, jadi dicek dulu agar
@@ -118,6 +130,20 @@ const tambahKolomUser = (nama, tipe) => {
 tambahKolomUser('password_hash', 'TEXT');
 tambahKolomUser('username', 'TEXT');
 tambahKolomUser('birthdate', 'TEXT');
+
+// Nomor versi catatan, naik tiap kali isinya berubah. Dipakai menolak simpanan
+// yang menimpa pekerjaan orang lain — lihat PATCH /api/notes/:id.
+const noteColumns = db.prepare('PRAGMA table_info(notes)').all().map((c) => c.name);
+if (!noteColumns.includes('version')) {
+  db.exec('ALTER TABLE notes ADD COLUMN version INTEGER NOT NULL DEFAULT 1');
+}
+
+// Usulan kolaborasi menyebut tiga orang: pengusul, penerima usulan, dan orang
+// yang diusulkan jadi kolaborator. Dua kolom pertama sudah ada.
+const notifColumns = db.prepare('PRAGMA table_info(notifikasi)').all().map((c) => c.name);
+if (!notifColumns.includes('target_id')) {
+  db.exec('ALTER TABLE notifikasi ADD COLUMN target_id TEXT REFERENCES users(id)');
+}
 
 // SQLite tidak bisa menambahkan batasan UNIQUE lewat ALTER TABLE, jadi keunikan
 // username dijaga indeks terpisah. Baris dengan NULL tidak saling bentrok —

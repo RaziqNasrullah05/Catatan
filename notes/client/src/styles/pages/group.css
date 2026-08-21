@@ -221,3 +221,44 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---------- Kolaborasi dan bentrok versi ---------- */
+
+.grup-teks .sub.kolab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+}
+
+.btn.kecil { width: auto; flex: none; padding: 7px 14px; font-size: 13px; border-radius: 9px; }
+
+.pilih-baris .btn.kecil { margin-left: auto; }
+
+/* Dua isi ditampilkan berdampingan supaya pilihannya berdasar apa yang terlihat,
+   bukan tebakan. Dipotong 600 karakter — ini pratinjau, bukan penyunting. */
+.bentrok-kotak { margin-bottom: 12px; }
+.bentrok-kotak .label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.bentrok-kotak pre {
+  margin: 0;
+  max-height: 22vh;
+  overflow: auto;
+  padding: 11px 13px;
+  border: 1px solid var(--rule);
+  border-radius: 11px;
+  background: var(--bg);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink);
+}
