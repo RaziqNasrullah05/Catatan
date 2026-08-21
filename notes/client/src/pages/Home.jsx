@@ -346,7 +346,8 @@ export default function Home({ user, onSignOut }) {
         daftar.filter((g) => g.terpilih).map((g) => g.id)
       );
       setPemilihGrup(null);
-      reload();
+      // Daftar catatan perlu dimuat ulang agar penanda grupnya ikut segar.
+      setReloadKey((k) => k + 1);
     } catch (err) {
       setError(err.message);
     } finally {
