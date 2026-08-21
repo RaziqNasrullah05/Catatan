@@ -48,7 +48,7 @@ const penomoranOtomatis = EditorState.transactionFilter.of((tr) => {
  * Editor markdown. Instance CodeMirror sengaja dibuat sekali saja; perubahan isi
  * dari luar (mis. memuat catatan lain) dikirim lewat prop `docKey`.
  */
-export default function Editor({ docKey, initialValue, onChange, onReady }) {
+export default function Editor({ docKey, initialValue, onChange, onReady, indeks, onBuatCatatan }) {
   const host = useRef(null);
   const viewRef = useRef(null);
   const onChangeRef = useRef(onChange);
