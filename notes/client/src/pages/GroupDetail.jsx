@@ -89,9 +89,14 @@ export default function GroupDetail({ user }) {
                       spellCheck="false"
                       aria-label="Nama pengguna atau email orang yang diundang"
                     />
-                    <button className="btn" onClick={undang} disabled={!orang.trim()}>
-                      <UserPlus size={16} strokeWidth={1.9} />
-                      Undang
+                    <button
+                      className="btn kotak"
+                      onClick={undang}
+                      disabled={!orang.trim()}
+                      aria-label="Kirim undangan"
+                      title="Kirim undangan"
+                    >
+                      <UserPlus size={18} strokeWidth={1.9} />
                     </button>
                   </div>
                 </label>

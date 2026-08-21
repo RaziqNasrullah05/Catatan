@@ -108,11 +108,12 @@
   font-weight: 500;
   color: var(--ink-soft);
 }
-.grup-field .baris { display: flex; gap: 8px; }
+.grup-field .baris { display: flex; gap: 8px; align-items: stretch; }
 .grup-field input {
   flex: 1;
   min-width: 0;
-  padding: 11px 14px;
+  padding: 13px 15px;
+  font-size: 15px;
   border-radius: 12px;
   border: 1px solid var(--rule-strong);
   background: var(--paper);
@@ -121,6 +122,17 @@
   transition: border-color 0.16s;
 }
 .grup-field input:focus { border-color: var(--accent); }
+
+/* Tombol undang berupa kotak ikon, bukan ikon plus teks. Dengan teks, tombolnya
+   memakan lebar yang justru paling dibutuhkan kolom pencarian di layar sempit —
+   maksud barisnya adalah mengetik nama, bukan menekan tombol. */
+.grup-field .btn.kotak {
+  flex: none;
+  width: 48px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
 
 .grup-bawah { padding: 26px 16px 96px; }
 
