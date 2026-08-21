@@ -104,6 +104,7 @@ notes/
         ├── mailer.js               # nodemailer, fallback cetak ke log
         └── routes/
             ├── auth.js             # masuk, kata sandi, profil, undangan, admin
+            ├── events.js           # agenda: acara dan pengulangannya
             ├── group.js            # grup, anggota, undangan, catatan di grup
             ├── notification.js     # daftar, terima, tolak, tandai dibaca
             └── notes.js            # CRUD catatan + agregasi tugas
@@ -251,6 +252,15 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | POST | `/read` | Tandai semuanya sudah dilihat. |
 | POST | `/:id/accept`, `/:id/reject` | Menjawab yang berstatus `menunggu`. |
 
+### Agenda (`/api/events`, semua butuh sesi)
+
+| Metode | Jalur | Keterangan |
+| --- | --- | --- |
+| GET | `/?dari=&sampai=` | Acara dalam rentang tanggal, acara berulang sudah disebar. |
+| POST | `/` | Buat acara. |
+| PATCH | `/:id` | Ubah. Seluruh isian dikirim ulang, bukan sebagian. |
+| DELETE | `/:id` | Hapus. Acara berulang terhapus sebagai satu kesatuan. |
+
 ### Admin (`/api/admin`, butuh peran admin)
 
 `GET /users`, `GET /invites`, `POST /invites`, `POST /users/:id/access`
@@ -260,7 +270,7 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 ## 6. Basis data
 
 Tabel: `users`, `invites`, `login_tokens`, `sessions`, `notes`, `grup`, `grup_anggota`, `grup_catatan`,
-`catatan_kolaborator`, `notifikasi`.
+`catatan_kolaborator`, `notifikasi`, `acara`.
 Tabel domain baru dinamai dalam Bahasa Indonesia — sekalian menghindari `groups`, yang sejak SQLite
 3.28 dipakai sebagai kata kunci window function. Skema dibuat lewat `CREATE TABLE IF NOT
 EXISTS` di `db.js`, jadi aman dijalankan berulang.
@@ -496,6 +506,24 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
+
+**v1.24** — Agenda. Tab keempat kini berisi kisi kalender bulanan di dalam kotak, dengan daftar acara
+yang belum lewat di bawahnya; mengetuk sebuah tanggal menyaring daftarnya ke tanggal itu.
+
+Tabel `acara` menyimpan tanggal dan jam sebagai **teks lokal** (`TTTT-BB-HH` dan `JJ:MM`), bukan
+penanda waktu UTC. Yang dicatat adalah tanggal kalender, dan menyimpannya sebagai instan membuat acara
+pagi hari bergeser ke tanggal sebelumnya begitu ada pembacaan beda zona. Jam boleh dikosongkan — artinya
+sepanjang hari.
+
+Pengulangan tidak aktif secara bawaan, tapi bisa dipilih: harian, mingguan, bulanan, tahunan, dengan
+tanggal berhenti opsional. Aturannya disimpan sebagai satu baris, lalu disebar saat dibaca dalam
+rentang yang diminta (`server/src/recurrence.js`) — tanpa batas rentang, pengulangan tanpa tanggal
+akhir tidak akan pernah selesai dihitung. Bulan yang tidak punya tanggalnya **dilewati, bukan digeser**:
+acara tanggal 31 tidak muncul di Februari, dan 29 Februari hanya muncul di tahun kabisat. Menggesernya
+ke tanggal terdekat berarti mengarang jadwal yang tidak pernah dibuat penggunanya.
+
+Menyunting atau menghapus acara berulang berlaku untuk seluruh kemunculannya. Mengubah satu kemunculan
+saja menuntut penyimpanan daftar pengecualian, dan itu belum ada.
 
 **v1.23** — Penomoran daftar dijaga tetap urut, dan indentasi ikut menomori ulang.
 

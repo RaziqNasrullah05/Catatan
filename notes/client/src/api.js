@@ -76,6 +76,11 @@ export const api = {
   cabutKolaborasi: (grupId, noteId, userId) =>
     request(`/groups/${grupId}/notes/${noteId}/collaborators/${userId}`, { method: 'DELETE' }),
 
+  listAcara: (dari, sampai) => request(`/events?dari=${dari}&sampai=${sampai}`),
+  buatAcara: (isi) => request('/events', { method: 'POST', body: isi }),
+  ubahAcara: (id, isi) => request(`/events/${id}`, { method: 'PATCH', body: isi }),
+  hapusAcara: (id) => request(`/events/${id}`, { method: 'DELETE' }),
+
   listNotifikasi: () => request('/notifications'),
   jumlahNotifikasi: () => request('/notifications/count'),
   tandaiDibaca: () => request('/notifications/read', { method: 'POST' }),

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import NoteMenu from '../components/NoteMenu.jsx';
 import PullRefresh from '../components/PullRefresh.jsx';
+import Agenda from '../components/Agenda.jsx';
 import { NoteListSkeleton, PeopleSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
 import { readLayout } from '../prefs.js';
@@ -290,6 +291,10 @@ export default function Home({ user, onSignOut }) {
   const [grup, setGrup] = useState(null);
   const [grupBaru, setGrupBaru] = useState(null);
 
+  // Sekali dibuka, panel Agenda dibiarkan terpasang supaya geseran bolak-balik
+  // tidak memuat ulang kalendernya tiap kali.
+  const [agendaPernahDibuka, setAgendaPernahDibuka] = useState(false);
+
   const adaBaru = belumDibaca > 0;
 
   /**
@@ -312,6 +317,10 @@ export default function Home({ user, onSignOut }) {
       window.removeEventListener('focus', periksa);
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    if (index === TABS.length - 1) setAgendaPernahDibuka(true);
+  }, [index]);
 
   // Grup dimuat saat panelnya pertama kali dikunjungi, bukan di awal — pemakaian
   // sehari-hari berada di Catatan dan Tugas.
@@ -586,10 +595,9 @@ export default function Home({ user, onSignOut }) {
         </PullRefresh>
 
         <div className="pane" role="tabpanel" aria-label="Agenda">
-          <div className="empty">
-            <h2>Belum ada acara</h2>
-            <p>Acara punya jam mulai, jam selesai, dan keterangan singkat.</p>
-          </div>
+          {/* Dipasang hanya saat panelnya dikunjungi: kisi kalender memuat acara
+              sebulan penuh, dan itu tidak perlu terjadi saat membuka Catatan. */}
+          {agendaPernahDibuka && <Agenda />}
         </div>
       </div>
 

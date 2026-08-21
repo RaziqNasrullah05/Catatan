@@ -118,6 +118,27 @@ CREATE TABLE IF NOT EXISTS catatan_kolaborator (
 );
 
 CREATE INDEX IF NOT EXISTS idx_kolaborator_user ON catatan_kolaborator(user_id);
+
+-- Agenda. Tanggal dan jam disimpan sebagai teks lokal (TTTT-BB-HH dan JJ:MM),
+-- bukan penanda waktu UTC: yang dicatat adalah tanggal kalender, dan menyimpannya
+-- sebagai instan membuat acara pagi hari bergeser ke tanggal sebelumnya.
+-- Acara berulang disimpan satu baris beserta aturannya; penyebarannya dihitung
+-- saat dibaca (lihat src/recurrence.js).
+CREATE TABLE IF NOT EXISTS acara (
+  id           TEXT PRIMARY KEY,
+  user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  judul        TEXT NOT NULL,
+  deskripsi    TEXT NOT NULL DEFAULT '',
+  tanggal      TEXT NOT NULL,
+  mulai        TEXT,
+  selesai      TEXT,
+  ulang        TEXT,
+  ulang_sampai TEXT,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_acara_user ON acara(user_id, tanggal);
 `);
 
 // Migrasi: kolom-kolom ini ditambahkan belakangan, jadi dicek dulu agar

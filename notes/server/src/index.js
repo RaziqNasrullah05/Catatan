@@ -15,6 +15,7 @@ import { adminRouter, authRouter, bootstrapAdmin } from './routes/auth.js';
 import { notesRouter } from './routes/notes.js';
 import { groupRouter } from './routes/group.js';
 import { notificationRouter } from './routes/notification.js';
+import { eventsRouter } from './routes/events.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -62,6 +63,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/notes', notesRouter);
 app.use('/api/groups', groupRouter);
 app.use('/api/notifications', notificationRouter);
+app.use('/api/events', eventsRouter);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Alamat tidak dikenal.' }));
 
