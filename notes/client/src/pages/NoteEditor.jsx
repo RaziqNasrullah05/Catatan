@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer, Eye, Pencil, Pin, PinOff, Trash2 } from 'lucide-react';
 import { api } from '../api.js';
-import Editor from '../components/Editor.jsx';
+
 import FormatRail from '../components/FormatRail.jsx';
 import { NoteEditorSkeleton } from '../components/Skeleton.jsx';
 import { withMinDelay } from '../utils.js';
@@ -11,6 +11,11 @@ import { findTableAtLine } from '../cm/table.js';
 
 // Pratinjau dimuat saat dibutuhkan agar berkas awal tetap ringan.
 const Preview = lazy(() => import('../components/Preview.jsx'));
+
+// CodeMirror berukuran ~180 kB terkompresi. Catatan dibuka dalam mode baca, jadi
+// penyuntingnya tidak perlu diunduh sampai ikon pensil ditekan — sebelumnya ia
+// ikut terunduh di halaman pertama meski penggunanya cuma melihat daftar.
+const Editor = lazy(() => import('../components/Editor.jsx'));
 
 const SAVE_DELAY = 800;
 const CLOSE_ANIM = 260;
@@ -360,6 +365,7 @@ export default function NoteEditor() {
                   />
                 </Suspense>
               ) : (
+                <Suspense fallback={<NoteEditorSkeleton />}>
                 <Editor
                   docKey={note.id}
                   initialValue={draft.current.content}
@@ -371,6 +377,7 @@ export default function NoteEditor() {
                     queueSave();
                   }}
                 />
+                </Suspense>
               )}
             </div>
 

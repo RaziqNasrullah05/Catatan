@@ -517,6 +517,16 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
 
+**v1.29** — Penyunting dimuat malas. `Editor.jsx` kini di balik `lazy()` seperti `Preview.jsx`, jadi
+CodeMirror (~180 kB terkompresi) tidak lagi ikut terunduh di halaman pertama. Sebelumnya ia bahkan
+ter-`modulepreload` di `index.html`, sehingga siapa pun yang cuma membuka daftar catatan tetap membayar
+ukurannya. Ini sejalan dengan keputusan lama bahwa catatan dibuka dalam mode baca: penyunting baru
+diperlukan setelah ikon pensil ditekan.
+
+Peringatan Vite tentang chunk di atas 500 kB **tetap muncul dan itu wajar** — ambangnya menghitung
+ukuran mentah satu chunk, bukan apa yang diunduh di halaman pertama. Chunk `editor` memang 527 kB, tapi
+kini hanya diambil saat dibutuhkan.
+
 **v1.28** — Tambah gambar, maksimal 2 MB. Tombol di rail format membuka pemilih berkas; gambarnya
 diunggah lalu disisipkan sebagai `![nama](/api/images/ID)`.
 
