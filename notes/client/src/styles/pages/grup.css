@@ -1,0 +1,156 @@
+/* ---------- Grup dan pemberitahuan ---------- */
+
+/* Titik penanda ada yang belum dilihat, menempel di ikon lonceng. Dipasang di
+   sudut ikon, bukan sebagai lencana berangka: yang perlu diketahui sekilas
+   cuma ada atau tidak. */
+.icon-btn.bel { position: relative; }
+.icon-btn.bel .titik {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  /* Cincin sewarna latar agar titik tetap terbaca di atas garis ikon. */
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.grup-list { padding: 6px 0 96px; }
+
+.grup-kartu,
+.grup-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  text-align: left;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.grup-kartu:active { background: var(--accent-soft); }
+.grup-row.samar .grup-teks .nama { color: var(--ink-soft); }
+
+.grup-avatar {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.grup-avatar.kosong {
+  background: none;
+  border: 1px dashed var(--rule-strong);
+  color: var(--ink-faint);
+}
+
+.grup-teks { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.grup-teks .nama {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.grup-teks .sub {
+  font-size: 13px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grup-teks .tanda {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 500;
+}
+.grup-teks .tanda.samar { background: var(--rule); color: var(--ink-soft); }
+
+.grup-aksi { flex: none; display: flex; gap: 2px; }
+
+.grup-judul {
+  margin: 20px 16px 6px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.grup-undang { padding: 14px 16px 4px; }
+.grup-field { display: block; }
+.grup-field > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.grup-field .baris { display: flex; gap: 8px; }
+.grup-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.16s;
+}
+.grup-field input:focus { border-color: var(--accent); }
+
+.grup-bawah { padding: 26px 16px 96px; }
+
+/* ---------- Daftar pemberitahuan ---------- */
+
+.notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.notif-row.is-baru { background: var(--accent-soft); }
+
+.notif-ikon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  color: var(--accent);
+  border: 1px solid var(--rule);
+}
+
+.notif-isi { flex: 1; min-width: 0; }
+.notif-isi .judul { margin: 0; font-size: 14.5px; line-height: 1.45; color: var(--ink); }
+.notif-isi .sub { margin: 2px 0 0; font-size: 13.5px; font-weight: 500; color: var(--ink); }
+.notif-isi .waktu { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-faint); }
+
+.notif-aksi { display: flex; gap: 8px; margin-top: 11px; }
+.notif-status {
+  display: inline-block;
+  margin-top: 9px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--rule);
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  font-weight: 500;
+}

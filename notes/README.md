@@ -103,7 +103,9 @@ notes/
         ├── security.js             # sesi, scrypt, guard CSRF & peran
         ├── mailer.js               # nodemailer, fallback cetak ke log
         └── routes/
-            ├── auth.js             # masuk, kata sandi, undangan, admin
+            ├── auth.js             # masuk, kata sandi, profil, undangan, admin
+            ├── grup.js             # grup, anggota, undangan
+            ├── notifikasi.js       # daftar, terima, tolak, tandai dibaca
             └── notes.js            # CRUD catatan + agregasi tugas
 ```
 
@@ -223,6 +225,28 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | POST | `/tasks` | Tambah tugas cepat ke catatan berjudul "Tugas". |
 | POST | `/:id/tasks/:line/toggle` | Centang satu baris tugas. |
 
+### Grup (`/api/grup`, semua butuh sesi)
+
+| Metode | Jalur | Keterangan |
+| --- | --- | --- |
+| GET | `/` | Grup yang kamu ikuti, beserta peran dan jumlah anggota. |
+| POST | `/` | Buat grup; pembuatnya langsung jadi pemimpin. |
+| GET/PATCH/DELETE | `/:id` | Rincian, ganti nama, bubarkan. Ubah dan bubarkan khusus pemimpin. |
+| POST | `/:id/undang` | Undang lewat nama pengguna atau email; membuat notifikasi. |
+| DELETE | `/:id/undangan/:notifId` | Batalkan undangan yang belum dijawab. |
+| POST | `/:id/keluar` | Keluar dari grup. Pemimpin harus mengalihkan jabatan dulu. |
+| DELETE | `/:id/anggota/:userId` | Keluarkan anggota (pemimpin). |
+| POST | `/:id/pemimpin/:userId` | Alihkan jabatan pemimpin. |
+
+### Pemberitahuan (`/api/notifikasi`, semua butuh sesi)
+
+| Metode | Jalur | Keterangan |
+| --- | --- | --- |
+| GET | `/` | 100 terbaru, plus `belumDibaca`. |
+| GET | `/jumlah` | Hanya jumlah belum dibaca — dipakai titik di bilah atas. |
+| POST | `/dibaca` | Tandai semuanya sudah dilihat. |
+| POST | `/:id/terima`, `/:id/tolak` | Menjawab yang berstatus `menunggu`. |
+
 ### Admin (`/api/admin`, butuh peran admin)
 
 `GET /users`, `GET /invites`, `POST /invites`, `POST /users/:id/access`
@@ -231,7 +255,9 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 
 ## 6. Basis data
 
-Tabel: `users`, `invites`, `login_tokens`, `sessions`, `notes`. Skema dibuat lewat `CREATE TABLE IF NOT
+Tabel: `users`, `invites`, `login_tokens`, `sessions`, `notes`, `grup`, `grup_anggota`, `notifikasi`.
+Tabel domain baru dinamai dalam Bahasa Indonesia — sekalian menghindari `groups`, yang sejak SQLite
+3.28 dipakai sebagai kata kunci window function. Skema dibuat lewat `CREATE TABLE IF NOT
 EXISTS` di `db.js`, jadi aman dijalankan berulang.
 
 Migrasi kolom baru memakai pola pemeriksaan `PRAGMA table_info`:
@@ -465,6 +491,15 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
+
+**v1.20** — Grup dan pemberitahuan. Tabel `grup`, `grup_anggota`, dan `notifikasi`; rute `/api/grup`
+dan `/api/notifikasi`. Grup punya satu pemimpin yang berwenang mengundang, mengeluarkan, mengalihkan
+jabatan, dan membubarkan; pemimpin tidak bisa keluar begitu saja karena grup tanpa pemimpin tidak punya
+siapa pun yang bisa mengelolanya. Undangan dikirim lewat nama pengguna atau email, tiba sebagai
+pemberitahuan, dan baru menjadi keanggotaan setelah diterima. Ikon lonceng menggantikan tulisan
+"Catatan" di kiri bilah atas, dengan titik hijau kecil saat ada yang belum dilihat; jumlahnya diperiksa
+saat halaman dibuka dan tiap kali tab kembali aktif. Panel Grup dimuat saat pertama kali dikunjungi,
+bukan bersama Catatan dan Tugas.
 
 **v1.19** — Halaman utama jadi empat tab: Grup, Catatan, Tugas, Agenda. Grup dan Agenda masih panel
 kosong; isinya menyusul. Tab yang aktif menampilkan ikon beserta teksnya, sisanya ikon saja. Penanda

@@ -61,6 +61,39 @@ CREATE TABLE IF NOT EXISTS notes (
 
 CREATE INDEX IF NOT EXISTS idx_notes_user   ON notes(user_id, deleted_at, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sessions_exp ON sessions(expires_at);
+
+-- Nama tabel domain memakai Bahasa Indonesia, sekalian menghindari "groups"
+-- yang sejak SQLite 3.28 dipakai sebagai kata kunci window function.
+CREATE TABLE IF NOT EXISTS grup (
+  id         TEXT PRIMARY KEY,
+  nama       TEXT NOT NULL,
+  leader_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS grup_anggota (
+  grup_id   TEXT NOT NULL REFERENCES grup(id) ON DELETE CASCADE,
+  user_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  peran     TEXT NOT NULL DEFAULT 'anggota',
+  joined_at TEXT NOT NULL,
+  PRIMARY KEY (grup_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS notifikasi (
+  id          TEXT PRIMARY KEY,
+  penerima_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  aktor_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  jenis       TEXT NOT NULL,
+  grup_id     TEXT REFERENCES grup(id) ON DELETE CASCADE,
+  note_id     TEXT REFERENCES notes(id) ON DELETE CASCADE,
+  -- 'menunggu' hanya dipakai notifikasi yang menuntut jawaban; sisanya 'info'.
+  status      TEXT NOT NULL DEFAULT 'menunggu',
+  created_at  TEXT NOT NULL,
+  read_at     TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_penerima ON notifikasi(penerima_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_anggota_user   ON grup_anggota(user_id);
 `);
 
 // Migrasi: kolom-kolom ini ditambahkan belakangan, jadi dicek dulu agar

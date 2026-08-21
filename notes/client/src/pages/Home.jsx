@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Bell,
   CalendarDays,
   CircleCheck,
   LogOut,
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react';
 import NoteMenu from '../components/NoteMenu.jsx';
 import PullRefresh from '../components/PullRefresh.jsx';
-import { NoteListSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
+import { NoteListSkeleton, PeopleSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
 import { readLayout } from '../prefs.js';
 import { withMinDelay } from '../utils.js';
@@ -285,13 +286,70 @@ export default function Home({ user, onSignOut }) {
     }
   }
 
+  const [belumDibaca, setBelumDibaca] = useState(0);
+  const [grup, setGrup] = useState(null);
+  const [grupBaru, setGrupBaru] = useState(null);
+
+  const adaBaru = belumDibaca > 0;
+
+  /**
+   * Tidak ada sambungan langsung ke server, jadi jumlahnya diperiksa saat
+   * halaman dibuka dan tiap kali tab ini kembali aktif — cukup untuk pemakaian
+   * sehari-hari tanpa menambah polling berkala.
+   */
+  useEffect(() => {
+    const periksa = () =>
+      api
+        .jumlahNotifikasi()
+        .then((d) => setBelumDibaca(d.belumDibaca))
+        .catch(() => {});
+    periksa();
+    const saatKembali = () => document.visibilityState === 'visible' && periksa();
+    document.addEventListener('visibilitychange', saatKembali);
+    window.addEventListener('focus', periksa);
+    return () => {
+      document.removeEventListener('visibilitychange', saatKembali);
+      window.removeEventListener('focus', periksa);
+    };
+  }, [reloadKey]);
+
+  // Grup dimuat saat panelnya pertama kali dikunjungi, bukan di awal — pemakaian
+  // sehari-hari berada di Catatan dan Tugas.
+  useEffect(() => {
+    if (index !== 0 || grup !== null) return;
+    api
+      .listGrup()
+      .then((d) => setGrup(d.grup))
+      .catch(() => setGrup([]));
+  }, [index, grup]);
+
+  async function buatGrup() {
+    const nama = (grupBaru || '').trim();
+    if (nama.length < 2) return;
+    try {
+      const { grup: g } = await api.createGrup(nama);
+      setGrupBaru(null);
+      setGrup((lama) => [g, ...(lama || [])]);
+      navigate(`/grup/${g.id}`);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   const open = tasks.filter((t) => !t.done);
   const done = tasks.filter((t) => t.done);
 
   return (
     <div className="app">
       <header className="topbar">
-        <span className="wordmark">Catatan</span>
+        <button
+          className={`icon-btn bel ${adaBaru ? 'ada-baru' : ''}`}
+          aria-label={adaBaru ? 'Pemberitahuan, ada yang baru' : 'Pemberitahuan'}
+          onClick={() => navigate('/notifikasi')}
+        >
+          <Bell size={20} strokeWidth={1.75} />
+          {adaBaru && <span className="titik" aria-hidden="true" />}
+        </button>
         {index === TAB_CATATAN && (
           <button
             className={`icon-btn ${searchOpen ? 'is-on' : ''}`}
@@ -334,10 +392,31 @@ export default function Home({ user, onSignOut }) {
 
       <div className="pager" ref={pagerRef} onScroll={onPagerScroll}>
         <div className="pane" role="tabpanel" aria-label="Grup">
-          <div className="empty">
-            <h2>Belum ada grup</h2>
-            <p>Grup jadi wadah bersama untuk catatan yang sengaja kamu simpan di dalamnya.</p>
-          </div>
+          {grup === null ? (
+            <PeopleSkeleton />
+          ) : grup.length === 0 ? (
+            <div className="empty">
+              <h2>Belum ada grup</h2>
+              <p>Grup jadi wadah bersama untuk catatan yang sengaja kamu simpan di dalamnya.</p>
+            </div>
+          ) : (
+            <div className="grup-list">
+              {grup.map((g) => (
+                <button key={g.id} className="grup-kartu" onClick={() => navigate(`/grup/${g.id}`)}>
+                  <span className="grup-avatar">{g.nama[0]}</span>
+                  <span className="grup-teks">
+                    <span className="nama">
+                      {g.nama}
+                      {g.peran === 'leader' && <span className="tanda">Pemimpin</span>}
+                    </span>
+                    <span className="sub">
+                      {g.jumlahAnggota} anggota
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <PullRefresh
@@ -531,6 +610,40 @@ export default function Home({ user, onSignOut }) {
           <SquarePen size={18} strokeWidth={1.75} />
           Tulis
         </button>
+      )}
+
+      {index === 0 && (
+        <button className="fab" onClick={() => setGrupBaru('')}>
+          <Plus size={18} strokeWidth={2} />
+          Grup baru
+        </button>
+      )}
+
+      {grupBaru !== null && (
+        <div className="sheet-backdrop" onClick={() => setGrupBaru(null)}>
+          <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>Grup baru</h3>
+            <p>Kamu jadi pemimpinnya, dan bisa mengundang orang setelah grupnya dibuat.</p>
+            <label className="grup-field">
+              <input
+                autoFocus
+                value={grupBaru}
+                onChange={(e) => setGrupBaru(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && buatGrup()}
+                placeholder="mis. Koas Paru 2026"
+                aria-label="Nama grup"
+              />
+            </label>
+            <div className="row">
+              <button className="btn ghost" onClick={() => setGrupBaru(null)}>
+                Batal
+              </button>
+              <button className="btn" onClick={buatGrup} disabled={grupBaru.trim().length < 2}>
+                Buat
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

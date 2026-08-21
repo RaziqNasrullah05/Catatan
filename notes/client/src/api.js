@@ -46,6 +46,23 @@ export const api = {
   addTask: (text) => request('/notes/tasks', { method: 'POST', body: { text } }),
   toggleTask: (noteId, line) => request(`/notes/${noteId}/tasks/${line}/toggle`, { method: 'POST' }),
 
+  listGrup: () => request('/grup'),
+  getGrup: (id) => request(`/grup/${id}`),
+  createGrup: (nama) => request('/grup', { method: 'POST', body: { nama } }),
+  renameGrup: (id, nama) => request(`/grup/${id}`, { method: 'PATCH', body: { nama } }),
+  deleteGrup: (id) => request(`/grup/${id}`, { method: 'DELETE' }),
+  undangKeGrup: (id, orang) => request(`/grup/${id}/undang`, { method: 'POST', body: { orang } }),
+  batalUndangan: (id, notifId) => request(`/grup/${id}/undangan/${notifId}`, { method: 'DELETE' }),
+  keluarGrup: (id) => request(`/grup/${id}/keluar`, { method: 'POST' }),
+  keluarkanAnggota: (id, userId) => request(`/grup/${id}/anggota/${userId}`, { method: 'DELETE' }),
+  alihkanPemimpin: (id, userId) => request(`/grup/${id}/pemimpin/${userId}`, { method: 'POST' }),
+
+  listNotifikasi: () => request('/notifikasi'),
+  jumlahNotifikasi: () => request('/notifikasi/jumlah'),
+  tandaiDibaca: () => request('/notifikasi/dibaca', { method: 'POST' }),
+  terimaNotifikasi: (id) => request(`/notifikasi/${id}/terima`, { method: 'POST' }),
+  tolakNotifikasi: (id) => request(`/notifikasi/${id}/tolak`, { method: 'POST' }),
+
   users: () => request('/admin/users'),
   invites: () => request('/admin/invites'),
   createInvite: (email) => request('/admin/invites', { method: 'POST', body: { email: email || null } }),
