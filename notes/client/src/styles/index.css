@@ -25,7 +25,7 @@
 @import './pages/notes-list.css';
 @import './pages/tasks.css';
 @import './pages/auth.css';
-@import './pages/grup.css';
+@import './pages/group.css';
 @import './pages/settings.css';
 
 /* Panel geser Catatan/Tugas — menimpa .segmented milik notes-list.css. */

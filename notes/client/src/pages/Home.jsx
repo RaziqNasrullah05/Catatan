@@ -323,6 +323,37 @@ export default function Home({ user, onSignOut }) {
       .catch(() => setGrup([]));
   }, [index, grup]);
 
+  const [pemilihGrup, setPemilihGrup] = useState(null);
+  const [menyimpanGrup, setMenyimpanGrup] = useState(false);
+
+  async function bukaPemilihGrup(note) {
+    setPemilihGrup({ note, grup: null });
+    try {
+      const { grup: daftar } = await api.grupCatatan(note.id);
+      setPemilihGrup({ note, grup: daftar });
+    } catch (err) {
+      setError(err.message);
+      setPemilihGrup(null);
+    }
+  }
+
+  async function simpanPemilihGrup() {
+    const { note, grup: daftar } = pemilihGrup;
+    setMenyimpanGrup(true);
+    try {
+      await api.simpanGrupCatatan(
+        note.id,
+        daftar.filter((g) => g.terpilih).map((g) => g.id)
+      );
+      setPemilihGrup(null);
+      reload();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setMenyimpanGrup(false);
+    }
+  }
+
   async function buatGrup() {
     const nama = (grupBaru || '').trim();
     if (nama.length < 2) return;
@@ -498,6 +529,15 @@ export default function Home({ user, onSignOut }) {
                       {note.openTasks} tugas
                     </span>
                   )}
+                  {note.grup?.length > 0 && (
+                    <span
+                      className="badge grup"
+                      title={`Terlihat oleh anggota: ${note.grup.join(', ')}`}
+                    >
+                      <Users size={11} strokeWidth={2} />
+                      {note.grup.length === 1 ? note.grup[0] : `${note.grup.length} grup`}
+                    </span>
+                  )}
                 </span>
               </button>
             ))}
@@ -561,8 +601,63 @@ export default function Home({ user, onSignOut }) {
             setConfirmDelete(menu.note);
             setMenu(null);
           }}
+          onGrup={() => {
+            bukaPemilihGrup(menu.note);
+            setMenu(null);
+          }}
           onClose={() => setMenu(null)}
         />
+      )}
+
+      {pemilihGrup && (
+        <div className="sheet-backdrop" onClick={() => setPemilihGrup(null)}>
+          <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h3>Simpan ke grup</h3>
+            <p>
+              Anggota grup yang dicentang bisa membaca “{pemilihGrup.note.title || 'Tanpa judul'}”,
+              tapi tidak menyuntingnya.
+            </p>
+
+            {pemilihGrup.grup === null ? (
+              <p className="pilih-kosong">Memuat grup…</p>
+            ) : pemilihGrup.grup.length === 0 ? (
+              <p className="pilih-kosong">
+                Kamu belum ikut grup mana pun. Buat grup dulu di tab Grup.
+              </p>
+            ) : (
+              <div className="pilih-grup">
+                {pemilihGrup.grup.map((g) => (
+                  <label key={g.id} className="pilih-baris">
+                    <input
+                      type="checkbox"
+                      checked={g.terpilih}
+                      onChange={() =>
+                        setPemilihGrup((p) => ({
+                          ...p,
+                          grup: p.grup.map((x) => (x.id === g.id ? { ...x, terpilih: !x.terpilih } : x)),
+                        }))
+                      }
+                    />
+                    <span>{g.nama}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="row">
+              <button className="btn ghost" onClick={() => setPemilihGrup(null)}>
+                Batal
+              </button>
+              <button
+                className="btn"
+                onClick={simpanPemilihGrup}
+                disabled={!pemilihGrup.grup?.length || menyimpanGrup}
+              >
+                {menyimpanGrup ? 'Menyimpan…' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {confirmDelete && (
@@ -630,7 +725,7 @@ export default function Home({ user, onSignOut }) {
                 value={grupBaru}
                 onChange={(e) => setGrupBaru(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && buatGrup()}
-                placeholder="Nama Grup"
+                placeholder="mis. Koas Paru 2026"
                 aria-label="Nama grup"
               />
             </label>

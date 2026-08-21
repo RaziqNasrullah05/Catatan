@@ -16,7 +16,7 @@ function kapan(iso) {
 
 const LABEL_STATUS = { diterima: 'Diterima', ditolak: 'Ditolak' };
 
-export default function Notifikasi() {
+export default function Notification() {
   const navigate = useNavigate();
   const [daftar, setDaftar] = useState(null);
   const [error, setError] = useState('');

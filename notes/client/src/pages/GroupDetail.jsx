@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Crown, LogOut, Trash2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Crown, FileText, LogOut, Trash2, UserPlus, X } from 'lucide-react';
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
 import { PeopleSkeleton } from '../components/Skeleton.jsx';
 
-export default function GrupDetail({ user }) {
+export default function GroupDetail({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [grup, setGrup] = useState(null);
@@ -13,6 +13,7 @@ export default function GrupDetail({ user }) {
   const [pesan, setPesan] = useState('');
   const [error, setError] = useState('');
   const [konfirmasi, setKonfirmasi] = useState(null);
+  const [catatan, setCatatan] = useState(null);
 
   const muat = () =>
     withMinDelay(api.getGrup(id))
@@ -21,6 +22,10 @@ export default function GrupDetail({ user }) {
 
   useEffect(() => {
     muat();
+    api
+      .catatanGrup(id)
+      .then((d) => setCatatan(d.catatan))
+      .catch(() => setCatatan([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -92,6 +97,39 @@ export default function GrupDetail({ user }) {
                 </label>
               </div>
             )}
+
+            <h3 className="grup-judul">Catatan · {catatan?.length ?? 0}</h3>
+            {catatan?.length === 0 && (
+              <p className="grup-kosong">
+                Belum ada catatan di sini. Tekan lama sebuah catatan di tab Catatan, lalu pilih
+                “Simpan ke grup”.
+              </p>
+            )}
+            {(catatan || []).map((c) => (
+              <div key={c.id} className="grup-row">
+                <span className="grup-avatar catatan">
+                  <FileText size={17} strokeWidth={1.8} />
+                </span>
+                <button className="grup-teks tombol" onClick={() => navigate(`/catatan/${c.id}`)}>
+                  <span className="nama">
+                    {c.title || 'Tanpa judul'}
+                    {c.milikku && <span className="tanda samar">Punyamu</span>}
+                  </span>
+                  <span className="sub">{c.penulis}{c.excerpt ? ` · ${c.excerpt}` : ''}</span>
+                </button>
+                {(c.milikku || pemimpin) && (
+                  <span className="grup-aksi">
+                    <button
+                      className="icon-btn"
+                      aria-label={`Keluarkan ${c.title || 'catatan'} dari grup`}
+                      onClick={() => setKonfirmasi({ jenis: 'keluarkanCatatan', catatan: c })}
+                    >
+                      <X size={17} strokeWidth={1.9} />
+                    </button>
+                  </span>
+                )}
+              </div>
+            ))}
 
             <h3 className="grup-judul">Anggota · {grup.anggota.length}</h3>
             {grup.anggota.map((a) => (
@@ -184,6 +222,10 @@ export default function GrupDetail({ user }) {
               navigate('/');
             } else if (k.jenis === 'keluarkan') {
               await jalankan(() => api.keluarkanAnggota(id, k.anggota.id), `${k.anggota.nama} dikeluarkan.`);
+            } else if (k.jenis === 'keluarkanCatatan') {
+              await jalankan(() => api.keluarkanCatatan(id, k.catatan.id));
+              const d = await api.catatanGrup(id).catch(() => ({ catatan: [] }));
+              setCatatan(d.catatan);
             } else if (k.jenis === 'alihkan') {
               await jalankan(
                 () => api.alihkanPemimpin(id, k.anggota.id),
@@ -214,6 +256,12 @@ function Konfirmasi({ data, grup, onBatal, onLanjut }) {
     keluarkan: {
       judul: `Keluarkan ${data.anggota?.nama}?`,
       isi: 'Dia berhenti melihat catatan grup ini, dan catatannya ikut keluar dari grup. Kamu bisa mengundangnya lagi kapan saja.',
+      tombol: 'Keluarkan',
+      bahaya: true,
+    },
+    keluarkanCatatan: {
+      judul: 'Keluarkan catatan dari grup?',
+      isi: `“${data.catatan?.title || 'Tanpa judul'}” berhenti terlihat oleh anggota grup ini. Catatannya sendiri tidak terhapus.`,
       tombol: 'Keluarkan',
       bahaya: true,
     },

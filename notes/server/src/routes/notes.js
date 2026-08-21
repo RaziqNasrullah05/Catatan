@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db.js';
 import { newId, requireAuth } from '../security.js';
+import { aksesCatatan, grupCatatan, sebutan } from '../access.js';
 
 export const notesRouter = Router();
 notesRouter.use(requireAuth);
@@ -41,6 +42,20 @@ notesRouter.get('/', (req, res) => {
         )
         .all(req.user.id);
 
+  // Satu kueri untuk semua kaitan grup sekaligus, bukan satu per catatan.
+  const kaitan = db
+    .prepare(
+      `SELECT gc.note_id, g.nama FROM grup_catatan gc
+         JOIN grup g ON g.id = gc.grup_id
+        WHERE gc.note_id IN (SELECT id FROM notes WHERE user_id = ? AND deleted_at IS NULL)`
+    )
+    .all(req.user.id);
+  const perCatatan = new Map();
+  for (const k of kaitan) {
+    if (!perCatatan.has(k.note_id)) perCatatan.set(k.note_id, []);
+    perCatatan.get(k.note_id).push(k.nama);
+  }
+
   res.json({
     notes: rows.map((n) => ({
       id: n.id,
@@ -49,6 +64,7 @@ notesRouter.get('/', (req, res) => {
       pinned: Boolean(n.pinned),
       updatedAt: n.updated_at,
       openTasks: (n.content.match(/^\s*[-+*]\s+\[ \]/gm) || []).length,
+      grup: perCatatan.get(n.id) || [],
     })),
   });
 });
@@ -81,9 +97,77 @@ function getNote(userId, id) {
 }
 
 notesRouter.get('/:id', (req, res) => {
-  const note = getNote(req.user.id, req.params.id);
-  if (!note) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
-  res.json({ note });
+  const akses = aksesCatatan(req.user.id, req.params.id);
+  if (!akses) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
+
+  if (akses === 'pemilik') {
+    return res.json({ note: { ...getNote(req.user.id, req.params.id), bisaSunting: true } });
+  }
+
+  // Milik orang lain, dibaca lewat grup bersama. Penulisnya disebut supaya
+  // jelas ini bukan tulisan sendiri, dan tidak ada jalan menyuntingnya.
+  const n = db.prepare('SELECT * FROM notes WHERE id = ?').get(req.params.id);
+  const penulis = db.prepare('SELECT email, username FROM users WHERE id = ?').get(n.user_id);
+  res.json({
+    note: {
+      id: n.id,
+      title: n.title,
+      content: n.content,
+      pinned: false,
+      createdAt: n.created_at,
+      updatedAt: n.updated_at,
+      bisaSunting: false,
+      penulis: sebutan(penulis),
+      grup: grupCatatan(req.user.id, n.id).map((g) => g.nama),
+    },
+  });
+});
+
+/** Grup mana saja yang memuat catatan ini — dipakai pemilih di menu catatan. */
+notesRouter.get('/:id/groups', (req, res) => {
+  if (aksesCatatan(req.user.id, req.params.id) !== 'pemilik') {
+    return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
+  }
+  const milikku = db
+    .prepare(
+      `SELECT g.id, g.nama FROM grup_anggota a JOIN grup g ON g.id = a.grup_id
+        WHERE a.user_id = ? ORDER BY g.nama`
+    )
+    .all(req.user.id);
+  const terpakai = new Set(
+    db.prepare('SELECT grup_id FROM grup_catatan WHERE note_id = ?').all(req.params.id).map((r) => r.grup_id)
+  );
+  res.json({ grup: milikku.map((g) => ({ ...g, terpilih: terpakai.has(g.id) })) });
+});
+
+/**
+ * Menetapkan seluruh daftar grup sekaligus, bukan menambah/menghapus satu per
+ * satu — pemilihnya berupa daftar centang, jadi satu simpan lebih jujur
+ * menggambarkan apa yang dilihat pengguna.
+ */
+notesRouter.put('/:id/groups', (req, res) => {
+  if (aksesCatatan(req.user.id, req.params.id) !== 'pemilik') {
+    return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
+  }
+  const diminta = Array.isArray(req.body?.grupIds) ? req.body.grupIds.map(String) : null;
+  if (!diminta) return res.status(400).json({ error: 'Daftar grup tidak valid.' });
+
+  // Hanya grup yang benar-benar diikuti; sisanya diabaikan diam-diam.
+  const sah = new Set(
+    db.prepare('SELECT grup_id FROM grup_anggota WHERE user_id = ?').all(req.user.id).map((r) => r.grup_id)
+  );
+  const dipakai = diminta.filter((id) => sah.has(id));
+  const now = new Date().toISOString();
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM grup_catatan WHERE note_id = ?').run(req.params.id);
+    const sisip = db.prepare(
+      'INSERT INTO grup_catatan (grup_id, note_id, added_by, added_at) VALUES (?, ?, ?, ?)'
+    );
+    for (const gid of dipakai) sisip.run(gid, req.params.id, req.user.id, now);
+  })();
+
+  res.json({ grup: grupCatatan(req.user.id, req.params.id) });
 });
 
 notesRouter.patch('/:id', (req, res) => {

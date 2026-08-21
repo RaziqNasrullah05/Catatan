@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { db } from '../db.js';
 import { requireAuth } from '../security.js';
 
-export const notifikasiRouter = Router();
-notifikasiRouter.use(requireAuth);
+export const notificationRouter = Router();
+notificationRouter.use(requireAuth);
 
 const sebutan = (row) => (row.aktor_username ? `@${row.aktor_username}` : row.aktor_email || 'Seseorang');
 
@@ -39,21 +39,21 @@ const AMBIL = `
     LEFT JOIN grup  g ON g.id = n.grup_id
    WHERE n.penerima_id = ?`;
 
-notifikasiRouter.get('/', (req, res) => {
+notificationRouter.get('/', (req, res) => {
   const rows = db.prepare(`${AMBIL} ORDER BY n.created_at DESC LIMIT 100`).all(req.user.id);
   const belumDibaca = rows.filter((r) => !r.read_at).length;
   res.json({ notifikasi: rows.map(bentuk), belumDibaca });
 });
 
 /** Dipanggil sering oleh titik merah di bilah atas, jadi sengaja seringan mungkin. */
-notifikasiRouter.get('/jumlah', (req, res) => {
+notificationRouter.get('/count', (req, res) => {
   const row = db
     .prepare('SELECT COUNT(*) AS n FROM notifikasi WHERE penerima_id = ? AND read_at IS NULL')
     .get(req.user.id);
   res.json({ belumDibaca: row.n });
 });
 
-notifikasiRouter.post('/dibaca', (req, res) => {
+notificationRouter.post('/read', (req, res) => {
   db.prepare('UPDATE notifikasi SET read_at = ? WHERE penerima_id = ? AND read_at IS NULL').run(
     new Date().toISOString(),
     req.user.id
@@ -67,7 +67,7 @@ function ambilMenunggu(id, userId) {
     .get(id, userId);
 }
 
-notifikasiRouter.post('/:id/terima', (req, res) => {
+notificationRouter.post('/:id/accept', (req, res) => {
   const n = ambilMenunggu(req.params.id, req.user.id);
   if (!n) return res.status(404).json({ error: 'Pemberitahuan itu sudah tidak berlaku.' });
   const now = new Date().toISOString();
@@ -92,7 +92,7 @@ notifikasiRouter.post('/:id/terima', (req, res) => {
   res.json({ ok: true });
 });
 
-notifikasiRouter.post('/:id/tolak', (req, res) => {
+notificationRouter.post('/:id/reject', (req, res) => {
   const n = ambilMenunggu(req.params.id, req.user.id);
   if (!n) return res.status(404).json({ error: 'Pemberitahuan itu sudah tidak berlaku.' });
   db.prepare("UPDATE notifikasi SET status = 'ditolak', read_at = ? WHERE id = ?").run(

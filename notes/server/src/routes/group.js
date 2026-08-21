@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { db } from '../db.js';
 import { newId, requireAuth } from '../security.js';
 
-export const grupRouter = Router();
-grupRouter.use(requireAuth);
+export const groupRouter = Router();
+groupRouter.use(requireAuth);
 
 const namaSchema = z.string().trim().min(2).max(60);
 
@@ -38,7 +38,7 @@ function ambilGrup(grupId, userId) {
 
 /* ---------- Daftar dan pembuatan ---------- */
 
-grupRouter.get('/', (req, res) => {
+groupRouter.get('/', (req, res) => {
   const rows = db
     .prepare(
       `SELECT g.id, g.nama, g.created_at, a.peran,
@@ -60,7 +60,7 @@ grupRouter.get('/', (req, res) => {
   });
 });
 
-grupRouter.post('/', (req, res) => {
+groupRouter.post('/', (req, res) => {
   const parsed = namaSchema.safeParse(req.body?.nama);
   if (!parsed.success) return res.status(400).json({ error: 'Nama grup 2–60 karakter.' });
 
@@ -84,7 +84,7 @@ grupRouter.post('/', (req, res) => {
 
 /* ---------- Satu grup ---------- */
 
-grupRouter.get('/:id', (req, res) => {
+groupRouter.get('/:id', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
 
@@ -122,7 +122,7 @@ grupRouter.get('/:id', (req, res) => {
   });
 });
 
-grupRouter.patch('/:id', (req, res) => {
+groupRouter.patch('/:id', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
   if (ada.peran !== 'leader') return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa mengubah ini.' });
@@ -133,7 +133,7 @@ grupRouter.patch('/:id', (req, res) => {
   res.json({ ok: true, nama: parsed.data });
 });
 
-grupRouter.delete('/:id', (req, res) => {
+groupRouter.delete('/:id', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
   if (ada.peran !== 'leader') return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa membubarkan grup.' });
@@ -144,7 +144,7 @@ grupRouter.delete('/:id', (req, res) => {
 
 /* ---------- Undangan ---------- */
 
-grupRouter.post('/:id/undang', (req, res) => {
+groupRouter.post('/:id/invite', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
   if (ada.peran !== 'leader') return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa mengundang.' });
@@ -182,7 +182,7 @@ grupRouter.post('/:id/undang', (req, res) => {
   res.status(201).json({ ok: true, nama: sebutan(sasaran) });
 });
 
-grupRouter.delete('/:id/undangan/:notifId', (req, res) => {
+groupRouter.delete('/:id/invites/:notifId', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada || ada.peran !== 'leader') return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa membatalkan undangan.' });
   db.prepare("DELETE FROM notifikasi WHERE id = ? AND grup_id = ? AND jenis = 'undangan_grup' AND status = 'menunggu'").run(
@@ -194,7 +194,7 @@ grupRouter.delete('/:id/undangan/:notifId', (req, res) => {
 
 /* ---------- Keanggotaan ---------- */
 
-grupRouter.post('/:id/keluar', (req, res) => {
+groupRouter.post('/:id/leave', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
   // Grup tanpa pemimpin tidak punya siapa pun yang bisa mengelolanya, jadi
@@ -208,7 +208,7 @@ grupRouter.post('/:id/keluar', (req, res) => {
   res.json({ ok: true });
 });
 
-grupRouter.delete('/:id/anggota/:userId', (req, res) => {
+groupRouter.delete('/:id/members/:userId', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
   if (ada.peran !== 'leader') return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa mengeluarkan anggota.' });
@@ -222,8 +222,62 @@ grupRouter.delete('/:id/anggota/:userId', (req, res) => {
   res.json({ ok: true });
 });
 
+/* ---------- Catatan di dalam grup ---------- */
+
+groupRouter.get('/:id/notes', (req, res) => {
+  const ada = ambilGrup(req.params.id, req.user.id);
+  if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
+
+  const rows = db
+    .prepare(
+      `SELECT n.id, n.title, n.content, n.updated_at, n.user_id,
+              u.email, u.username, gc.added_at
+         FROM grup_catatan gc
+         JOIN notes n ON n.id = gc.note_id AND n.deleted_at IS NULL
+         JOIN users u ON u.id = n.user_id
+        WHERE gc.grup_id = ?
+        ORDER BY n.updated_at DESC
+        LIMIT 200`
+    )
+    .all(req.params.id);
+
+  res.json({
+    catatan: rows.map((n) => ({
+      id: n.id,
+      title: n.title,
+      excerpt: n.content
+        .replace(/^#{1,6}\s+/gm, '')
+        .replace(/[*_`>~]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 160),
+      updatedAt: n.updated_at,
+      penulis: sebutan(n),
+      milikku: n.user_id === req.user.id,
+    })),
+  });
+});
+
+/** Mengeluarkan catatan dari grup. Boleh oleh pemiliknya atau pemimpin grup. */
+groupRouter.delete('/:id/notes/:noteId', (req, res) => {
+  const ada = ambilGrup(req.params.id, req.user.id);
+  if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
+
+  const n = db.prepare('SELECT user_id FROM notes WHERE id = ?').get(req.params.noteId);
+  if (!n) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
+  if (n.user_id !== req.user.id && ada.peran !== 'leader') {
+    return res.status(403).json({ error: 'Hanya penulisnya atau pemimpin grup yang bisa mengeluarkan catatan ini.' });
+  }
+
+  db.prepare('DELETE FROM grup_catatan WHERE grup_id = ? AND note_id = ?').run(
+    req.params.id,
+    req.params.noteId
+  );
+  res.json({ ok: true });
+});
+
 /** Mengalihkan jabatan pemimpin ke anggota lain. */
-grupRouter.post('/:id/pemimpin/:userId', (req, res) => {
+groupRouter.post('/:id/leader/:userId', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
   if (ada.peran !== 'leader') return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa mengalihkan jabatan.' });

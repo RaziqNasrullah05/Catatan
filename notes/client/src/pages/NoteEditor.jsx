@@ -24,6 +24,11 @@ export default function NoteEditor() {
   const [status, setStatus] = useState('memuat');
   // Catatan dibuka dalam mode baca; menulis dimulai lewat ikon pensil.
   const [mode, setMode] = useState('baca');
+
+  // Catatan milik anggota grup lain: tidak ada tombol sunting, semat, atau hapus.
+  // Server juga menolaknya, jadi ini semata agar antarmukanya tidak menjanjikan
+  // sesuatu yang akan ditolak.
+  const milikOrangLain = note ? note.bisaSunting === false : false;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
   const [view, setView] = useState(null);
@@ -206,7 +211,14 @@ export default function NoteEditor() {
         <button className="icon-btn" aria-label="Kembali" onClick={close}>
           <ArrowLeft size={20} strokeWidth={1.75} />
         </button>
-        <span style={{ marginRight: 'auto' }} />
+        {milikOrangLain ? (
+          <span className="baca-saja" style={{ marginRight: 'auto' }}>
+            Catatan {note.penulis} · baca saja
+          </span>
+        ) : (
+          <span style={{ marginRight: 'auto' }} />
+        )}
+        {!milikOrangLain && (
         <button
           className={`icon-btn ${note?.pinned ? 'is-on' : ''}`}
           aria-label={note?.pinned ? 'Lepas sematan' : 'Sematkan catatan'}
@@ -215,6 +227,8 @@ export default function NoteEditor() {
         >
           {note?.pinned ? <PinOff size={19} strokeWidth={1.75} /> : <Pin size={19} strokeWidth={1.75} />}
         </button>
+        )}
+        {!milikOrangLain && (
         <button
           className={`icon-btn ${mode === 'tulis' ? 'is-on' : ''}`}
           aria-label={mode === 'baca' ? 'Sunting catatan' : 'Baca hasil akhir'}
@@ -223,9 +237,12 @@ export default function NoteEditor() {
         >
           {mode === 'baca' ? <Pencil size={19} strokeWidth={1.75} /> : <Eye size={19} strokeWidth={1.75} />}
         </button>
+        )}
+        {!milikOrangLain && (
         <button className="icon-btn" aria-label="Hapus catatan" onClick={() => setConfirmDelete(true)}>
           <Trash2 size={19} strokeWidth={1.75} />
         </button>
+        )}
       </header>
 
       {error && <p className="notice bad" style={{ margin: '0 16px 8px' }}>{error}</p>}

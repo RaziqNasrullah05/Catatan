@@ -13,8 +13,8 @@ import { mailAktif, verifikasiSmtp } from './mailer.js';
 import { attachUser, isProd, requireFetchHeader } from './security.js';
 import { adminRouter, authRouter, bootstrapAdmin } from './routes/auth.js';
 import { notesRouter } from './routes/notes.js';
-import { grupRouter } from './routes/grup.js';
-import { notifikasiRouter } from './routes/notifikasi.js';
+import { groupRouter } from './routes/group.js';
+import { notificationRouter } from './routes/notification.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -60,8 +60,8 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/notes', notesRouter);
-app.use('/api/grup', grupRouter);
-app.use('/api/notifikasi', notifikasiRouter);
+app.use('/api/groups', groupRouter);
+app.use('/api/notifications', notificationRouter);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Alamat tidak dikenal.' }));
 

@@ -94,6 +94,18 @@ CREATE TABLE IF NOT EXISTS notifikasi (
 
 CREATE INDEX IF NOT EXISTS idx_notif_penerima ON notifikasi(penerima_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_anggota_user   ON grup_anggota(user_id);
+
+-- Catatan tetap milik penulisnya; menaruhnya di grup hanya menambah kaitan.
+-- Satu catatan boleh berada di banyak grup sekaligus.
+CREATE TABLE IF NOT EXISTS grup_catatan (
+  grup_id  TEXT NOT NULL REFERENCES grup(id)  ON DELETE CASCADE,
+  note_id  TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  added_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  added_at TEXT NOT NULL,
+  PRIMARY KEY (grup_id, note_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_grup_catatan_note ON grup_catatan(note_id);
 `);
 
 // Migrasi: kolom-kolom ini ditambahkan belakangan, jadi dicek dulu agar

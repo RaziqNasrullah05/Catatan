@@ -104,8 +104,8 @@ notes/
         ├── mailer.js               # nodemailer, fallback cetak ke log
         └── routes/
             ├── auth.js             # masuk, kata sandi, profil, undangan, admin
-            ├── grup.js             # grup, anggota, undangan
-            ├── notifikasi.js       # daftar, terima, tolak, tandai dibaca
+            ├── group.js            # grup, anggota, undangan, catatan di grup
+            ├── notification.js     # daftar, terima, tolak, tandai dibaca
             └── notes.js            # CRUD catatan + agregasi tugas
 ```
 
@@ -225,27 +225,29 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | POST | `/tasks` | Tambah tugas cepat ke catatan berjudul "Tugas". |
 | POST | `/:id/tasks/:line/toggle` | Centang satu baris tugas. |
 
-### Grup (`/api/grup`, semua butuh sesi)
+### Grup (`/api/groups`, semua butuh sesi)
 
 | Metode | Jalur | Keterangan |
 | --- | --- | --- |
 | GET | `/` | Grup yang kamu ikuti, beserta peran dan jumlah anggota. |
 | POST | `/` | Buat grup; pembuatnya langsung jadi pemimpin. |
 | GET/PATCH/DELETE | `/:id` | Rincian, ganti nama, bubarkan. Ubah dan bubarkan khusus pemimpin. |
-| POST | `/:id/undang` | Undang lewat nama pengguna atau email; membuat notifikasi. |
-| DELETE | `/:id/undangan/:notifId` | Batalkan undangan yang belum dijawab. |
-| POST | `/:id/keluar` | Keluar dari grup. Pemimpin harus mengalihkan jabatan dulu. |
-| DELETE | `/:id/anggota/:userId` | Keluarkan anggota (pemimpin). |
-| POST | `/:id/pemimpin/:userId` | Alihkan jabatan pemimpin. |
+| POST | `/:id/invite` | Undang lewat nama pengguna atau email; membuat notifikasi. |
+| DELETE | `/:id/invites/:notifId` | Batalkan undangan yang belum dijawab. |
+| POST | `/:id/leave` | Keluar dari grup. Pemimpin harus mengalihkan jabatan dulu. |
+| DELETE | `/:id/members/:userId` | Keluarkan anggota (pemimpin). |
+| POST | `/:id/leader/:userId` | Alihkan jabatan pemimpin. |
+| GET | `/:id/notes` | Catatan yang disimpan di grup ini, beserta penulisnya. |
+| DELETE | `/:id/notes/:noteId` | Keluarkan catatan dari grup (penulisnya atau pemimpin). |
 
-### Pemberitahuan (`/api/notifikasi`, semua butuh sesi)
+### Pemberitahuan (`/api/notifications`, semua butuh sesi)
 
 | Metode | Jalur | Keterangan |
 | --- | --- | --- |
 | GET | `/` | 100 terbaru, plus `belumDibaca`. |
-| GET | `/jumlah` | Hanya jumlah belum dibaca — dipakai titik di bilah atas. |
-| POST | `/dibaca` | Tandai semuanya sudah dilihat. |
-| POST | `/:id/terima`, `/:id/tolak` | Menjawab yang berstatus `menunggu`. |
+| GET | `/count` | Hanya jumlah belum dibaca — dipakai titik di bilah atas. |
+| POST | `/read` | Tandai semuanya sudah dilihat. |
+| POST | `/:id/accept`, `/:id/reject` | Menjawab yang berstatus `menunggu`. |
 
 ### Admin (`/api/admin`, butuh peran admin)
 
@@ -255,7 +257,8 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 
 ## 6. Basis data
 
-Tabel: `users`, `invites`, `login_tokens`, `sessions`, `notes`, `grup`, `grup_anggota`, `notifikasi`.
+Tabel: `users`, `invites`, `login_tokens`, `sessions`, `notes`, `grup`, `grup_anggota`, `grup_catatan`,
+`notifikasi`.
 Tabel domain baru dinamai dalam Bahasa Indonesia — sekalian menghindari `groups`, yang sejak SQLite
 3.28 dipakai sebagai kata kunci window function. Skema dibuat lewat `CREATE TABLE IF NOT
 EXISTS` di `db.js`, jadi aman dijalankan berulang.
@@ -491,6 +494,26 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
+
+**v1.21** — Catatan bisa disimpan ke grup, dan berkas rute dinamai ulang ke Bahasa Inggris.
+
+Tabel `grup_catatan` mengaitkan catatan ke grup tanpa menyalinnya — satu catatan boleh berada di banyak
+grup, dan mengeluarkannya tidak menghapus apa pun. Seluruh pertanyaan izin dijawab satu fungsi di
+`server/src/access.js`: pemilik boleh segalanya, sesama anggota grup hanya membaca, selain itu tidak ada
+akses. `GET /api/notes/:id` kini melayani catatan orang lain dengan `bisaSunting: false` dan nama
+penulisnya; `PATCH` dan `DELETE` tetap terkunci ke pemilik lewat `WHERE user_id = ?` yang tidak diubah.
+
+Pintu masuknya lewat menu tekan-lama di kartu catatan — "Simpan ke grup" membuka daftar centang, dan
+seluruh daftar dikirim sekaligus lewat `PUT /api/notes/:id/groups`, bukan tambah-hapus satu per satu.
+Kartu catatan yang sedang berada di grup mendapat penanda beraksen; tab Catatan tetap berisi catatan
+sendiri saja. Membuka catatan orang lain menyembunyikan tombol sunting, semat, dan hapus, dengan
+keterangan penulisnya di bilah atas.
+
+Berkas rute dan halaman dinamai dalam Bahasa Inggris (`group.js`, `notification.js`, `GroupDetail.jsx`,
+`Notification.jsx`, `group.css`), begitu pula jalur API (`/api/groups`, `/api/notifications`, beserta
+segmen `invite`, `leave`, `members`, `leader`, `count`, `read`, `accept`, `reject`). Rute yang dilihat
+pengguna tetap Bahasa Indonesia (`/grup/:id`, `/notifikasi`), mengikuti `/pengaturan` dan `/catatan/:id`
+yang sudah ada. Nama tabel tidak ikut diubah karena datanya sudah ada di produksi.
 
 **v1.20** — Grup dan pemberitahuan. Tabel `grup`, `grup_anggota`, dan `notifikasi`; rute `/api/grup`
 dan `/api/notifikasi`. Grup punya satu pemimpin yang berwenang mengundang, mengeluarkan, mengalihkan

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Pin, PinOff, Trash2 } from 'lucide-react';
+import { Pin, PinOff, Trash2, Users } from 'lucide-react';
 
 const GAP = 8;
 const MARGIN = 12;
@@ -9,7 +9,7 @@ const MARGIN = 12;
  * di bawah kartu bila muat, kalau tidak di atasnya — supaya kartu yang sedang
  * ditekan tetap terlihat.
  */
-export default function NoteMenu({ anchor, note, onPin, onDelete, onClose }) {
+export default function NoteMenu({ anchor, note, onPin, onDelete, onGrup, onClose }) {
   const ref = useRef(null);
   const [pos, setPos] = useState(null);
 
@@ -54,6 +54,10 @@ export default function NoteMenu({ anchor, note, onPin, onDelete, onClose }) {
         <button role="menuitem" onClick={onPin}>
           {note.pinned ? <PinOff size={17} strokeWidth={1.8} /> : <Pin size={17} strokeWidth={1.8} />}
           {note.pinned ? 'Lepas sematan' : 'Sematkan'}
+        </button>
+        <button role="menuitem" onClick={onGrup}>
+          <Users size={17} strokeWidth={1.8} />
+          Simpan ke grup
         </button>
         <button role="menuitem" className="danger" onClick={onDelete}>
           <Trash2 size={17} strokeWidth={1.8} />
