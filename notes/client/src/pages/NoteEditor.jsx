@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Eye, Pencil, Pin, PinOff, Trash2 } from 'lucide-react';
+import { ArrowLeft, Printer, Eye, Pencil, Pin, PinOff, Trash2 } from 'lucide-react';
 import { api } from '../api.js';
 import Editor from '../components/Editor.jsx';
 import FormatRail from '../components/FormatRail.jsx';
@@ -29,6 +29,26 @@ export default function NoteEditor() {
   // Server juga menolaknya, jadi ini semata agar antarmukanya tidak menjanjikan
   // sesuatu yang akan ditolak.
   const milikOrangLain = note ? note.bisaSunting === false : false;
+
+  /**
+   * Membagikan catatan sebagai PDF lewat dialog cetak peramban — di Android dan
+   * iOS pilihannya "Simpan sebagai PDF", lalu bisa dibagikan seperti berkas lain.
+   *
+   * Tidak dirender di server. Itu berarti memasang Chromium di VPS demi satu
+   * fitur, sementara peramban di tangan penggunanya sudah bisa melakukannya.
+   *
+   * Yang dicetak adalah pratinjau, bukan teks markdown mentah, jadi mode baca
+   * dinyalakan dulu bila sedang menulis. Cetak ditunda dua frame agar pratinjau
+   * yang dimuat malas sempat terpasang sebelum dialognya terbuka.
+   */
+  const cetak = useCallback(() => {
+    const buka = () => requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+    if (mode === 'baca') buka();
+    else {
+      setMode('baca');
+      setTimeout(buka, 120);
+    }
+  }, [mode]);
   // Kolaborator boleh menyunting, tapi menyematkan dan menghapus tetap hak penulis.
   const bukanPenulis = note ? note.milikSendiri === false : false;
   const [bentrok, setBentrok] = useState(null);
@@ -245,6 +265,9 @@ export default function NoteEditor() {
           {note?.pinned ? <PinOff size={19} strokeWidth={1.75} /> : <Pin size={19} strokeWidth={1.75} />}
         </button>
         )}
+        <button className="icon-btn" aria-label="Bagikan sebagai PDF" onClick={cetak}>
+          <Printer size={19} strokeWidth={1.75} />
+        </button>
         {!milikOrangLain && (
         <button
           className={`icon-btn ${mode === 'tulis' ? 'is-on' : ''}`}

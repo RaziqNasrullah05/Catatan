@@ -507,6 +507,18 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
 
+**v1.25** — Bagikan catatan sebagai PDF. Ikon printer di bilah atas penyunting membuka dialog cetak
+peramban; di Android dan iOS pilihannya "Simpan sebagai PDF", lalu bisa dibagikan seperti berkas lain.
+Tidak dirender di server — itu berarti memasang Chromium di VPS demi satu fitur, sementara peramban di
+tangan penggunanya sudah bisa melakukannya.
+
+Yang dicetak adalah pratinjau, bukan markdown mentah, jadi mode baca dinyalakan dulu bila sedang
+menulis, dan cetak ditunda sampai pratinjau yang dimuat malas selesai terpasang. `styles/print.css`
+diimpor paling akhir agar menang kaskade: tinggi setinggi layar dan gulir di dalamnya dilepas — tanpa
+itu yang tercetak hanya sepotong yang kebetulan terlihat — perkakas layar disembunyikan, judul tetap
+berupa `input` supaya nilainya selalu terbaru tapi tampil sebagai judul biasa, dan pemenggalan halaman
+dijaga agar judul tidak tertinggal di kaki halaman serta baris tabel tidak terbelah.
+
 **v1.24** — Agenda. Tab keempat kini berisi kisi kalender bulanan di dalam kotak, dengan daftar acara
 yang belum lewat di bawahnya; mengetuk sebuah tanggal menyaring daftarnya ke tanggal itu.
 

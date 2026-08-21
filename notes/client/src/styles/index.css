@@ -48,3 +48,6 @@
 
 /* Penyesuaian layar lebar — paling akhir, menimpa gaya di atasnya. */
 @import './layout/responsive.css';
+
+/* Terakhir: aturan cetak harus menang atas semua yang di atasnya. */
+@import './print.css';

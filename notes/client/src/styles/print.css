@@ -1,0 +1,104 @@
+/* ---------- Cetak: catatan menjadi PDF ---------- */
+
+@media print {
+  @page {
+    margin: 18mm 15mm;
+  }
+
+  /* Aplikasi ini setinggi layar dengan gulir di dalamnya. Saat dicetak semua itu
+     harus dilepas, kalau tidak yang keluar hanya satu halaman berisi potongan
+     yang kebetulan sedang terlihat. */
+  html,
+  body,
+  #root,
+  .app,
+  .editor-wrap,
+  .editor-scroll,
+  .scroll {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    background: #fff !important;
+  }
+
+  .app { max-width: none !important; margin: 0 !important; }
+  .editor-wrap { border: 0 !important; }
+
+  /* Perkakas layar tidak ikut tercetak. */
+  .topbar,
+  .fab,
+  .rail,
+  .segmented,
+  .save-state,
+  .sheet-backdrop,
+  .m3-scrim,
+  .notice,
+  .sk,
+  .pull-zone,
+  .search,
+  .table-edit {
+    display: none !important;
+  }
+
+  /* Judul tetap berupa input agar nilainya selalu yang terbaru, tapi tampil
+     sebagai judul biasa: tanpa kotak, tanpa latar. */
+  .title-input {
+    border: 0 !important;
+    background: none !important;
+    padding: 0 0 6px !important;
+    font-family: var(--serif) !important;
+    font-size: 22pt !important;
+    font-weight: 500 !important;
+    color: #000 !important;
+    width: 100% !important;
+  }
+
+  .preview {
+    padding: 0 !important;
+    color: #000 !important;
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+  .preview a { color: #000 !important; text-decoration: underline; }
+
+  /* Judul tidak ditinggal sendirian di kaki halaman, dan tabel tidak terbelah
+     di tengah baris. */
+  .preview h1,
+  .preview h2,
+  .preview h3,
+  .preview h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+    color: #000 !important;
+  }
+  .preview tr,
+  .preview li,
+  .preview blockquote,
+  .preview pre {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .preview table { width: 100%; border-collapse: collapse; }
+  .preview th,
+  .preview td { border: 1px solid #999 !important; padding: 5px 7px; }
+  .preview pre,
+  .preview code {
+    background: #f4f4f4 !important;
+    color: #000 !important;
+  }
+  .preview img { max-width: 100% !important; }
+
+  /* Kotak centang tugas tetap terlihat statusnya di atas kertas. */
+  .preview input[type='checkbox'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    border: 1px solid #333;
+    border-radius: 2px;
+    vertical-align: -1px;
+  }
+  .preview input[type='checkbox']:checked { background: #333; }
+}
