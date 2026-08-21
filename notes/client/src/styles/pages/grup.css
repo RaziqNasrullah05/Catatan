@@ -3,6 +3,11 @@
 /* Titik penanda ada yang belum dilihat, menempel di ikon lonceng. Dipasang di
    sudut ikon, bukan sebagai lencana berangka: yang perlu diketahui sekilas
    cuma ada atau tidak. */
+/* Lonceng berdiri sendiri di kiri. Peran ini dulu dipegang .wordmark lewat
+   margin-right: auto; begitu tulisannya diganti ikon, pendorongnya ikut hilang
+   dan semua tombol menumpuk di kiri. */
+.topbar .icon-btn.bel { margin-right: auto; }
+
 .icon-btn.bel { position: relative; }
 .icon-btn.bel .titik {
   position: absolute;
@@ -92,6 +97,10 @@
 
 .grup-undang { padding: 14px 16px 4px; }
 .grup-field { display: block; }
+
+/* Di dalam lembar, isian berdiri langsung di atas barisan tombol — tanpa jarak
+   ini keduanya menempel. */
+.sheet .grup-field { margin-bottom: 18px; }
 .grup-field > span {
   display: block;
   margin-bottom: 7px;

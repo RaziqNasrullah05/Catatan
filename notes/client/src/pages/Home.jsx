@@ -630,7 +630,7 @@ export default function Home({ user, onSignOut }) {
                 value={grupBaru}
                 onChange={(e) => setGrupBaru(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && buatGrup()}
-                placeholder="mis. Koas Paru 2026"
+                placeholder="Nama Grup"
                 aria-label="Nama grup"
               />
             </label>
