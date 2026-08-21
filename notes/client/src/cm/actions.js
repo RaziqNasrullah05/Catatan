@@ -1,5 +1,26 @@
 /** Perintah penyuntingan markdown yang dipakai tombol-tombol rail format. */
 
+import { hitungPenomoran } from './numbering.js';
+
+/**
+ * Perubahan yang diperlukan agar penomoran daftar pada sebuah state jadi urut.
+ * Hanya baris yang angkanya benar-benar berubah yang dihasilkan, supaya riwayat
+ * urung-lakukan tidak dipenuhi transaksi kosong.
+ */
+export function perubahanPenomoran(state) {
+  const baris = [];
+  for (let i = 1; i <= state.doc.lines; i++) baris.push(state.doc.line(i).text);
+
+  const ganti = hitungPenomoran(baris);
+  const changes = [];
+  for (let i = 0; i < ganti.length; i++) {
+    if (ganti[i] === null) continue;
+    const line = state.doc.line(i + 1);
+    changes.push({ from: line.from, to: line.to, insert: ganti[i] });
+  }
+  return changes;
+}
+
 export function wrapInline(view, before, after = before) {
   const range = view.state.selection.main;
   const text = view.state.sliceDoc(range.from, range.to);
@@ -95,7 +116,16 @@ export function changeIndent(view, direction) {
   }
 
   if (!changes.length) return false;
-  view.dispatch({ changes });
+
+  // Indentasi mengubah tingkat, dan tingkat menentukan penomoran — jadi angkanya
+  // ditulis ulang dalam transaksi yang sama. Dipisah jadi dua langkah karena
+  // penomoran harus melihat dokumen setelah barisnya bergeser.
+  const setelahGeser = state.update({ changes }).state;
+  view.dispatch(
+    { changes },
+    // sequential: true — posisinya dihitung dari dokumen setelah barisnya bergeser.
+    { changes: perubahanPenomoran(setelahGeser), sequential: true }
+  );
   view.focus();
   return true;
 }

@@ -497,6 +497,19 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
 
+**v1.23** — Penomoran daftar dijaga tetap urut, dan indentasi ikut menomori ulang.
+
+Markdown mengabaikan angka yang ditulis: `1. 3. 7.` tetap tampil 1, 2, 3 di pratinjau. Teks sumber dan
+hasilnya jadi berbeda — angka melompat di penyunting, rapi di pratinjau. Modul baru `cm/numbering.js`
+menyamakan keduanya dengan menulis ulang angkanya. Tiap tingkat indentasi punya hitungannya sendiri dan
+selalu mulai dari 1, jadi baris yang di-indent menjadi anak bernomor 1, lalu 2, sampai tingkat berapa pun.
+
+Dipasang di dua tempat. `changeIndent` menomori ulang dalam transaksi yang sama setelah barisnya
+bergeser. Dan sebuah `transactionFilter` di `Editor.jsx` menjalankannya tiap kali susunan baris berubah
+— baris dihapus, Enter, atau tempelan banyak baris. Mengetik huruf biasa tidak memicunya, supaya angka
+yang sedang diketik tidak ditimpa di tengah jalan; urung dan ulang juga dilewati, karena Ctrl+Z harus
+mengembalikan teks apa adanya. Isi blok kode berpagar tidak disentuh.
+
 **v1.22** — Kolaborasi dan penjaga versi.
 
 Izin menyunting catatan orang lain hidup di `catatan_kolaborator`. Pemimpin grup **mengusulkan**,
