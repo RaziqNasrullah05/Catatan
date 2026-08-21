@@ -55,7 +55,7 @@ function kepalaTanggal(s, ini) {
 
 const jam = (a) => (a.mulai ? `${a.mulai}${a.selesai ? `–${a.selesai}` : ''}` : 'Sepanjang hari');
 
-export default function Agenda() {
+export default function Agenda({ aktif = true }) {
   const ini = hariIni();
   const [kursor, setKursor] = useState(() => ({ tahun: +ini.slice(0, 4), bulan: +ini.slice(5, 7) - 1 }));
   const [acara, setAcara] = useState(null);
@@ -214,13 +214,19 @@ export default function Agenda() {
         ))
       )}
 
-      <button
-        className="fab"
-        onClick={() => setForm({ mode: 'baru', tanggal: dipilih || ini, judul: '', deskripsi: '' })}
-      >
-        <CalendarDays size={18} strokeWidth={1.85} />
-        Acara baru
-      </button>
+      {/* fab pakai position: fixed, jadi posisinya lepas dari .pane — kalau selalu
+          dirender, ia tetap menempel di layar walau tab Agenda sudah digeser
+          keluar layar (Agenda tidak dilepas dari DOM, hanya tergulir). Digerbang
+          dengan aktif supaya cuma tampil selagi tab ini yang sedang dilihat. */}
+      {aktif && (
+        <button
+          className="fab"
+          onClick={() => setForm({ mode: 'baru', tanggal: dipilih || ini, judul: '', deskripsi: '' })}
+        >
+          <CalendarDays size={18} strokeWidth={1.85} />
+          Acara baru
+        </button>
+      )}
 
       {form && (
         <FormAcara

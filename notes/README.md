@@ -517,6 +517,21 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
 
+**v1.30** — Perbaikan bug: tombol "Acara baru" di tab Agenda menempel di layar saat digeser ke tab lain.
+
+`.fab` memakai `position: fixed`, jadi posisinya lepas dari `.pane` tempat ia dirender — hanya
+soal koordinat layar, tidak peduli pane mana yang sedang terlihat. Fab "Tulis" (Catatan) dan "Grup baru"
+(Grup) tidak kena masalah ini karena keduanya dirender di `Home.jsx` sebagai saudara `.pager`, digerbang
+`index === TAB_CATATAN` / `index === 0` — otomatis lenyap begitu `index` berubah saat digeser. Fab
+"Acara baru" berbeda: ia dirender di dalam `Agenda.jsx` sendiri, dan `Agenda` tidak pernah dilepas dari
+DOM setelah tabnya sekali dibuka (`agendaPernahDibuka`) — ia hanya tergulir keluar layar. Hasilnya, fab
+tetap tampil menimpa tab manapun yang sedang dilihat pengguna.
+
+Diperbaiki dengan mengikuti pola yang sama seperti dua fab lain: `Home.jsx` mengirim prop `aktif` ke
+`<Agenda>` berisi `index === TAB_AGENDA`, dan `Agenda.jsx` hanya merender tombol fab-nya saat `aktif`
+bernilai benar. Sheet formulir acara (`FormAcara`) tidak ikut digerbang — itu modal penuh layar yang
+memang wajar tetap terbuka walau pengguna sempat menggeser tab lain sebelum menutupnya.
+
 **v1.29** — Penyunting dimuat malas. `Editor.jsx` kini di balik `lazy()` seperti `Preview.jsx`, jadi
 CodeMirror (~180 kB terkompresi) tidak lagi ikut terunduh di halaman pertama. Sebelumnya ia bahkan
 ter-`modulepreload` di `index.html`, sehingga siapa pun yang cuma membuka daftar catatan tetap membayar

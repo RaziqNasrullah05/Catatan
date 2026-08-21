@@ -31,6 +31,7 @@ const TABS = [
 
 // Grup berada di kiri, tapi yang dibuka pertama tetap Catatan.
 const TAB_CATATAN = TABS.findIndex((t) => t.id === 'catatan');
+const TAB_AGENDA = TABS.findIndex((t) => t.id === 'agenda');
 
 function timeAgo(iso) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -597,7 +598,7 @@ export default function Home({ user, onSignOut }) {
         <div className="pane" role="tabpanel" aria-label="Agenda">
           {/* Dipasang hanya saat panelnya dikunjungi: kisi kalender memuat acara
               sebulan penuh, dan itu tidak perlu terjadi saat membuka Catatan. */}
-          {agendaPernahDibuka && <Agenda />}
+          {agendaPernahDibuka && <Agenda aktif={index === TAB_AGENDA} />}
         </div>
       </div>
 
