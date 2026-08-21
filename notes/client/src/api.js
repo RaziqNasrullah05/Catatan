@@ -45,7 +45,7 @@ export const api = {
 
   listNotes: (q) => request(`/notes${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   getNote: (id) => request(`/notes/${id}`),
-  createNote: () => request('/notes', { method: 'POST', body: {} }),
+  createNote: (isi = {}) => request('/notes', { method: 'POST', body: isi }),
   updateNote: (id, patch) => request(`/notes/${id}`, { method: 'PATCH', body: patch }),
   deleteNote: (id) => request(`/notes/${id}`, { method: 'DELETE' }),
 

@@ -42,6 +42,22 @@ export default function NoteEditor() {
   const dariGrup = location.state?.dariGrup || null;
   const tujuanKeluar = dariGrup ? `/grup/${dariGrup}` : '/';
 
+  /**
+   * Membuat catatan kosong berjudul apa yang sedang diketik, untuk pilihan
+   * "Buat catatan" di dasar daftar saran. Catatannya langsung masuk indeks agar
+   * sebutan ke situ segera menjadi tautan tanpa memuat ulang halaman.
+   */
+  const buatCatatanUntukSebutan = useCallback(async (judul) => {
+    try {
+      const { note: baru } = await api.createNote({ title: judul, content: '' });
+      const ringkas = { id: baru.id, judul: baru.title || judul, milikku: true };
+      setIndeks((lama) => [ringkas, ...lama]);
+      return ringkas;
+    } catch {
+      return null;
+    }
+  }, []);
+
   // Indeks judul untuk mengubah [[Judul]] jadi tautan. Dimuat sekali per
   // pembukaan catatan; daftarnya ringan, hanya id dan judul.
   const [indeks, setIndeks] = useState([]);
@@ -348,6 +364,8 @@ export default function NoteEditor() {
                   docKey={note.id}
                   initialValue={draft.current.content}
                   onReady={setView}
+                  indeks={indeks}
+                  onBuatCatatan={buatCatatanUntukSebutan}
                   onChange={(value) => {
                     draft.current.content = value;
                     queueSave();

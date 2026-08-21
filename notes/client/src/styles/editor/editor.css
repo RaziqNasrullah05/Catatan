@@ -90,3 +90,69 @@
   white-space: nowrap;
 }
 .template-chip:active { background: var(--accent-soft); border-color: var(--accent); }
+
+/* ---------- Panel saran sebutan ---------- */
+
+/* CodeMirror menyuntikkan tema dasarnya sendiri lewat StyleModule di <head>,
+   jadi pemilihnya digandakan agar kekhususannya menang; tanpa ini panelnya
+   tampil putih polos dan mencolok di tema gelap. */
+.cm-tooltip.cm-tooltip-autocomplete {
+  border: 1px solid var(--rule-strong);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  font-family: var(--sans);
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul {
+  max-height: 15em;
+  font-family: var(--sans);
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  color: var(--ink);
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li + li { border-top: 1px solid var(--rule); }
+
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.cm-tooltip-autocomplete .cm-completionLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Bagian judul yang cocok dengan ketikan ditebalkan oleh CodeMirror sendiri. */
+.cm-tooltip-autocomplete .cm-completionMatchedText {
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.cm-tooltip-autocomplete .cm-completionDetail {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--rule);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-style: normal;
+}
+
+/* Pilihan "Buat catatan …" di dasar daftar dibedakan garis yang lebih tegas. */
+.cm-tooltip-autocomplete > ul > li[class*='keyword'] {
+  border-top: 1px solid var(--rule-strong);
+  color: var(--ink-soft);
+  font-size: 13.5px;
+}

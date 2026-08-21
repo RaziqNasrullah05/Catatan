@@ -507,6 +507,25 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
 
+**v1.27** — Kurung menutup sendiri, dan saran sebutan muncul saat mengetik.
+
+`closeBrackets()` dari `@codemirror/autocomplete` memasangkan `(`, `[`, `{`, dan kutip. Paketnya sudah
+ada sebagai dependensi turunan, tapi kini didaftarkan eksplisit di `package.json` — bersandar pada paket
+yang kebetulan terbawa itu rapuh. **Jalankan `npm install` di `client` setelah menarik perubahan ini.**
+
+Mengetik `[[` lalu satu huruf memunculkan daftar judul. Pencocokannya tidak harfiah: huruf yang diketik
+cukup muncul berurutan di dalam judul, jadi "efpl" menemukan "Efusi Pleura" dan "vp" menemukan "Visite
+Pagi". Judul yang cocok di awal tetap diletakkan teratas supaya mengetik lengkap tidak kalah oleh
+kecocokan kebetulan. Yang dicari hanya judul, bukan isi catatan. Di dasar daftar selalu ada "Buat
+catatan …" yang membuat catatan kosong berjudul apa yang sedang diketik, lalu menyisipkan sebutannya —
+catatan baru itu langsung masuk indeks tanpa memuat ulang halaman.
+
+Penyisipan memeriksa apakah `]]` sudah dipasang penutupan otomatis, jadi tidak pernah muncul `]]]]`.
+`closeBracketsKeymap` dan `completionKeymap` dipasang pada `Prec.high` agar mendahului keymap bawaan:
+Backspace menghapus sepasang kurung sekaligus, dan Enter memilih saran alih-alih menyisipkan baris baru
+saat daftarnya terbuka. Saran dibatasi hanya untuk sebutan lewat `override`, supaya CodeMirror tidak
+ikut menawarkan kata dari dokumen saat menulis biasa.
+
 **v1.26** — Sebut catatan lain, gaya Obsidian. `[[Judul catatan]]` menjadi tautan di pratinjau; diketuk
 akan membuka catatan itu tanpa memuat ulang halaman. Pemilih di rail format menulis `[[Judul|id]]`,
 sehingga tautannya tetap benar bila judulnya berubah kemudian. Yang tidak dikenali dibiarkan apa adanya

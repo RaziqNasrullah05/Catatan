@@ -4,7 +4,14 @@ import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/vi
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { livePreview } from '../cm/livePreview.js';
+import {
+  autocompletion,
+  closeBrackets,
+  closeBracketsKeymap,
+  completionKeymap,
+} from '@codemirror/autocomplete';
 import { changeIndent, perubahanPenomoran } from '../cm/actions.js';
+import { sumberSebutan } from '../cm/mention.js';
 
 /**
  * Menjaga penomoran daftar tetap urut setelah baris ditambah atau dihapus.
@@ -47,6 +54,14 @@ export default function Editor({ docKey, initialValue, onChange, onReady }) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
+  // Instance CodeMirror sengaja dibuat sekali saja, sedangkan daftar catatan dan
+  // pembuat catatan baru datang belakangan dan bisa berubah. Keduanya dibaca
+  // lewat ref saat saran diminta, jadi penyunting tidak perlu dirakit ulang.
+  const indeksRef = useRef(indeks);
+  indeksRef.current = indeks;
+  const buatRef = useRef(onBuatCatatan);
+  buatRef.current = onBuatCatatan;
+
   useEffect(() => {
     const view = new EditorView({
       parent: host.current,
@@ -55,12 +70,29 @@ export default function Editor({ docKey, initialValue, onChange, onReady }) {
         extensions: [
           history(),
           penomoranOtomatis,
+          closeBrackets(),
+          autocompletion({
+            override: [
+              sumberSebutan({
+                ambilDaftar: () => indeksRef.current,
+                onBuat: (judul) => buatRef.current?.(judul) ?? Promise.resolve(null),
+              }),
+            ],
+            // Saran hanya untuk sebutan catatan; tanpa ini CodeMirror ikut
+            // menawarkan kata dari dokumen dan itu mengganggu saat menulis biasa.
+            defaultKeymap: false,
+            icons: false,
+          }),
           // Tab menggeser baris keluar-masuk, terutama untuk daftar bersarang.
           Prec.highest(
             keymap.of([
               { key: 'Tab', run: (v) => changeIndent(v, 1), shift: (v) => changeIndent(v, -1) },
             ])
           ),
+          // closeBrackets dan saran harus mendahului keymap bawaan: Backspace
+          // menghapus sepasang kurung sekaligus, dan Enter memilih saran alih-alih
+          // menyisipkan baris baru saat daftarnya terbuka.
+          Prec.high(keymap.of([...closeBracketsKeymap, ...completionKeymap])),
           keymap.of([...defaultKeymap, ...historyKeymap]),
           markdown({ base: markdownLanguage, addKeymap: true }),
           livePreview,
