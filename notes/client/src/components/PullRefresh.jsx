@@ -44,7 +44,7 @@ export default function PullRefresh({ onRefresh, onScroll, header, className = '
       const dx = t.clientX - g.x;
 
       if (!g.aktif) {
-        // Gerakan mendatar itu milik panel geser Catatan/Tugas, bukan kita.
+        // Gerakan mendatar itu milik panel geser antar tab, bukan kita.
         if (Math.abs(dx) > Math.abs(dy)) {
           gesture.current = null;
           return;

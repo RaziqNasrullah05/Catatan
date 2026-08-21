@@ -466,6 +466,14 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
 
+**v1.19** — Halaman utama jadi empat tab: Grup, Catatan, Tugas, Agenda. Grup dan Agenda masih panel
+kosong; isinya menyusul. Tab yang aktif menampilkan ikon beserta teksnya, sisanya ikon saja. Penanda
+geser `.thumb` dilepas karena lebarnya dihitung dengan persen dan itu hanya sahih saat semua tab sama
+lebar — sekarang tombol aktif sendiri yang jadi penanda, melebar lewat animasi `flex-grow` (`width:
+auto` tidak bisa ditransisikan). Urutan DOM menaruh Grup paling kiri, jadi posisi gulir pager
+ditempatkan ke panel Catatan di `useLayoutEffect` sebelum lukisan pertama, dengan `scroll-snap`
+dimatikan sekejap karena ia menolak penetapan `scrollLeft` langsung.
+
 **v1.18** — Profil pengguna: `username` dan `birthdate` di tabel `users`, `PATCH /api/auth/profile`,
 dan barisnya di kartu Akun pada Pengaturan → Keamanan yang membuka dialog Edit profil. Username
 dinormalkan ke huruf kecil, dibatasi 3–20 karakter (huruf kecil, angka, titik, garis bawah, dengan

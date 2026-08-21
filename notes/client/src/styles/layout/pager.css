@@ -1,4 +1,4 @@
-/* ---------- Panel geser antara Catatan dan Tugas ---------- */
+/* ---------- Panel geser: Grup, Catatan, Tugas, Agenda ---------- */
 
 .pager {
   flex: 1;
@@ -25,18 +25,48 @@
   scroll-snap-stop: always;
 }
 
-/* Segmented control dengan penanda yang bergeser mengikuti panel. */
-.segmented { position: relative; }
-.segmented .thumb {
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc(50% - 3px);
-  border-radius: 9px;
-  background: var(--accent-soft);
-  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
+/* Empat tab ikon; hanya yang aktif menampilkan teks.
+ *
+ * Penanda geser (.thumb) yang lama dilepas: lebarnya dihitung dengan persen,
+ * dan itu hanya sahih kalau semua tab sama lebar. Di sini tab aktif lebih lebar
+ * karena memuat teks, jadi tombolnya sendiri yang jadi penanda — ia melebar,
+ * yang lain menyusut jadi kotak ikon. flex-grow dianimasikan, bukan width,
+ * karena width: auto tidak bisa ditransisikan. */
+.segmented button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex: 0 1 44px;
+  min-width: 44px;
+  overflow: hidden;
+  white-space: nowrap;
+  background: none;
+  transition: flex-grow 0.26s cubic-bezier(0.4, 0, 0.2, 1), background 0.18s, color 0.18s;
 }
-.segmented button { position: relative; z-index: 1; background: none; }
-.segmented button[aria-pressed='true'] { background: none; color: var(--accent); }
+.segmented button .label {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.26s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s, margin-left 0.26s;
+}
+.segmented button[aria-pressed='true'] {
+  flex-grow: 1;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.segmented button[aria-pressed='true'] .label {
+  max-width: 140px;
+  opacity: 1;
+  margin-left: 8px;
+}
+
+/* Bagi yang mematikan animasi di perangkatnya, pelebaran itu jadi kedipan. */
+@media (prefers-reduced-motion: reduce) {
+  .segmented button,
+  .segmented button .label {
+    transition: none;
+  }
+}

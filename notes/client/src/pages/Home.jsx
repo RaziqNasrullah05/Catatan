@@ -1,6 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CircleCheck, LogOut, MoreVertical, Pin, Plus, Search, Settings, SquarePen } from 'lucide-react';
+import {
+  CalendarDays,
+  CircleCheck,
+  LogOut,
+  MoreVertical,
+  NotebookPen,
+  Pin,
+  Plus,
+  Search,
+  Settings,
+  SquarePen,
+  Users,
+} from 'lucide-react';
 import NoteMenu from '../components/NoteMenu.jsx';
 import PullRefresh from '../components/PullRefresh.jsx';
 import { NoteListSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
@@ -8,7 +20,15 @@ import { api } from '../api.js';
 import { readLayout } from '../prefs.js';
 import { withMinDelay } from '../utils.js';
 
-const TABS = ['catatan', 'tugas'];
+const TABS = [
+  { id: 'grup', label: 'Grup', Icon: Users },
+  { id: 'catatan', label: 'Catatan', Icon: NotebookPen },
+  { id: 'tugas', label: 'Tugas', Icon: CircleCheck },
+  { id: 'agenda', label: 'Agenda', Icon: CalendarDays },
+];
+
+// Grup berada di kiri, tapi yang dibuka pertama tetap Catatan.
+const TAB_CATATAN = TABS.findIndex((t) => t.id === 'catatan');
 
 function timeAgo(iso) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -21,7 +41,7 @@ function timeAgo(iso) {
 
 export default function Home({ user, onSignOut }) {
   const navigate = useNavigate();
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(TAB_CATATAN);
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -105,6 +125,24 @@ export default function Home({ user, onSignOut }) {
   }, []);
 
   useEffect(() => () => clearTimeout(settleTimer.current), []);
+
+  /**
+   * Panel pertama dalam urutan DOM adalah Grup, sedangkan yang harus terlihat
+   * saat halaman dibuka adalah Catatan. Posisinya digeser sebelum lukisan
+   * pertama supaya tidak terlihat melompat. scroll-snap dimatikan sekejap
+   * karena ia menolak penetapan scrollLeft secara langsung.
+   */
+  const sudahDitempatkan = useRef(false);
+  useLayoutEffect(() => {
+    const pager = pagerRef.current;
+    if (!pager || sudahDitempatkan.current || !pager.clientWidth) return;
+    sudahDitempatkan.current = true;
+    pager.style.scrollSnapType = 'none';
+    pager.scrollLeft = TAB_CATATAN * pager.clientWidth;
+    requestAnimationFrame(() => {
+      pager.style.scrollSnapType = '';
+    });
+  });
 
   /** Menyesuaikan tab aktif saat pengguna menggeser dengan jari. */
   function onPagerScroll(e) {
@@ -254,7 +292,7 @@ export default function Home({ user, onSignOut }) {
     <div className="app">
       <header className="topbar">
         <span className="wordmark">Catatan</span>
-        {index === 0 && (
+        {index === TAB_CATATAN && (
           <button
             className={`icon-btn ${searchOpen ? 'is-on' : ''}`}
             aria-label="Cari catatan"
@@ -277,16 +315,17 @@ export default function Home({ user, onSignOut }) {
       </header>
 
       <div className="segmented" role="tablist" aria-label="Tampilan">
-        <span className="thumb" style={{ transform: `translateX(${index * 100}%)` }} aria-hidden="true" />
-        {TABS.map((name, i) => (
+        {TABS.map(({ id, label, Icon }, i) => (
           <button
-            key={name}
+            key={id}
             role="tab"
             aria-selected={index === i}
             aria-pressed={index === i}
+            aria-label={label}
             onClick={() => goTo(i)}
           >
-            {name === 'catatan' ? 'Catatan' : 'Tugas'}
+            <Icon size={17} strokeWidth={1.85} />
+            <span className="label">{label}</span>
           </button>
         ))}
       </div>
@@ -294,6 +333,13 @@ export default function Home({ user, onSignOut }) {
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
 
       <div className="pager" ref={pagerRef} onScroll={onPagerScroll}>
+        <div className="pane" role="tabpanel" aria-label="Grup">
+          <div className="empty">
+            <h2>Belum ada grup</h2>
+            <p>Grup jadi wadah bersama untuk catatan yang sengaja kamu simpan di dalamnya.</p>
+          </div>
+        </div>
+
         <PullRefresh
           onRefresh={refresh}
           onScroll={onListScroll}
@@ -418,6 +464,13 @@ export default function Home({ user, onSignOut }) {
           </div>
           )}
         </PullRefresh>
+
+        <div className="pane" role="tabpanel" aria-label="Agenda">
+          <div className="empty">
+            <h2>Belum ada acara</h2>
+            <p>Acara punya jam mulai, jam selesai, dan keterangan singkat.</p>
+          </div>
+        </div>
       </div>
 
       {menu && (
@@ -473,7 +526,7 @@ export default function Home({ user, onSignOut }) {
         </div>
       )}
 
-      {index === 0 && (
+      {index === TAB_CATATAN && (
         <button className="fab" onClick={createNote}>
           <SquarePen size={18} strokeWidth={1.75} />
           Tulis
