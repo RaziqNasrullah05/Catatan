@@ -51,7 +51,38 @@
 .m3-option .lead { color: var(--s-on-variant); display: flex; }
 .m3-option[aria-checked='true'] .lead { color: var(--s-primary); }
 
-.m3-dialog .actions { display: flex; justify-content: flex-end; padding: 10px 16px 0; }
+.m3-dialog .actions { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px 0; }
+
+/* ---------- Dialog berisi kolom isian ---------- */
+
+.m3-dialog-form { padding: 4px 24px 0; }
+.m3-dialog-form .m3-field:last-of-type { margin-bottom: 10px; }
+
+/* Safari iOS menampilkan input tanggal dengan tinggi dan perataannya sendiri;
+   disamakan dengan kolom isian lain agar keduanya sebaris rapi. */
+.m3-dialog-form input[type='date'] {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 48px;
+  font-family: inherit;
+  font-size: 15px;
+}
+.m3-dialog-form input[type='date']::-webkit-date-and-time-value { text-align: left; }
+.m3-dialog-form input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.m3-hint {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--s-on-variant);
+}
+.m3-dialog-form .m3-note { margin-top: 12px; }
+
+/* Panah pada baris yang bisa diketuk */
+.m3-chevron { color: var(--s-on-variant); display: flex; }
 
 @media (min-width: 560px) {
   .m3-scrim { align-items: center; }

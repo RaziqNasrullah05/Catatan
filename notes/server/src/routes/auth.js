@@ -151,6 +151,79 @@ authRouter.delete('/password', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+/* ---------- Profil ---------- */
+
+/**
+ * Username dipakai sebagai nama yang dilihat orang lain, jadi bentuknya dibatasi
+ * agar bisa diketik ulang tanpa ragu: huruf kecil, angka, titik, dan garis bawah,
+ * dengan huruf atau angka di kedua ujungnya.
+ */
+const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(
+    /^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$/,
+    'Nama pengguna 3–20 karakter, hanya huruf kecil, angka, titik, dan garis bawah.'
+  );
+
+const birthdateSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Tanggal lahir harus berbentuk TTTT-BB-HH.')
+  .refine((s) => {
+    // Date menerima 2026-02-31 dan menggesernya ke Maret, jadi hasilnya
+    // dibandingkan balik dengan teks aslinya.
+    const d = new Date(`${s}T00:00:00Z`);
+    if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s) return false;
+    const tahun = Number(s.slice(0, 4));
+    return d.getTime() <= Date.now() && tahun >= 1900;
+  }, 'Tanggal lahir tidak masuk akal.');
+
+// Kolom yang dikirim kosong berarti dihapus, jadi null dan '' sengaja diterima.
+const kosongJadiNull = (v) => (v === '' || v === null ? null : v);
+
+const profileSchema = z.object({
+  username: z.preprocess(kosongJadiNull, usernameSchema.nullable().optional()),
+  birthdate: z.preprocess(kosongJadiNull, birthdateSchema.nullable().optional()),
+});
+
+authRouter.patch('/profile', requireAuth, (req, res) => {
+  const parsed = profileSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Isian tidak valid.' });
+  }
+
+  const saatIni = db
+    .prepare('SELECT username, birthdate FROM users WHERE id = ?')
+    .get(req.user.id);
+  const berikutnya = { ...saatIni, ...parsed.data };
+
+  if (berikutnya.username) {
+    const dipakai = db
+      .prepare('SELECT id FROM users WHERE username = ? AND id <> ?')
+      .get(berikutnya.username, req.user.id);
+    if (dipakai) return res.status(409).json({ error: 'Nama pengguna itu sudah dipakai.' });
+  }
+
+  try {
+    db.prepare('UPDATE users SET username = ?, birthdate = ? WHERE id = ?').run(
+      berikutnya.username,
+      berikutnya.birthdate,
+      req.user.id
+    );
+  } catch (err) {
+    // Dua permintaan bersamaan bisa lolos pemeriksaan di atas; indeks unik yang
+    // menjadi penjaga terakhir.
+    if (String(err.code).startsWith('SQLITE_CONSTRAINT')) {
+      return res.status(409).json({ error: 'Nama pengguna itu sudah dipakai.' });
+    }
+    throw err;
+  }
+
+  res.json({ profile: berikutnya });
+});
+
 /* ---------- Undangan ---------- */
 
 authRouter.get('/invite/:token', verifyLimiter, (req, res) => {

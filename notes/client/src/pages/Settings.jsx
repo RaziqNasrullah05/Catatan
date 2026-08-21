@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
+  ChevronRight,
   Columns2,
   Columns3,
   Copy,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   Sun,
   UserPlus,
+  UserRound,
   Users,
 } from 'lucide-react';
 import { api } from '../api.js';
@@ -103,9 +105,107 @@ function ChoiceDialog({ title, subtitle, options, icons, value, onPick, onClose 
   );
 }
 
+/** Tanggal ISO menjadi bentuk yang enak dibaca, mis. 12 Mei 1998. */
+function tanggalPanjang(iso) {
+  if (!iso) return null;
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function ProfilDialog({ user, onSimpan, onClose }) {
+  const [username, setUsername] = useState(user?.username || '');
+  const [birthdate, setBirthdate] = useState(user?.birthdate || '');
+  const [error, setError] = useState('');
+  const [menyimpan, setMenyimpan] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  async function simpan() {
+    setError('');
+    setMenyimpan(true);
+    try {
+      // Keduanya selalu dikirim, termasuk saat kosong, supaya mengosongkan
+      // kolom juga tersimpan — server membaca '' sebagai penghapusan.
+      const { profile } = await api.updateProfile({ username: username.trim(), birthdate });
+      onSimpan(profile);
+      onClose();
+    } catch (err) {
+      setError(err.message);
+      setMenyimpan(false);
+    }
+  }
+
+  // Tanggal lahir tidak mungkin di masa depan; batasnya dipasang di input agar
+  // pemilih tanggal bawaan peramban tidak menawarkannya sama sekali.
+  const hariIni = new Date().toISOString().slice(0, 10);
+
+  return (
+    <div className="m3-scrim" onClick={onClose}>
+      <div
+        className="m3-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Edit profil"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3>Edit profil</h3>
+        <p className="sub">Nama pengguna dipakai saat orang lain menyebut atau berbagi catatan denganmu.</p>
+
+        <div className="m3-dialog-form">
+          <label className="m3-field">
+            <span>Nama pengguna</span>
+            <input
+              type="text"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck="false"
+              inputMode="text"
+              placeholder="mis. sigit.dokter"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </label>
+          <label className="m3-field">
+            <span>Tanggal lahir</span>
+            <input
+              type="date"
+              max={hariIni}
+              min="1900-01-01"
+              value={birthdate}
+              onChange={(e) => setBirthdate(e.target.value)}
+            />
+          </label>
+          <p className="m3-hint">
+            3–20 karakter: huruf kecil, angka, titik, dan garis bawah. Kosongkan salah satunya kalau
+            belum ingin diisi.
+          </p>
+          {error && <p className="m3-note bad">{error}</p>}
+        </div>
+
+        <div className="actions">
+          <button className="m3-btn text" onClick={onClose} disabled={menyimpan}>
+            Batal
+          </button>
+          <button className="m3-btn" onClick={simpan} disabled={menyimpan}>
+            {menyimpan ? 'Menyimpan…' : 'Simpan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Halaman ---------- */
 
-export default function Settings({ user }) {
+export default function Settings({ user, onUserChange }) {
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
 
@@ -136,7 +236,7 @@ export default function Settings({ user }) {
 
       <div className="scroll">
         <div className="m3-container">
-          {section === 'keamanan' && <Security user={user} />}
+          {section === 'keamanan' && <Security user={user} onUserChange={onUserChange} />}
           {section === 'tampilan' && <Appearance />}
           {section === 'undang' && isAdmin && <Invites user={user} />}
         </div>
@@ -147,13 +247,14 @@ export default function Settings({ user }) {
 
 /* ---------- Keamanan ---------- */
 
-function Security({ user }) {
+function Security({ user, onUserChange }) {
   const [pwd, setPwd] = useState('');
   const [oldPwd, setOldPwd] = useState('');
   const [hasPassword, setHasPassword] = useState(Boolean(user?.hasPassword));
   const [editing, setEditing] = useState(!user?.hasPassword);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [dialogProfil, setDialogProfil] = useState(false);
 
   async function save() {
     setMessage('');
@@ -170,12 +271,17 @@ function Security({ user }) {
     }
   }
 
+  const lahir = tanggalPanjang(user?.birthdate);
+  const ringkasanProfil = user?.username
+    ? [`@${user.username}`, lahir].filter(Boolean).join(' · ')
+    : 'Belum diisi. Nama pengguna dipakai saat orang lain menyebut atau berbagi catatan denganmu.';
+
   return (
     <>
       <h2 className="m3-section-title">Akun</h2>
       <div className="m3-card">
         <div className="m3-row">
-          <span className="m3-avatar">{user?.email?.[0] || '?'}</span>
+          <span className="m3-avatar">{(user?.username || user?.email)?.[0] || '?'}</span>
           <span className="m3-body">
             <span className="m3-title">
               {user?.email}
@@ -184,7 +290,33 @@ function Security({ user }) {
             <p className="m3-desc">Sesi berlaku 30 hari sejak terakhir kamu masuk.</p>
           </span>
         </div>
+
+        <div className="m3-divider" />
+
+        <button className="m3-row tappable" onClick={() => setDialogProfil(true)}>
+          <span className="m3-icon">
+            <UserRound size={19} strokeWidth={1.7} />
+          </span>
+          <span className="m3-body">
+            <span className="m3-title">Profil</span>
+            <p className="m3-desc">{ringkasanProfil}</p>
+          </span>
+          <span className="m3-action m3-chevron">
+            <ChevronRight size={20} strokeWidth={1.7} />
+          </span>
+        </button>
       </div>
+
+      {dialogProfil && (
+        <ProfilDialog
+          user={user}
+          onSimpan={(profile) => {
+            onUserChange?.({ ...user, ...profile });
+            setMessage('Profil tersimpan.');
+          }}
+          onClose={() => setDialogProfil(false)}
+        />
+      )}
 
       <h2 className="m3-section-title">Masuk</h2>
       <div className="m3-card">

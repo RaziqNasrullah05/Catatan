@@ -205,9 +205,10 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | POST | `/password/login` | Masuk dengan email + kata sandi. |
 | GET | `/verify?token=` | Verifikasi magic link, pasang sesi, alihkan ke `APP_URL`. |
 | POST | `/logout` | Hapus sesi. |
-| GET | `/me` | `{user: {id, email, role, hasPassword}}` atau `{user: null}`. |
+| GET | `/me` | `{user: {id, email, role, username, birthdate, hasPassword}}` atau `{user: null}`. |
 | POST | `/password` | Pasang/ganti kata sandi (butuh sesi; ganti butuh `currentPassword`). |
 | DELETE | `/password` | Lepas kata sandi. |
+| PATCH | `/profile` | Ubah `username` dan `birthdate`. Kirim `''` atau `null` untuk mengosongkan. |
 | GET | `/invite/:token` | Cek keabsahan undangan. |
 | POST | `/invite/:token/accept` | Buat akun, kirim magic link. |
 
@@ -241,6 +242,10 @@ if (!cols.includes('password_hash')) db.exec('ALTER TABLE users ADD COLUMN passw
 ```
 
 **Ikuti pola ini untuk setiap kolom baru** agar basis data lama tidak perlu dibuat ulang.
+
+SQLite tidak bisa menambahkan batasan `UNIQUE` lewat `ALTER TABLE`, jadi keunikan `users.username`
+dijaga indeks terpisah (`idx_users_username`). Baris ber-`NULL` tidak saling bentrok karena SQLite
+menganggap setiap `NULL` berbeda — akun yang belum mengisi username tetap sah semuanya.
 
 `purgeExpired()` jalan saat start dan tiap jam: membuang sesi/token kedaluwarsa dan catatan terhapus
 yang lebih tua dari 30 hari.
@@ -460,6 +465,12 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
+
+**v1.18** — Profil pengguna: `username` dan `birthdate` di tabel `users`, `PATCH /api/auth/profile`,
+dan barisnya di kartu Akun pada Pengaturan → Keamanan yang membuka dialog Edit profil. Username
+dinormalkan ke huruf kecil, dibatasi 3–20 karakter (huruf kecil, angka, titik, garis bawah, dengan
+huruf atau angka di kedua ujung), dan wajib unik. Tanggal lahir divalidasi sebagai tanggal sungguhan —
+`1998-02-31` ditolak, bukan digeser ke Maret seperti perilaku bawaan `Date`.
 
 **v1.17** — Persiapan multi-pengguna, tahap nol: pengiriman email diaktifkan dan salah konfigurasi
 dibuat terlihat. Sambungan SMTP diuji saat start (`verifikasiSmtp`), dan server mencetak peringatan

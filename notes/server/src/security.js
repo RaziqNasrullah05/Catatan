@@ -88,13 +88,19 @@ export function attachUser(req, _res, next) {
   if (!token) return next();
   const row = db
     .prepare(
-      `SELECT u.id, u.email, u.role, u.disabled
+      `SELECT u.id, u.email, u.role, u.disabled, u.username, u.birthdate
          FROM sessions s JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = ? AND s.expires_at > ?`
     )
     .get(hashToken(token), new Date().toISOString());
   if (row && !row.disabled) {
-    req.user = { id: row.id, email: row.email, role: row.role };
+    req.user = {
+      id: row.id,
+      email: row.email,
+      role: row.role,
+      username: row.username,
+      birthdate: row.birthdate,
+    };
     db.prepare('UPDATE users SET last_seen_at = ? WHERE id = ?').run(new Date().toISOString(), row.id);
   }
   next();

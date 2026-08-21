@@ -30,6 +30,7 @@ export const api = {
   setPassword: (password, currentPassword) =>
     request('/auth/password', { method: 'POST', body: { password, currentPassword } }),
   removePassword: () => request('/auth/password', { method: 'DELETE' }),
+  updateProfile: (patch) => request('/auth/profile', { method: 'PATCH', body: patch }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   checkInvite: (token) => request(`/auth/invite/${encodeURIComponent(token)}`),
   acceptInvite: (token, email) =>
