@@ -262,3 +262,31 @@
   word-break: break-word;
   color: var(--ink);
 }
+
+/* Sebutan catatan di dalam pratinjau. Kelas tidak bisa dipakai karena
+   rehype-sanitize membuang atribut class dari <a>, jadi pemilihnya lewat href. */
+.preview a[href^='/catatan/'] {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-soft);
+  padding-bottom: 1px;
+}
+.preview a[href^='/catatan/']:active { background: var(--accent-soft); }
+
+.pilih-baris.tombol {
+  width: 100%;
+  text-align: left;
+  background: none;
+  gap: 10px;
+}
+.pilih-baris.tombol:active { background: var(--accent-soft); }
+.pilih-baris.tombol > svg { flex: none; color: var(--ink-faint); }
+.pilih-baris.tombol > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pilih-tanda {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--rule);
+  color: var(--ink-soft);
+  font-size: 11px;
+}

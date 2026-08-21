@@ -76,6 +76,8 @@ export const api = {
   cabutKolaborasi: (grupId, noteId, userId) =>
     request(`/groups/${grupId}/notes/${noteId}/collaborators/${userId}`, { method: 'DELETE' }),
 
+  indeksCatatan: () => request('/notes/index'),
+
   listAcara: (dari, sampai) => request(`/events?dari=${dari}&sampai=${sampai}`),
   buatAcara: (isi) => request('/events', { method: 'POST', body: isi }),
   ubahAcara: (id, isi) => request(`/events/${id}`, { method: 'PATCH', body: isi }),

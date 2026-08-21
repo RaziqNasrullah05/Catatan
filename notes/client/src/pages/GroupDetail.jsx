@@ -116,7 +116,7 @@ export default function GroupDetail({ user }) {
                 <span className="grup-avatar catatan">
                   <FileText size={17} strokeWidth={1.8} />
                 </span>
-                <button className="grup-teks tombol" onClick={() => navigate(`/catatan/${c.id}`)}>
+                <button className="grup-teks tombol" onClick={() => navigate(`/catatan/${c.id}`, { state: { dariGrup: id } })}>
                   <span className="nama">
                     {c.title || 'Tanpa judul'}
                     {c.milikku && <span className="tanda samar">Punyamu</span>}

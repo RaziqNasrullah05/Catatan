@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer, Eye, Pencil, Pin, PinOff, Trash2 } from 'lucide-react';
 import { api } from '../api.js';
 import Editor from '../components/Editor.jsx';
@@ -19,6 +19,7 @@ const DRAG_THRESHOLD = 96;
 export default function NoteEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [note, setNote] = useState(null);
   const [status, setStatus] = useState('memuat');
@@ -29,6 +30,31 @@ export default function NoteEditor() {
   // Server juga menolaknya, jadi ini semata agar antarmukanya tidak menjanjikan
   // sesuatu yang akan ditolak.
   const milikOrangLain = note ? note.bisaSunting === false : false;
+
+  /**
+   * Catatan yang dibuka dari halaman grup harus kembali ke grup itu, bukan ke
+   * daftar catatan pribadi — kalau tidak, pembaca terlempar ke tempat yang tidak
+   * memuat catatan tadi. Asalnya dibawa lewat state navigasi, dan diteruskan
+   * saat sebuah sebutan membuka catatan berikutnya supaya rantainya tidak putus.
+   *
+   * State hilang bila halaman dimuat ulang; dalam hal itu kembali ke beranda.
+   */
+  const dariGrup = location.state?.dariGrup || null;
+  const tujuanKeluar = dariGrup ? `/grup/${dariGrup}` : '/';
+
+  // Indeks judul untuk mengubah [[Judul]] jadi tautan. Dimuat sekali per
+  // pembukaan catatan; daftarnya ringan, hanya id dan judul.
+  const [indeks, setIndeks] = useState([]);
+  useEffect(() => {
+    let hidup = true;
+    api
+      .indeksCatatan()
+      .then((d) => hidup && setIndeks(d.catatan))
+      .catch(() => {});
+    return () => {
+      hidup = false;
+    };
+  }, []);
 
   /**
    * Membagikan catatan sebagai PDF lewat dialog cetak peramban — di Android dan
@@ -141,8 +167,8 @@ export default function NoteEditor() {
       ? api.updateNote(id, { ...draft.current }).catch(() => {})
       : Promise.resolve();
     await Promise.all([flush, new Promise((r) => setTimeout(r, CLOSE_ANIM))]);
-    navigate('/', { replace: true });
-  }, [id, navigate, slideOut]);
+    navigate(tujuanKeluar, { replace: true });
+  }, [id, navigate, slideOut, tujuanKeluar]);
 
   // Jaring pengaman kalau tab ditutup mendadak.
   useEffect(() => {
@@ -216,7 +242,7 @@ export default function NoteEditor() {
     try {
       await api.deleteNote(id);
       slideOut();
-      setTimeout(() => navigate('/', { replace: true }), CLOSE_ANIM);
+      setTimeout(() => navigate(tujuanKeluar, { replace: true }), CLOSE_ANIM);
     } catch (err) {
       setError(err.message);
       setConfirmDelete(false);
@@ -309,7 +335,13 @@ export default function NoteEditor() {
             <div className="editor-scroll">
               {mode === 'baca' ? (
                 <Suspense fallback={<NoteEditorSkeleton />}>
-                  <Preview key={rev} content={draft.current.content} onEditTable={editTableAtLine} />
+                  <Preview
+                    key={rev}
+                    content={draft.current.content}
+                    onEditTable={milikOrangLain ? undefined : editTableAtLine}
+                    indeks={indeks}
+                    stateNavigasi={dariGrup ? { dariGrup } : undefined}
+                  />
                 </Suspense>
               ) : (
                 <Editor

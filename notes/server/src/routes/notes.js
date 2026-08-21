@@ -98,6 +98,37 @@ function getNote(userId, id) {
   };
 }
 
+/**
+ * Daftar ringkas id dan judul untuk pemilih "sebut catatan". Termasuk catatan
+ * milik sendiri dan catatan grup yang boleh dibaca, supaya sebutan bisa menunjuk
+ * tulisan orang lain di grup yang sama.
+ *
+ * Harus didaftarkan sebelum '/:id', kalau tidak "index" akan ditangkap sebagai id.
+ */
+notesRouter.get('/index', (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT id, title, updated_at, 1 AS milikku FROM notes
+        WHERE user_id = ? AND deleted_at IS NULL
+        UNION
+       SELECT n.id, n.title, n.updated_at, 0 AS milikku FROM grup_catatan gc
+         JOIN notes n ON n.id = gc.note_id AND n.deleted_at IS NULL
+         JOIN grup_anggota ga ON ga.grup_id = gc.grup_id AND ga.user_id = ?
+        WHERE n.user_id <> ?
+        ORDER BY updated_at DESC
+        LIMIT 500`
+    )
+    .all(req.user.id, req.user.id, req.user.id);
+
+  res.json({
+    catatan: rows.map((r) => ({
+      id: r.id,
+      judul: r.title || 'Tanpa judul',
+      milikku: Boolean(r.milikku),
+    })),
+  });
+});
+
 notesRouter.get('/:id', (req, res) => {
   const akses = aksesCatatan(req.user.id, req.params.id);
   if (!akses) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });

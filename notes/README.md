@@ -507,6 +507,23 @@ menghitung ulang tata letak seluruh daftar di setiap frame.
 **v1.16** — Kerangka pemuatan kini ikut tampil setelah tarik-untuk-muat-ulang, dengan jeda minimum yang
 sama seperti pemuatan awal. Ditambahkan `CONTEXT.md` sebagai dokumen orientasi sesi lanjutan.
 
+**v1.26** — Sebut catatan lain, gaya Obsidian. `[[Judul catatan]]` menjadi tautan di pratinjau; diketuk
+akan membuka catatan itu tanpa memuat ulang halaman. Pemilih di rail format menulis `[[Judul|id]]`,
+sehingga tautannya tetap benar bila judulnya berubah kemudian. Yang tidak dikenali dibiarkan apa adanya
+sebagai teks — lebih jujur daripada tautan yang tidak menuju ke mana-mana.
+
+Ditulis sebagai plugin remark (`src/wikilink.js`), bukan penggantian teks dengan regex sebelum render.
+Regex tidak bisa membedakan `[[...]]` yang ditulis sebagai isi tulisan dari yang berada di dalam blok
+kode atau kode sebaris; pohon markdown sudah memisahkan keduanya. `GET /api/notes/index` menyediakan id
+dan judul catatan yang boleh dibaca, termasuk catatan grup, jadi sebutan bisa menunjuk tulisan orang
+lain di grup yang sama. Gayanya dipasang lewat pemilih atribut `a[href^='/catatan/']` karena
+rehype-sanitize membuang atribut `class` dari `<a>`.
+
+Sekalian: catatan yang dibuka dari halaman grup kini kembali ke grup itu saat penyunting ditutup, bukan
+ke daftar catatan pribadi yang tidak memuatnya. Asalnya dibawa lewat state navigasi dan diteruskan saat
+sebuah sebutan membuka catatan berikutnya, supaya rantainya tidak putus. State hilang bila halaman
+dimuat ulang; dalam hal itu tujuannya kembali ke beranda.
+
 **v1.25** — Bagikan catatan sebagai PDF. Ikon printer di bilah atas penyunting membuka dialog cetak
 peramban; di Android dan iOS pilihannya "Simpan sebagai PDF", lalu bisa dibagikan seperti berkas lain.
 Tidak dirender di server — itu berarti memasang Chromium di VPS demi satu fitur, sementara peramban di

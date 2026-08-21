@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Bold,
   BookOpen,
@@ -20,6 +20,8 @@ import {
   SquareCheck,
   Stethoscope,
   Strikethrough,
+  Link2 as LinkIcon2,
+  Search,
   Table,
   Users,
 } from 'lucide-react';
@@ -27,12 +29,14 @@ import { changeIndent, insertBlock, insertLink, toggleLinePrefix, wrapInline } f
 import { templates } from '../templates.js';
 import TableEditor from './TableEditor.jsx';
 import { emptyTable, findTableAtOffset } from '../cm/table.js';
+import { api } from '../api.js';
 
 const TEMPLATE_ICONS = { CalendarCheck, ListChecks, Users, Stethoscope, Table, BookOpen };
 
 export default function FormatRail({ view }) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [table, setTable] = useState(null);
+  const [sebutan, setSebutan] = useState(null);
   const guard = (fn) => () => view && fn(view);
 
   /** Membuka penyunting kisi: memuat tabel di posisi kursor, atau membuat yang baru. */
@@ -76,6 +80,7 @@ export default function FormatRail({ view }) {
     { key: 'indent', label: 'Tambah indentasi (Tab)', Icon: IndentIncrease, run: (v) => changeIndent(v, 1) },
     { sep: true, key: 'sep4' },
     { key: 'link', label: 'Tautan', Icon: LinkIcon, run: insertLink },
+    { key: 'sebut', label: 'Sebut catatan', Icon: LinkIcon2, run: () => setSebutan({ daftar: null, cari: '' }) },
     { key: 'code', label: 'Kode', Icon: Code, run: (v) => wrapInline(v, '`') },
     { key: 'table', label: 'Tabel', Icon: Table, run: openTable },
     { key: 'hr', label: 'Garis pemisah', Icon: Minus, run: (v) => insertBlock(v, '---') },
@@ -139,6 +144,13 @@ export default function FormatRail({ view }) {
         )}
       </div>
 
+      {sebutan && (
+        <PemilihSebutan
+          view={view}
+          onTutup={() => setSebutan(null)}
+        />
+      )}
+
       {table && (
         <TableEditor
           initial={table.data}
@@ -147,6 +159,94 @@ export default function FormatRail({ view }) {
           onClose={() => setTable(null)}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Pemilih catatan untuk disebut. Menyisipkan `[[Judul|id]]`, bukan `[[Judul]]`
+ * saja, supaya tautannya tetap benar bila judul catatan itu berubah kemudian.
+ */
+function PemilihSebutan({ view, onTutup }) {
+  const [daftar, setDaftar] = useState(null);
+  const [cari, setCari] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let hidup = true;
+    api
+      .indeksCatatan()
+      .then((d) => hidup && setDaftar(d.catatan))
+      .catch((err) => hidup && setError(err.message));
+    return () => {
+      hidup = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onTutup();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onTutup]);
+
+  const kata = cari.trim().toLowerCase();
+  const tersaring = (daftar || []).filter((c) => !kata || c.judul.toLowerCase().includes(kata));
+
+  function sisipkan(c) {
+    if (!view) return onTutup();
+    const { from, to } = view.state.selection.main;
+    view.dispatch({
+      changes: { from, to, insert: `[[${c.judul}|${c.id}]]` },
+      selection: { anchor: from + c.judul.length + c.id.length + 5 },
+    });
+    onTutup();
+    view.focus();
+  }
+
+  return (
+    <div className="sheet-backdrop" onClick={onTutup}>
+      <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <h3>Sebut catatan</h3>
+        <p>Judulnya jadi tautan; diketuk saat membaca akan membuka catatan itu.</p>
+
+        <label className="grup-field">
+          <div className="baris">
+            <input
+              autoFocus
+              value={cari}
+              onChange={(e) => setCari(e.target.value)}
+              placeholder="Cari judul catatan"
+              aria-label="Cari judul catatan"
+            />
+          </div>
+        </label>
+
+        {error && <p className="m3-note bad">{error}</p>}
+
+        {daftar === null ? (
+          <p className="pilih-kosong">Memuat catatan…</p>
+        ) : tersaring.length === 0 ? (
+          <p className="pilih-kosong">
+            {kata ? 'Tidak ada judul yang cocok.' : 'Belum ada catatan lain untuk disebut.'}
+          </p>
+        ) : (
+          <div className="pilih-grup">
+            {tersaring.slice(0, 50).map((c) => (
+              <button key={c.id} className="pilih-baris tombol" onClick={() => sisipkan(c)}>
+                <Search size={15} strokeWidth={1.9} />
+                <span>{c.judul}</span>
+                {!c.milikku && <span className="pilih-tanda">grup</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="row">
+          <button className="btn ghost" onClick={onTutup}>
+            Batal
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
