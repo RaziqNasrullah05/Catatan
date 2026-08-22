@@ -6,7 +6,7 @@
  * jabatan, keluar, dan membubarkan ditanyakan di halaman pengaturan. Teksnya
  * tetap satu tempat supaya keduanya tidak berbeda kalimat untuk hal yang sama.
  */
-export default function ConfirmationGroup({ data, grup, onBatal, onLanjut }) {
+export default function GroupConfirm({ data, grup, onBatal, onLanjut }) {
   const teks = {
     bubarkan: {
       judul: 'Bubarkan grup ini?',

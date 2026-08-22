@@ -21,7 +21,7 @@
 
 /* Kerangka umum yang membungkus hampir semua halaman. */
 @import './layout/shell.css';
-@import './layout/transition.css';
+@import './layout/transitions.css';
 
 /* Per halaman. */
 @import './pages/notes-list.css';

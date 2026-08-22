@@ -61,7 +61,7 @@ notes/
 │       │   ├── TableEditor.jsx     # penyunting tabel berbentuk kisi (tanpa CodeMirror)
 │       │   ├── NoteMenu.jsx        # menu kontekstual: sematkan / hapus
 │       │   ├── PullRefresh.jsx     # tarik untuk muat ulang, efek ketapel
-│       │   ├── KonfirmasiGrup.jsx  # lembar konfirmasi, dipakai dua halaman grup
+│       │   ├── GroupConfirm.jsx    # lembar konfirmasi, dipakai dua halaman grup
 │       │   ├── Sheet.jsx         # lembar yang naik dan turun; tangani Esc
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
 │       │   └── ErrorBoundary.jsx   # menangkap error render agar layar tak kosong
@@ -84,7 +84,7 @@ notes/
 │           │   └── selection.css   # seleksi teks dimatikan di halaman utama
 │           ├── layout/
 │           │   ├── shell.css       # kerangka .app, topbar, pencarian
-│           │   ├── transisi.css    # cara halaman masuk (.panel-naik)
+│           │   ├── transitions.css # cara halaman masuk (naik, kiri, kanan)
 │           │   ├── pager.css       # panel geser Catatan/Tugas (menimpa .segmented)
 │           │   └── responsive.css  # penyesuaian layar lebar — dimuat paling akhir
 │           ├── pages/
@@ -476,6 +476,27 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.36** — Fase 5d: animasi navigasi, dan dua berkas berganti nama.
+
+**Pemberitahuan masuk dari kiri, Pengaturan dari kanan** (`.panel-kiri`, `.panel-kanan` di
+`styles/layout/transitions.css`). Arahnya bukan hiasan: ia mengikuti letak tombol yang membukanya —
+lonceng di kiri bilah atas, gerigi di kanan — sehingga layar terasa berpindah ke arah yang sama
+dengan jari. Menukar keduanya akan terasa salah, dan itu satu-satunya alasan ada dua kelas.
+
+Keluar tetap seketika, seperti `.panel-naik`. Menahan pelepasan halaman berarti menyalin mesin
+penunda milik `Sheet` ke lapisan perutean, dan itu pekerjaan tersendiri.
+
+**Jebakan penyusun:** aturannya harus ditulis sebagai properti panjang
+(`animation-duration`, `animation-timing-function`, `animation-fill-mode`), bukan ringkasan
+`animation`. Ringkasan tanpa nama animasi disederhanakan penyusun menjadi `animation: none` dan
+durasinya ikut hilang, sehingga animasinya diam sama sekali. Ini hanya terlihat di CSS hasil build,
+tidak di sumbernya.
+
+**Dua berkas diinggriskan** agar konsisten dengan aturan penamaan: `components/KonfirmasiGrup.jsx`
+→ `components/GroupConfirm.jsx` (beserta nama komponennya) dan `styles/layout/transisi.css` →
+`styles/layout/transitions.css`. Nama kelas CSS di dalamnya tidak ikut berubah — itu nama domain,
+bukan nama berkas.
 
 **v1.35** — Perbaikan: penyunting gagal terbuka pada catatan bertabel.
 

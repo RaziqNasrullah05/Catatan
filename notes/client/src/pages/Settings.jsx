@@ -219,7 +219,7 @@ export default function Settings({ user, onUserChange }) {
   const [section, setSection] = useState('keamanan');
 
   return (
-    <div className="app settings-page">
+    <div className="app settings-page panel-kanan">
       <header className="topbar">
         <button className="icon-btn" aria-label="Kembali" onClick={() => navigate('/')}>
           <ArrowLeft size={20} strokeWidth={1.75} />

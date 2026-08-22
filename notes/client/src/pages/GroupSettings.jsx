@@ -4,7 +4,7 @@ import { ArrowLeft, Crown, LogOut, Trash2, UserPlus, Users } from 'lucide-react'
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
 import { PeopleSkeleton } from '../components/Skeleton.jsx';
-import ConfirmationGroup from '../components/ConfirmationGroup.jsx';
+import GroupConfirm from '../components/GroupConfirm.jsx';
 import { KEMBALI_KE_GRUP } from '../nav.js';
 
 /** Jeda sebelum kata kunci dikirim, supaya tiap huruf tidak jadi satu permintaan. */
@@ -261,7 +261,7 @@ export default function GroupSettings({ user }) {
       </div>
 
       {konfirmasi && (
-        <ConfirmationGroup
+        <GroupConfirm
           data={konfirmasi}
           grup={grup}
           onBatal={() => setKonfirmasi(null)}

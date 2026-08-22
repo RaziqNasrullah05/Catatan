@@ -1,0 +1,69 @@
+/* ---------- Transisi antar halaman ---------- */
+
+/*
+ * Halaman yang naik dari bawah, seperti panel catatan.
+ *
+ * Sengaja bukan `.sheet-page`. Kelas itu membawa lebih dari sekadar animasi:
+ * ia memasang gagang seret, mematikan `touch-action` di bilah atas, dan —
+ * sejak v1.31 — dikecualikan dari `user-select: none`, karena isinya tulisan
+ * untuk dibaca dan disalin. Halaman grup tidak menginginkan satu pun dari itu;
+ * yang dipinjam hanya cara masuknya.
+ *
+ * Yang dianimasikan `transform`, bukan `height` atau `top`, agar peramban tidak
+ * menghitung ulang tata letak seluruh halaman di tiap frame — sama seperti
+ * keputusan di v1.15.
+ */
+.panel-naik {
+  border-radius: 22px 22px 0 0;
+  overflow: hidden;
+  will-change: transform;
+  animation: panel-naik 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes panel-naik {
+  from { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-naik { animation: none; }
+}
+
+/*
+ * Halaman yang masuk dari samping.
+ *
+ * Arahnya bukan hiasan: ia memberi tahu di mana halaman itu "berada" relatif
+ * terhadap beranda. Pemberitahuan dijangkau lewat lonceng di kiri bilah atas,
+ * jadi ia datang dari kiri; Pengaturan lewat tombol di kanan, jadi dari kanan.
+ * Menukar keduanya membuat layar terasa berpindah ke arah yang salah, dan itu
+ * satu-satunya alasan ada dua kelas, bukan satu.
+ *
+ * Seperti .panel-naik, yang dianimasikan hanya transform — dan hanya saat
+ * masuk. Keluar tetap seketika: halaman-halaman ini dilepas dari DOM begitu
+ * navigasi terjadi, dan menahan pelepasannya berarti menyalin mesin penunda
+ * milik Sheet ke lapisan perutean. Kalau nanti terasa kurang, itu pekerjaan
+ * tersendiri, bukan tambahan di sini.
+ */
+/* Ditulis sebagai properti panjang, bukan ringkasan `animation`. Ringkasan
+   tanpa nama animasi disederhanakan penyusun jadi `animation: none`, dan
+   durasinya ikut hilang — animasinya diam sama sekali. Ini terlihat di CSS
+   hasil build, bukan di sumbernya, jadi periksa di sana kalau mengubahnya. */
+.panel-kiri,
+.panel-kanan {
+  will-change: transform;
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  animation-fill-mode: backwards;
+}
+.panel-kiri { animation-name: panel-kiri; }
+.panel-kanan { animation-name: panel-kanan; }
+
+@keyframes panel-kiri {
+  from { transform: translateX(-100%); }
+}
+@keyframes panel-kanan {
+  from { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-kiri,
+  .panel-kanan { animation: none; }
+}
