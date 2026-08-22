@@ -47,6 +47,7 @@ notes/
 │       ├── utils.js                # withMinDelay — jeda minimum kerangka pemuatan
 │       ├── templates.js            # 6 template catatan siap pakai
 │       ├── nav.js                  # tujuan navigasi yang dipakai lebih dari satu halaman
+│       ├── panel.js                # usePanel: animasi masuk & keluar halaman
 │       │
 │       ├── cm/                     # semua yang menempel ke CodeMirror
 │       │   ├── livePreview.js      # ViewPlugin dekorasi: sembunyikan sintaks, checkbox, tabel
@@ -489,6 +490,28 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.43** — Halaman kini juga beranimasi saat keluar.
+
+Sampai v1.42 hanya masuknya yang beranimasi. Keluarnya seketika, karena navigasi langsung melepas
+komponennya dari DOM. Hasilnya timpang: halaman datang dengan lembut lalu hilang begitu saja, seolah
+tidak pergi ke mana-mana melainkan sekadar berhenti ada. Yang hilang adalah keterangan arah — geseran
+keluar itulah yang memberi tahu bahwa layar kembali ke tempat asalnya.
+
+Mesinnya ditaruh di `src/panel.js` sebagai hook `usePanel(arah)`, yang mengembalikan kelas dan sebuah
+fungsi `tutup(tujuan)`. Cara kerjanya sama dengan `Sheet` (v1.34), hanya lapisannya berbeda: di sana
+yang ditunda pelepasan komponen, di sini perpindahan rute. Kalau gerak dikurangi, penundaannya
+dilewati sepenuhnya. Dipakai Pemberitahuan (kiri), Pengaturan (kanan), Pengaturan grup (kanan), dan
+halaman catatan grup (naik).
+
+**Pengaturan grup ikut beranimasi masuk,** yang sebelumnya terlewat sama sekali.
+
+**Halaman catatan grup tidak lagi naik ulang saat kembali dari pengaturan grup.** Ini bug yang sama
+dengan v1.33 tapi lewat jalur lain: penanda `tanpaAnimasi` sudah dititipkan `NoteEditor`, tapi tidak
+oleh `GroupSettings`. Sekarang keduanya menitipkannya. `usePanel` menerimanya lewat opsi `tanpaMasuk`,
+yang melewati animasi masuk **tanpa** ikut mematikan animasi keluar — halaman yang dipasang diam-diam
+tetap harus pergi dengan bergeser. Karena itu kelas arahnya tetap dipasang saat menutup; tanpa itu
+selektor `.panel-kanan.keluar` tidak cocok dengan apa pun dan halamannya hilang seketika.
 
 **v1.42** — Agenda: kepala dan daftar jadi satu kotak.
 

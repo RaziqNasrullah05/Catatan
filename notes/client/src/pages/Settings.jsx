@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { usePanel } from '../panel.js';
 import {
   ArrowLeft,
   ChevronDown,
@@ -208,7 +208,7 @@ function ProfilDialog({ user, onSimpan, onClose }) {
 /* ---------- Halaman ---------- */
 
 export default function Settings({ user, onUserChange }) {
-  const navigate = useNavigate();
+  const { kelas, tutup } = usePanel('kanan');
   const isAdmin = user?.role === 'admin';
 
   const sections = [
@@ -219,9 +219,9 @@ export default function Settings({ user, onUserChange }) {
   const [section, setSection] = useState('keamanan');
 
   return (
-    <div className="app settings-page panel-kanan">
+    <div className={`app settings-page ${kelas}`}>
       <header className="topbar">
-        <button className="icon-btn" aria-label="Kembali" onClick={() => navigate('/')}>
+        <button className="icon-btn" aria-label="Kembali" onClick={() => tutup('/')}>
           <ArrowLeft size={20} strokeWidth={1.75} />
         </button>
         <span className="wordmark">Pengaturan</span>

@@ -36,11 +36,8 @@
  * Menukar keduanya membuat layar terasa berpindah ke arah yang salah, dan itu
  * satu-satunya alasan ada dua kelas, bukan satu.
  *
- * Seperti .panel-naik, yang dianimasikan hanya transform — dan hanya saat
- * masuk. Keluar tetap seketika: halaman-halaman ini dilepas dari DOM begitu
- * navigasi terjadi, dan menahan pelepasannya berarti menyalin mesin penunda
- * milik Sheet ke lapisan perutean. Kalau nanti terasa kurang, itu pekerjaan
- * tersendiri, bukan tambahan di sini.
+ * Yang dianimasikan hanya transform, masuk maupun keluar. Penundaan navigasi
+ * diurus `usePanel` di src/panel.js.
  */
 /* Ditulis sebagai properti panjang, bukan ringkasan `animation`. Ringkasan
    tanpa nama animasi disederhanakan penyusun jadi `animation: none`, dan
@@ -66,4 +63,43 @@
 @media (prefers-reduced-motion: reduce) {
   .panel-kiri,
   .panel-kanan { animation: none; }
+}
+
+/*
+ * Keluar: bergeser ke sisi yang sama dengan arah masuknya, jadi layar terasa
+ * kembali ke tempat asalnya alih-alih sekadar berhenti ada.
+ *
+ * `forwards` penting — tanpa itu halamannya melompat balik ke posisi terbuka di
+ * frame terakhir animasi, tepat sebelum rutenya berganti, dan yang terlihat
+ * justru kedipan.
+ *
+ * Lamanya harus sama dengan KELUAR_MS di src/panel.js. Kalau CSS lebih lambat,
+ * rutenya berganti sebelum halamannya sempat pergi.
+ */
+.panel-kiri.keluar,
+.panel-kanan.keluar,
+.panel-naik.keluar {
+  animation-duration: 0.26s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.9, 0.3);
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+.panel-kiri.keluar { animation-name: panel-kiri-keluar; }
+.panel-kanan.keluar { animation-name: panel-kanan-keluar; }
+.panel-naik.keluar { animation-name: panel-naik-keluar; }
+
+@keyframes panel-kiri-keluar {
+  to { transform: translateX(-100%); }
+}
+@keyframes panel-kanan-keluar {
+  to { transform: translateX(100%); }
+}
+@keyframes panel-naik-keluar {
+  to { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-kiri.keluar,
+  .panel-kanan.keluar,
+  .panel-naik.keluar { animation: none; }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { usePanel } from '../panel.js';
 import { ArrowLeft, Bell } from 'lucide-react';
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
@@ -17,7 +17,7 @@ function kapan(iso) {
 const LABEL_STATUS = { diterima: 'Diterima', ditolak: 'Ditolak' };
 
 export default function Notification() {
-  const navigate = useNavigate();
+  const { kelas, tutup } = usePanel('kiri');
   const [daftar, setDaftar] = useState(null);
   const [error, setError] = useState('');
   const [sibuk, setSibuk] = useState(null);
@@ -47,7 +47,7 @@ export default function Notification() {
       setDaftar((lama) =>
         lama.map((x) => (x.id === n.id ? { ...x, status: terima ? 'diterima' : 'ditolak' } : x))
       );
-      if (terima && n.grupId) navigate(`/grup/${n.grupId}`);
+      if (terima && n.grupId) tutup(`/grup/${n.grupId}`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,9 +56,9 @@ export default function Notification() {
   }
 
   return (
-    <div className="app panel-kiri">
+    <div className={`app ${kelas}`}>
       <header className="topbar">
-        <button className="icon-btn" aria-label="Kembali" onClick={() => navigate('/')}>
+        <button className="icon-btn" aria-label="Kembali" onClick={() => tutup('/')}>
           <ArrowLeft size={20} strokeWidth={1.75} />
         </button>
         <span className="wordmark">Pemberitahuan</span>

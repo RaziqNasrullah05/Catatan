@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { usePanel } from '../panel.js';
 import { ArrowLeft, FileText, Settings2, Users, X } from 'lucide-react';
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
@@ -28,7 +29,7 @@ export default function GroupNotes() {
    * penanda lewat state navigasi; dibaca sekali saat dipasang supaya perubahan
    * state berikutnya tidak memicu animasi di tengah pemakaian.
    */
-  const [beranimasi] = useState(() => !location.state?.tanpaAnimasi);
+  const { kelas, tutup } = usePanel('naik', { tanpaMasuk: Boolean(location.state?.tanpaAnimasi) });
   const [grup, setGrup] = useState(null);
   const [catatan, setCatatan] = useState(null);
   const [error, setError] = useState('');
@@ -70,9 +71,9 @@ export default function GroupNotes() {
   }
 
   return (
-    <div className={`app ${beranimasi ? 'panel-naik' : ''}`}>
+    <div className={`app ${kelas}`}>
       <header className="topbar">
-        <button className="icon-btn" aria-label="Kembali" onClick={() => navigate('/', KEMBALI_KE_GRUP)}>
+        <button className="icon-btn" aria-label="Kembali" onClick={() => tutup('/', KEMBALI_KE_GRUP)}>
           <ArrowLeft size={20} strokeWidth={1.75} />
         </button>
         <span className="wordmark">{grup?.nama || 'Grup'}</span>
