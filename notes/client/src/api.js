@@ -58,6 +58,13 @@ export const api = {
   createGrup: (nama) => request('/groups', { method: 'POST', body: { nama } }),
   renameGrup: (id, nama) => request(`/groups/${id}`, { method: 'PATCH', body: { nama } }),
   deleteGrup: (id) => request(`/groups/${id}`, { method: 'DELETE' }),
+  // Tugas sebagai barang tersendiri (v1.39). Ceklis "- [ ]" di dalam catatan
+  // tetap ada, tapi tidak lagi dikumpulkan ke tab Tugas.
+  listTugas: () => request('/tasks'),
+  buatTugas: (isi) => request('/tasks', { method: 'POST', body: isi }),
+  ubahTugas: (id, isi) => request(`/tasks/${id}`, { method: 'PATCH', body: isi }),
+  hapusTugas: (id) => request(`/tasks/${id}`, { method: 'DELETE' }),
+
   semuaTag: () => request('/notes/tags/all'),
   simpanTag: (id, tag) => request(`/notes/${id}/tags`, { method: 'PUT', body: { tag } }),
   undangKeGrup: (id, orang) => request(`/groups/${id}/invite`, { method: 'POST', body: { orang } }),

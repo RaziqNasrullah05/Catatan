@@ -177,6 +177,34 @@ CREATE TABLE IF NOT EXISTS catatan_tag (
 
 -- Menjawab "catatan apa saja yang bertag X, milik siapa".
 CREATE INDEX IF NOT EXISTS idx_catatan_tag_nama ON catatan_tag(user_id, nama);
+
+-- Tugas sebagai barang tersendiri, bukan baris ceklis di dalam catatan.
+--
+-- Sampai v1.38 tugas cuma baris "- [ ] ..." di markdown, dan tab Tugas bekerja
+-- dengan menyisir seluruh catatan. Itu murah dibangun tapi menutup semua yang
+-- bukan teks: tugas tidak bisa punya tenggat, tidak punya tanggal dibuat
+-- sendiri, dan tidak bisa disunting tanpa membuka catatan induknya.
+--
+-- Ceklis lama sengaja dibiarkan hidup di dalam catatannya dan tetap tampil di
+-- penyunting; yang berubah cuma tab Tugas tidak lagi mengumpulkannya. Tidak ada
+-- data yang dipindahkan atau dihapus, jadi keputusan ini bisa dibatalkan kapan
+-- saja tanpa kehilangan apa pun.
+--
+-- Tenggat disimpan sebagai teks tanggal lokal (TTTT-BB-HH), dengan alasan yang
+-- sama seperti tabel acara: yang dicatat tanggal kalender, dan menyimpannya
+-- sebagai instan UTC membuat tenggat pagi hari bergeser ke hari sebelumnya.
+CREATE TABLE IF NOT EXISTS tugas (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  judul      TEXT NOT NULL,
+  isi        TEXT NOT NULL DEFAULT '',
+  tenggat    TEXT,
+  selesai    INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_tugas_user ON tugas(user_id, selesai, created_at);
 `);
 
 // Migrasi: kolom-kolom ini ditambahkan belakangan, jadi dicek dulu agar

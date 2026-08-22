@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import NoteMenu from '../components/NoteMenu.jsx';
 import PullRefresh from '../components/PullRefresh.jsx';
+import TaskCard, { TaskForm } from '../components/TaskCard.jsx';
 import Agenda from '../components/Agenda.jsx';
 import { NoteListSkeleton, PeopleSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
@@ -36,6 +37,7 @@ const PUDAR_MS = 170;
 
 const TAB_GRUP = TABS.findIndex((t) => t.id === 'grup');
 const TAB_CATATAN = TABS.findIndex((t) => t.id === 'catatan');
+const TAB_TUGAS = TABS.findIndex((t) => t.id === 'tugas');
 const TAB_AGENDA = TABS.findIndex((t) => t.id === 'agenda');
 
 /**
@@ -71,7 +73,8 @@ export default function Home({ user, onSignOut }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [layout, setLayout] = useState(readLayout);
-  const [newTask, setNewTask] = useState('');
+  // Tugas yang sedang dibuat atau disunting; null berarti formulirnya tertutup.
+  const [formTugas, setFormTugas] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [menu, setMenu] = useState(null);
@@ -110,11 +113,11 @@ export default function Home({ user, onSignOut }) {
       try {
         setError('');
         const [noteData, taskData] = await withMinDelay(
-          Promise.all([api.listNotes(query), api.listTasks()])
+          Promise.all([api.listNotes(query), api.listTugas()])
         );
         if (!alive) return;
         setNotes(noteData.notes);
-        setTasks(taskData.tasks);
+        setTasks(taskData.tugas);
       } catch (err) {
         if (alive) setError(err.message);
       } finally {
@@ -227,7 +230,7 @@ export default function Home({ user, onSignOut }) {
    * disusun ulang — ia muncul kembali di tempat barunya sebagai kartu yang
    * timbul, bukan melompat.
    *
-   * Jedanya sama dengan lama transition di CSS (.note-row.is-memudar). Kalau
+   * Jedanya sama dengan lama transisi di CSS (.note-row.is-memudar). Kalau
    * salah satunya diubah, ubah keduanya.
    */
   async function pinFromMenu() {
@@ -282,10 +285,10 @@ export default function Home({ user, onSignOut }) {
     setLoading(true);
     try {
       const [noteData, taskData] = await withMinDelay(
-        Promise.all([api.listNotes(query), api.listTasks()])
+        Promise.all([api.listNotes(query), api.listTugas()])
       );
       setNotes(noteData.notes);
-      setTasks(taskData.tasks);
+      setTasks(taskData.tugas);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -324,27 +327,35 @@ export default function Home({ user, onSignOut }) {
     }
   }
 
-  async function addTask() {
-    const text = newTask.trim();
-    if (!text) return;
-    setNewTask('');
+  /**
+   * Mencentang selesai dipasang lebih dulu di layar, baru dikirim. Ini tindakan
+   * yang paling sering diulang di tab ini, dan menunggu jaringan untuk setiap
+   * centang membuat daftarnya terasa berat. Kalau kirimannya gagal, keadaan
+   * lama dipulihkan.
+   */
+  async function centangTugas(t) {
+    const sebelumnya = tasks;
+    setTasks((list) => list.map((x) => (x.id === t.id ? { ...x, selesai: !x.selesai } : x)));
     try {
-      await api.addTask(text);
+      await api.ubahTugas(t.id, { selesai: !t.selesai });
       setReloadKey((k) => k + 1);
     } catch (err) {
+      setTasks(sebelumnya);
       setError(err.message);
     }
   }
 
-  async function toggleTask(task) {
-    setTasks((list) =>
-      list.map((t) => (t.noteId === task.noteId && t.line === task.line ? { ...t, done: !t.done } : t))
-    );
-    try {
-      await api.toggleTask(task.noteId, task.line);
-    } catch (err) {
-      setError(err.message);
-    }
+  async function simpanTugas(isi) {
+    if (formTugas?.id) await api.ubahTugas(formTugas.id, isi);
+    else await api.buatTugas(isi);
+    setFormTugas(null);
+    setReloadKey((k) => k + 1);
+  }
+
+  async function hapusTugas(t) {
+    await api.hapusTugas(t.id);
+    setFormTugas(null);
+    setReloadKey((k) => k + 1);
   }
 
   const [belumDibaca, setBelumDibaca] = useState(0);
@@ -437,8 +448,8 @@ export default function Home({ user, onSignOut }) {
     }
   }
 
-  const open = tasks.filter((t) => !t.done);
-  const done = tasks.filter((t) => t.done);
+  const open = tasks.filter((t) => !t.selesai);
+  const done = tasks.filter((t) => t.selesai);
 
   return (
     <div className="app">
@@ -629,23 +640,7 @@ export default function Home({ user, onSignOut }) {
           )}
         </PullRefresh>
 
-        <PullRefresh
-          onRefresh={refresh}
-          role="tabpanel"
-          aria-label="Tugas"
-          header={
-            <div className="task-add">
-              <Plus size={17} strokeWidth={2} />
-              <input
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addTask()}
-                placeholder="Tambah tugas lalu tekan Enter"
-                aria-label="Tambah tugas baru"
-              />
-            </div>
-          }
-        >
+        <PullRefresh onRefresh={refresh} role="tabpanel" aria-label="Tugas">
           {loading ? (
             <TaskListSkeleton />
           ) : (
@@ -653,16 +648,16 @@ export default function Home({ user, onSignOut }) {
             {tasks.length === 0 && (
               <div className="empty">
                 <h2>Belum ada tugas</h2>
-                <p>Setiap baris ceklis di catatanmu akan muncul di sini.</p>
+                <p>Tekan tombol Tugas baru di bawah. Tekan lama sebuah tugas untuk mengubahnya.</p>
               </div>
             )}
             {open.length > 0 && <h3>Belum selesai</h3>}
-            {open.map((task) => (
-              <TaskRow key={`${task.noteId}-${task.line}`} task={task} onToggle={toggleTask} navigate={navigate} />
+            {open.map((t) => (
+              <TaskCard key={t.id} tugas={t} onCentang={centangTugas} onSunting={setFormTugas} />
             ))}
             {done.length > 0 && <h3>Selesai</h3>}
-            {done.map((task) => (
-              <TaskRow key={`${task.noteId}-${task.line}`} task={task} onToggle={toggleTask} navigate={navigate} />
+            {done.map((t) => (
+              <TaskCard key={t.id} tugas={t} onCentang={centangTugas} onSunting={setFormTugas} />
             ))}
           </div>
           )}
@@ -802,6 +797,22 @@ export default function Home({ user, onSignOut }) {
         </button>
       )}
 
+      {index === TAB_TUGAS && (
+        <button className="fab" onClick={() => setFormTugas({})}>
+          <Plus size={18} strokeWidth={2} />
+          Tugas baru
+        </button>
+      )}
+
+      {formTugas && (
+        <TaskForm
+          awal={formTugas}
+          onTutup={() => setFormTugas(null)}
+          onSimpan={simpanTugas}
+          onHapus={hapusTugas}
+        />
+      )}
+
       {grupBaru !== null && (
         <div className="sheet-backdrop" onClick={() => setGrupBaru(null)}>
           <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
@@ -828,27 +839,6 @@ export default function Home({ user, onSignOut }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function TaskRow({ task, onToggle, navigate }) {
-  return (
-    <div className={`task-row ${task.done ? 'done' : ''}`}>
-      <input
-        type="checkbox"
-        className="md-check"
-        checked={task.done}
-        onChange={() => onToggle(task)}
-        aria-label={task.text}
-        style={{ marginTop: 4 }}
-      />
-      <span className="text">
-        {task.text || '(tugas tanpa teks)'}
-        <button className="source" onClick={() => navigate(`/catatan/${task.noteId}`)}>
-          {task.noteTitle}
-        </button>
-      </span>
     </div>
   );
 }

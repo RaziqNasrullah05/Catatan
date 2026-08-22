@@ -64,6 +64,7 @@ notes/
 │       │   ├── GroupConfirm.jsx    # lembar konfirmasi, dipakai dua halaman grup
 │       │   ├── Sheet.jsx         # lembar yang naik dan turun; tangani Esc
 │       │   ├── TagRow.jsx        # deret tag + grup di antara judul dan isi
+│       │   ├── TaskCard.jsx      # kontainer tugas + formulirnya
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
 │       │   └── ErrorBoundary.jsx   # menangkap error render agar layar tak kosong
 │       │
@@ -253,6 +254,15 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | GET | `/tags/all` | Semua tag yang pernah dipakai orang ini, beserta jumlah catatannya. |
 | POST | `/tasks` | Tambah tugas cepat ke catatan berjudul "Tugas". |
 | POST | `/:id/tasks/:line/toggle` | Centang satu baris tugas. |
+
+### Tugas (`/api/tasks`, semua butuh sesi)
+
+| Metode | Jalur | Keterangan |
+| --- | --- | --- |
+| GET | `/` | Daftar tugas. Urut: belum selesai, tenggat terdekat, terbaru. |
+| POST | `/` | Buat tugas. `judul` wajib; `isi` dan `tenggat` opsional. |
+| PATCH | `/:id` | Ubah sebagian. Semua kolom opsional, termasuk `selesai`. |
+| DELETE | `/:id` | Hapus permanen; tidak ada tempat sampah. |
 
 ### Grup (`/api/groups`, semua butuh sesi)
 
@@ -479,6 +489,40 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.39** — Fase 5f: tugas jadi barang tersendiri. Fase 5 selesai.
+
+Sampai v1.38 tugas cuma baris `- [ ]` di dalam markdown, dan tab Tugas bekerja dengan menyisir
+seluruh catatan. Itu murah dibangun tapi menutup semua yang bukan teks: tugas tidak bisa punya
+tenggat, tidak punya tanggal dibuat sendiri, dan tidak bisa disunting tanpa membuka catatan induknya.
+Sekarang ada tabel `tugas` dan rute `/api/tasks` tersendiri.
+
+**Ceklis lama tidak dipindahkan dan tidak dihapus.** Ia tetap hidup di dalam catatannya dan tetap
+tampil sebagai ceklis di penyunting; yang berubah hanya tab Tugas tidak lagi mengumpulkannya. Karena
+tidak ada data yang disentuh, keputusan ini bisa dibatalkan kapan saja tanpa kehilangan apa pun.
+Akibatnya `GET /api/notes/tasks/all` dan `POST /api/notes/tasks` kini tidak dipanggil siapa pun —
+dibiarkan dulu, bukan dibuang, sampai jelas tidak ada yang merindukannya.
+
+**Kartu, bukan baris.** Judul, tanggal dibuat, isi, lalu tenggat di bawah garis pemisah. Tenggat
+dipisah garis alih-alih disandingkan dengan tanggal dibuat karena keduanya menjawab hal yang
+berlawanan: satu bercerita dari mana tugas ini datang, satu lagi menuntut sesuatu. Tenggat yang
+terlewat berubah merah.
+
+**Menyunting lewat tekan-lama**, bukan ketukan biasa — mencentang selesai adalah hal yang paling
+sering dilakukan pada tugas, dan ia tidak boleh kalah cepat dari membuka formulir. Kartunya menciut
+sedikit selagi ditekan; tanpa itu tekan-lama terasa tidak berfungsi sampai formulirnya tiba-tiba
+muncul. Jari yang bergeser membatalkannya, karena itu tandanya sedang menggulir.
+
+**Bilah "Tambah tugas lalu tekan Enter" dilepas,** diganti fab `Tugas baru` seperti tab lain.
+Formulirnya memakai `Sheet` (v1.34), jadi ikut turun saat ditutup. Satu komponen dipakai untuk
+membuat maupun mengubah; yang berbeda hanya judul lembar dan adanya tombol hapus.
+
+**Urutannya** belum selesai dulu, lalu tenggat terdekat, lalu terbaru. `tenggat IS NULL` jadi kunci
+urut tersendiri supaya tugas tanpa tenggat jatuh ke bawah — SQLite menganggap NULL lebih kecil dari
+nilai apa pun, jadi tanpa baris itu tugas tak bertenggat justru menempati posisi paling mendesak.
+
+Di `PATCH`, nilai baru diambil dengan `??` bukan `||`: isi yang sengaja dikosongkan dan
+`selesai: false` harus tersimpan, sedangkan `||` mengembalikannya ke nilai lama.
 
 **v1.38** — Fase 5e: tag catatan.
 
