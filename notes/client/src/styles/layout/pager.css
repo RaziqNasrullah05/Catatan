@@ -31,7 +31,7 @@
  * dan itu hanya sahih kalau semua tab sama lebar. Di sini tab aktif lebih lebar
  * karena memuat teks, jadi tombolnya sendiri yang jadi penanda — ia melebar,
  * yang lain menyusut jadi kotak ikon. flex-grow dianimasikan, bukan width,
- * karena width: auto tidak bisa ditransisikan. */
+ * karena width: auto tidak bisa ditransitionkan. */
 .segmented button {
   position: relative;
   z-index: 1;

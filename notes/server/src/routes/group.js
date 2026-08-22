@@ -182,6 +182,59 @@ groupRouter.post('/:id/invite', (req, res) => {
   res.status(201).json({ ok: true, nama: sebutan(sasaran) });
 });
 
+/**
+ * Saran orang yang bisa diundang, dicari per kata kunci.
+ *
+ * Sengaja sempit, karena endpoint ini pada dasarnya membacakan daftar orang
+ * yang terdaftar di aplikasi — persis hal yang ditutup di v1.17 pada jalur
+ * masuk. Yang membatasinya:
+ *
+ *   - hanya pemimpin grup yang boleh memanggilnya;
+ *   - hanya `username` yang dicari, dan hanya dari awal kata. Email tidak
+ *     dicari dan tidak pernah ikut dikembalikan, jadi tidak ada cara memungut
+ *     alamat orang lain dari sini. Mengundang lewat email tetap bisa lewat
+ *     `POST /:id/invite`, yang menuntut alamat lengkap dan tepat;
+ *   - minimal dua huruf, supaya satu huruf tidak menarik separuh basis data;
+ *   - paling banyak delapan hasil.
+ *
+ * Yang sudah jadi anggota dan yang undangannya belum dijawab tidak ikut
+ * ditampilkan — mengundang mereka toh akan ditolak `POST /:id/invite`, dan
+ * menawarkan nama yang pasti gagal hanya membuang waktu penggunanya.
+ */
+groupRouter.get('/:id/candidates', (req, res) => {
+  const ada = ambilGrup(req.params.id, req.user.id);
+  if (!ada) return res.status(404).json({ error: 'Grup tidak ditemukan.' });
+  if (ada.peran !== 'leader') {
+    return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa mengundang.' });
+  }
+
+  const q = String(req.query.q || '').trim().toLowerCase().replace(/^@/, '');
+  if (q.length < 2) return res.json({ orang: [] });
+
+  // Karakter jokernya di-escape supaya "%" yang diketik dicari apa adanya,
+  // bukan mencocokkan segalanya. Pola LIKE ... ESCAPE mengikuti pencarian
+  // catatan yang sudah ada.
+  const pola = `${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+  const rows = db
+    .prepare(
+      `SELECT u.id, u.username FROM users u
+        WHERE u.disabled = 0
+          AND u.username IS NOT NULL
+          AND u.username LIKE ? ESCAPE '\\'
+          AND u.id <> ?
+          AND u.id NOT IN (SELECT user_id FROM grup_anggota WHERE grup_id = ?)
+          AND u.id NOT IN (
+                SELECT penerima_id FROM notifikasi
+                 WHERE grup_id = ? AND jenis = 'undangan_grup' AND status = 'menunggu')
+        ORDER BY u.username
+        LIMIT 8`
+    )
+    .all(pola, req.user.id, req.params.id, req.params.id);
+
+  res.json({ orang: rows.map((u) => ({ id: u.id, nama: `@${u.username}` })) });
+});
+
 groupRouter.delete('/:id/invites/:notifId', (req, res) => {
   const ada = ambilGrup(req.params.id, req.user.id);
   if (!ada || ada.peran !== 'leader') return res.status(403).json({ error: 'Hanya pemimpin grup yang bisa membatalkan undangan.' });

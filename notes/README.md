@@ -46,6 +46,7 @@ notes/
 │       ├── prefs.js                # preferensi tata letak & tema (localStorage)
 │       ├── utils.js                # withMinDelay — jeda minimum kerangka pemuatan
 │       ├── templates.js            # 6 template catatan siap pakai
+│       ├── nav.js                  # tujuan navigasi yang dipakai lebih dari satu halaman
 │       │
 │       ├── cm/                     # semua yang menempel ke CodeMirror
 │       │   ├── livePreview.js      # ViewPlugin dekorasi: sembunyikan sintaks, checkbox, tabel
@@ -60,12 +61,16 @@ notes/
 │       │   ├── TableEditor.jsx     # penyunting tabel berbentuk kisi (tanpa CodeMirror)
 │       │   ├── NoteMenu.jsx        # menu kontekstual: sematkan / hapus
 │       │   ├── PullRefresh.jsx     # tarik untuk muat ulang, efek ketapel
+│       │   ├── ConfirmationGroup.jsx  # lembar konfirmasi, dipakai dua halaman grup
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
 │       │   └── ErrorBoundary.jsx   # menangkap error render agar layar tak kosong
 │       │
 │       ├── pages/
 │       │   ├── Home.jsx            # daftar catatan + tugas, panel geser, tekan lama
 │       │   ├── NoteEditor.jsx      # panel naik dari bawah, mode baca/tulis, simpan otomatis
+│       │   ├── GroupNotes.jsx      # halaman utama sebuah grup: catatan di dalamnya
+│       │   ├── GroupSettings.jsx   # undang, anggota, bubarkan (Material 3)
+│       │   ├── Notification.jsx    # daftar pemberitahuan
 │       │   ├── Login.jsx           # kata sandi / magic link
 │       │   ├── Invite.jsx          # penerimaan undangan
 │       │   └── Settings.jsx        # Keamanan / Tampilan / Undang orang (Material 3)
@@ -78,6 +83,7 @@ notes/
 │           │   └── selection.css   # seleksi teks dimatikan di halaman utama
 │           ├── layout/
 │           │   ├── shell.css       # kerangka .app, topbar, pencarian
+│           │   ├── transition.css    # cara halaman masuk (.panel-naik)
 │           │   ├── pager.css       # panel geser Catatan/Tugas (menimpa .segmented)
 │           │   └── responsive.css  # penyesuaian layar lebar — dimuat paling akhir
 │           ├── pages/
@@ -252,6 +258,7 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | POST | `/` | Buat grup; pembuatnya langsung jadi pemimpin. |
 | GET/PATCH/DELETE | `/:id` | Rincian, ganti nama, bubarkan. Ubah dan bubarkan khusus pemimpin. |
 | POST | `/:id/invite` | Undang lewat nama pengguna atau email; membuat notifikasi. |
+| GET | `/:id/candidates?q=` | Saran orang yang bisa diundang. Pemimpin saja; mencocokkan awal `username` (bukan email), minimal 2 huruf, maksimal 8 hasil. Anggota dan yang sudah diundang tidak ikut. Email tidak pernah dikembalikan. |
 | DELETE | `/:id/invites/:notifId` | Batalkan undangan yang belum dijawab. |
 | POST | `/:id/leave` | Keluar dari grup. Pemimpin harus mengalihkan jabatan dulu. |
 | DELETE | `/:id/members/:userId` | Keluarkan anggota (pemimpin). |
@@ -429,6 +436,14 @@ permintaan ke HTTPS. Pastikan Certbot sudah jalan.
 - Preferensi per-perangkat (tema, tata letak) di `localStorage` lewat `prefs.js`; data yang perlu ikut
   pindah perangkat masuk ke server.
 
+### Meminjam bentuk Material 3 di luar Pengaturan
+
+Kelas `.m3-*` (`m3-card`, `m3-row`, `m3-btn`, `m3-avatar`, …) global sejak v1.5. Yang dulu mengunci
+mereka ke halaman Pengaturan bukan selektornya, melainkan tidak adanya nilai token `--s-*` di luar
+sana. Sejak v1.32 kelas **`.m3-scope`** mendeklarasikan token itu, jadi bagian mana pun bisa
+memakainya: pasang `.m3-scope` pada pembungkusnya, lalu gunakan kelas `.m3-*` seperti biasa. Latar
+halaman penuh tetap hanya dipasang `.settings-page`.
+
 ### Token desain (`styles/base/tokens.css`)
 
 ```
@@ -460,6 +475,38 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.32** — Fase 5b: halaman grup dipecah dua.
+
+`GroupDetail.jsx` memuat empat urusan berbeda dalam satu gulungan — undangan, catatan, anggota,
+tombol bubarkan — dan yang paling sering dibuka justru berada di tengah. Sekarang `/grup/:id` adalah
+`GroupNotes.jsx` yang hanya berisi catatan grup, dan pengelolaannya pindah ke
+`/grup/:id/pengaturan` (`GroupSettings.jsx`), dijangkau lewat tombol gerigi di kanan nama grup.
+Lembar konfirmasi ditarik ke `components/ConfirmationGroup.jsx` karena kini dipakai dua halaman:
+mengeluarkan catatan ditanyakan di halaman catatan, sisanya di halaman pengaturan. Konstanta tujuan
+"kembali ke tab Grup" pindah ke `src/nav.js` dengan alasan yang sama.
+
+**Token Material 3 dibuka lewat `.m3-scope`.** Kelas `.m3-*` sudah global sejak v1.5; yang mengunci
+mereka ke Pengaturan hanyalah tidak adanya nilai `--s-*` di luar sana, sehingga warnanya jatuh ke
+kosong. Menambahkan satu selektor pada blok deklarasi token membuat halaman pengaturan grup dan
+kartu grup di tab Grup memakai bentuk yang sama tanpa satu pun aturan digandakan. Latar halaman
+penuh tetap hanya `.settings-page`, karena `.m3-scope` sering cuma membungkus sepotong halaman.
+
+**Halaman grup naik dari bawah** lewat `.panel-naik` di modul baru `styles/layout/transition.css`.
+Sengaja bukan `.sheet-page`: kelas itu juga memasang gagang seret, mematikan `touch-action` di bilah
+atas, dan sejak v1.31 dikecualikan dari `user-select: none` karena isinya tulisan untuk disalin.
+Halaman grup tidak menginginkan satu pun dari itu — yang dipinjam hanya cara masuknya.
+
+**Saran orang saat mengundang** (`GET /api/groups/:id/candidates?q=`). Endpoint ini pada dasarnya
+membacakan daftar orang yang terdaftar, yaitu hal yang ditutup di v1.17 pada jalur masuk, jadi
+batasnya sengaja ketat: pemimpin grup saja, hanya `username` dan hanya dari awal kata, **email tidak
+pernah dikembalikan**, minimal dua huruf, maksimal delapan hasil. Yang sudah jadi anggota dan yang
+undangannya belum dijawab tidak ditawarkan — mengundang mereka toh akan ditolak, dan menawarkan nama
+yang pasti gagal cuma membuang waktu. Konsekuensinya orang yang belum mengisi username tidak muncul
+di saran; mengundangnya tetap bisa dengan mengetik alamat email lengkap, dan itu tertulis sebagai
+keterangan di bawah isiannya. Di sisi klien kata kuncinya ditahan 250 ms, dan jawaban yang datang
+terlambat dibuang lewat penanda urutan — tanpa itu hasil untuk "si" bisa tiba setelah hasil untuk
+"sig" dan menimpanya dengan daftar yang lebih lama.
 
 **v1.31** — Fase 5a: dua bug ditutup, dan ESLint dipasang.
 
@@ -749,7 +796,7 @@ bukan bersama Catatan dan Tugas.
 kosong; isinya menyusul. Tab yang aktif menampilkan ikon beserta teksnya, sisanya ikon saja. Penanda
 geser `.thumb` dilepas karena lebarnya dihitung dengan persen dan itu hanya sahih saat semua tab sama
 lebar — sekarang tombol aktif sendiri yang jadi penanda, melebar lewat animasi `flex-grow` (`width:
-auto` tidak bisa ditransisikan). Urutan DOM menaruh Grup paling kiri, jadi posisi gulir pager
+auto` tidak bisa ditransitionkan). Urutan DOM menaruh Grup paling kiri, jadi posisi gulir pager
 ditempatkan ke panel Catatan di `useLayoutEffect` sebelum lukisan pertama, dengan `scroll-snap`
 dimatikan sekejap karena ia menolak penetapan `scrollLeft` langsung.
 

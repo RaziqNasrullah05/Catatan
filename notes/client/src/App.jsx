@@ -4,7 +4,8 @@ import { api } from './api.js';
 import { NoteListSkeleton } from './components/Skeleton.jsx';
 import { withMinDelay } from './utils.js';
 import Home from './pages/Home.jsx';
-import GroupDetail from './pages/GroupDetail.jsx';
+import GroupNotes from './pages/GroupNotes.jsx';
+import GroupSettings from './pages/GroupSettings.jsx';
 import Invite from './pages/Invite.jsx';
 import Login from './pages/Login.jsx';
 import NoteEditor from './pages/NoteEditor.jsx';
@@ -53,7 +54,8 @@ export default function App() {
       <Route path="/" element={<Home user={user} onSignOut={signOut} />} />
       <Route path="/catatan/:id" element={<NoteEditor />} />
       <Route path="/notifikasi" element={<Notification />} />
-      <Route path="/grup/:id" element={<GroupDetail user={user} />} />
+      <Route path="/grup/:id" element={<GroupNotes />} />
+      <Route path="/grup/:id/pengaturan" element={<GroupSettings user={user} />} />
       <Route path="/pengaturan" element={<Settings user={user} onUserChange={setUser} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

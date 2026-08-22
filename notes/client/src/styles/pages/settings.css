@@ -3,7 +3,20 @@
    Token dibatasi ke .settings-page agar halaman lain tidak berubah.
    ================================================================ */
 
-.settings-page {
+/*
+ * Token dulunya hanya hidup di `.settings-page`. Sejak halaman grup meminjam
+ * bentuk yang sama (kartu membulat, baris ikon-teks-aksi), `.m3-scope`
+ * ditambahkan sebagai kelas yang bisa dipasang di mana saja — termasuk pada
+ * sepotong halaman, seperti daftar grup di dalam tab Grup.
+ *
+ * Yang dibuka hanya tokennya. Kelas komponen (`.m3-card`, `.m3-row`, dst.)
+ * memang sudah global sejak v1.5; yang dulu mengunci mereka ke Pengaturan
+ * adalah tidak adanya nilai `--s-*` di luar sana, sehingga warnanya jatuh ke
+ * kosong. Membuka token berarti kelas itu kini bisa dipakai halaman lain tanpa
+ * satu pun aturan digandakan.
+ */
+.settings-page,
+.m3-scope {
   /* Warna diambil dari token global agar latar pengaturan sama persis
      dengan halaman lain; yang membedakan hanya bentuk dan jaraknya. */
   --s-bg: var(--bg);
@@ -14,7 +27,11 @@
   --s-primary: var(--accent);
   --s-container: var(--accent-soft);
   --s-danger: var(--danger);
+}
 
+/* Latar dipasang di halaman penuh saja. `.m3-scope` sering hanya membungkus
+   sepotong halaman, dan memberinya latar sendiri di sana tidak ada gunanya. */
+.settings-page {
   background: var(--s-bg);
   color: var(--s-on);
 }
@@ -215,3 +232,60 @@
   font-weight: 600;
   text-transform: uppercase;
 }
+
+/* ---------- Tambahan untuk halaman pengaturan grup ---------- */
+
+/* Isian dengan satu tombol di sampingnya. Bentuknya mengikuti .grup-field di
+   halaman lama: yang dituju adalah mengetik nama, jadi tombolnya berupa kotak
+   ikon dan tidak memakan lebar yang dibutuhkan isian. */
+.m3-baris { display: flex; gap: 8px; align-items: stretch; }
+.m3-baris input { flex: 1; min-width: 0; }
+.m3-btn.bulat {
+  flex: none;
+  width: 52px;
+  height: auto;
+  padding: 0;
+}
+
+/* Saran nama pengguna, muncul tepat di bawah isian. Ditaruh dalam kotak
+   bergaris, bukan mengambang: daftarnya pendek dan tidak perlu menutupi apa
+   pun. */
+.m3-saran {
+  margin: -6px 0 4px;
+  border: 1px solid var(--s-outline);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.m3-saran button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 14.5px;
+  color: var(--s-on);
+}
+.m3-saran button + button { border-top: 1px solid var(--s-outline); }
+.m3-saran button:active { background: var(--s-container); }
+
+.m3-avatar.kecil { width: 28px; height: 28px; font-size: 13px; }
+.m3-avatar.kosong {
+  background: none;
+  border: 1px dashed var(--s-outline);
+  color: var(--s-on-variant);
+}
+
+.m3-hint {
+  margin: 10px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--s-on-variant);
+}
+
+/* Chip abu untuk keterangan yang bukan penanda peran, mis. "Kamu". */
+.m3-status.abu { background: var(--rule); color: var(--s-on-variant); }
+
+/* .m3-title memakai flex, jadi keterangan di bawahnya perlu dipaksa satu baris
+   penuh saat ia berupa <span> di dalam kartu grup. */
+.m3-desc.blok { display: block; }

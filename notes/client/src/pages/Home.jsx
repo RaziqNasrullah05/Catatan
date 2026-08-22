@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
   CalendarDays,
+  ChevronRight,
   CircleCheck,
   LogOut,
   MoreVertical,
@@ -464,21 +465,29 @@ export default function Home({ user, onSignOut }) {
               <p>Grup jadi wadah bersama untuk catatan yang sengaja kamu simpan di dalamnya.</p>
             </div>
           ) : (
-            <div className="grup-list">
-              {grup.map((g) => (
-                <button key={g.id} className="grup-kartu" onClick={() => navigate(`/grup/${g.id}`)}>
-                  <span className="grup-avatar">{g.nama[0]}</span>
-                  <span className="grup-teks">
-                    <span className="nama">
-                      {g.nama}
-                      {g.peran === 'leader' && <span className="tanda">Pemimpin</span>}
+            <div className="grup-list m3-scope">
+              <div className="m3-container">
+                <div className="m3-card">
+              {grup.map((g, i) => (
+                <div key={g.id}>
+                  {i > 0 && <div className="m3-divider" />}
+                  <button className="m3-row tappable" onClick={() => navigate(`/grup/${g.id}`)}>
+                    <span className="m3-avatar">{g.nama[0]}</span>
+                    <span className="m3-body">
+                      <span className="m3-title">
+                        {g.nama}
+                        {g.peran === 'leader' && <span className="m3-status">Pemimpin</span>}
+                      </span>
+                      <span className="m3-desc blok">{g.jumlahAnggota} anggota</span>
                     </span>
-                    <span className="sub">
-                      {g.jumlahAnggota} anggota
+                    <span className="m3-action">
+                      <ChevronRight size={18} strokeWidth={1.75} />
                     </span>
-                  </span>
-                </button>
+                  </button>
+                </div>
               ))}
+                </div>
+              </div>
             </div>
           )}
         </div>

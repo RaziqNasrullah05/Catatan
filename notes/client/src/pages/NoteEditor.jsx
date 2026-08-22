@@ -170,7 +170,7 @@ export default function NoteEditor() {
     if (!el) return;
     el.style.animation = 'none';
     el.style.transition = `transform ${CLOSE_ANIM}ms cubic-bezier(0.4, 0, 1, 1)`;
-    // Satu frame jeda supaya peramban mencatat posisi awal transisi.
+    // Satu frame jeda supaya peramban mencatat posisi awal transition.
     requestAnimationFrame(() => {
       el.style.transform = 'translateY(100%)';
     });
