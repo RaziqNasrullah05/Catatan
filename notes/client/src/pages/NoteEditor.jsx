@@ -48,6 +48,15 @@ export default function NoteEditor() {
   const tujuanKeluar = dariGrup ? `/grup/${dariGrup}` : '/';
 
   /**
+   * Halaman grup naik dari bawah saat dibuka (`.panel-naik`). Kembali dari
+   * sebuah catatan grup memasangnya lagi dari nol, sehingga panelnya melompat
+   * ke bawah lalu naik ulang — padahal secara terasa pengguna cuma menutup
+   * sesuatu yang terbuka di atasnya, bukan membuka grup itu lagi. Penanda ini
+   * memberitahu halaman grup untuk melewati animasi masuknya.
+   */
+  const opsiKeluar = { replace: true, state: dariGrup ? { tanpaAnimasi: true } : undefined };
+
+  /**
    * Membuat catatan kosong berjudul apa yang sedang diketik, untuk pilihan
    * "Buat catatan" di dasar daftar saran. Catatannya langsung masuk indeks agar
    * sebutan ke situ segera menjadi tautan tanpa memuat ulang halaman.
@@ -170,7 +179,7 @@ export default function NoteEditor() {
     if (!el) return;
     el.style.animation = 'none';
     el.style.transition = `transform ${CLOSE_ANIM}ms cubic-bezier(0.4, 0, 1, 1)`;
-    // Satu frame jeda supaya peramban mencatat posisi awal transition.
+    // Satu frame jeda supaya peramban mencatat posisi awal transisi.
     requestAnimationFrame(() => {
       el.style.transform = 'translateY(100%)';
     });
@@ -188,7 +197,8 @@ export default function NoteEditor() {
       ? api.updateNote(id, { ...draft.current }).catch(() => {})
       : Promise.resolve();
     await Promise.all([flush, new Promise((r) => setTimeout(r, CLOSE_ANIM))]);
-    navigate(tujuanKeluar, { replace: true });
+    navigate(tujuanKeluar, opsiKeluar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate, slideOut, tujuanKeluar]);
 
   // Jaring pengaman kalau tab ditutup mendadak.
@@ -263,7 +273,7 @@ export default function NoteEditor() {
     try {
       await api.deleteNote(id);
       slideOut();
-      setTimeout(() => navigate(tujuanKeluar, { replace: true }), CLOSE_ANIM);
+      setTimeout(() => navigate(tujuanKeluar, opsiKeluar), CLOSE_ANIM);
     } catch (err) {
       setError(err.message);
       setConfirmDelete(false);

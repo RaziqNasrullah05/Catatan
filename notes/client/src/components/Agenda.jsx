@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Repeat, Trash2 } from 'lucide-react';
 import { api } from '../api.js';
+import PullRefresh from './PullRefresh.jsx';
+import { withMinDelay } from '../utils.js';
 
 const HARI = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const BULAN = [
@@ -64,6 +66,9 @@ export default function Agenda({ aktif = true }) {
   const [form, setForm] = useState(null);
   const [hapus, setHapus] = useState(null);
   const [muatUlang, setMuatUlang] = useState(0);
+  // Kalender menempel di puncak begitu kisinya tergulir keluar layar.
+  const [menempel, setMenempel] = useState(false);
+  const penjaga = useRef(null);
 
   const sel = useMemo(() => petakBulan(kursor.tahun, kursor.bulan), [kursor]);
 
@@ -109,6 +114,41 @@ export default function Agenda({ aktif = true }) {
     return out;
   }, [daftar]);
 
+  /**
+   * Tarik-untuk-muat-ulang. `muatUlang` hanya memicu efek pemuatan; ia tidak
+   * memberi tahu kapan datanya sampai, sedangkan PullRefresh menahan batangnya
+   * sampai janji yang dikembalikan selesai. Jadi permintaannya diulang di sini
+   * dan hasilnya dipasang langsung.
+   */
+  const muatUlangTarik = useCallback(async () => {
+    const isiSel = sel.filter(Boolean);
+    const akhirBulan = isiSel[isiSel.length - 1];
+    try {
+      const d = await withMinDelay(api.listAcara(isiSel[0], akhirBulan > ini ? akhirBulan : ini));
+      setAcara(d.acara);
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [sel, ini]);
+
+  /**
+   * Kalender lengket. Sebuah penjaga setinggi nol ditaruh tepat di bawah kisi;
+   * begitu ia keluar dari puncak daerah gulir, kalender dianggap menempel dan
+   * isinya diburamkan. IntersectionObserver dipilih daripada kejadian scroll
+   * karena ia tidak menjalankan apa pun di setiap frame gulir.
+   */
+  useEffect(() => {
+    const el = penjaga.current;
+    if (!el) return undefined;
+    const pengamat = new IntersectionObserver(
+      ([masuk]) => setMenempel(!masuk.isIntersecting),
+      { threshold: 0 }
+    );
+    pengamat.observe(el);
+    return () => pengamat.disconnect();
+  }, []);
+
   const geserBulan = (arah) => {
     setDipilih(null);
     setKursor(({ tahun, bulan }) => {
@@ -120,8 +160,9 @@ export default function Agenda({ aktif = true }) {
   };
 
   return (
-    <div className="agenda">
-      <div className="kalender">
+    <>
+      <PullRefresh onRefresh={muatUlangTarik} className="agenda" role="tabpanel" aria-label="Agenda">
+      <div className={`kalender ${menempel ? 'menempel' : ''}`}>
         <div className="kalender-kepala">
           <button className="icon-btn" aria-label="Bulan sebelumnya" onClick={() => geserBulan(-1)}>
             <ChevronLeft size={19} strokeWidth={1.8} />
@@ -143,7 +184,10 @@ export default function Agenda({ aktif = true }) {
         <div className="kalender-kisi" role="grid">
           {sel.map((tgl, i) => {
             if (!tgl) return <span key={`kosong-${i}`} className="sel kosong" />;
-            const jumlah = perTanggal.get(tgl)?.length ?? 0;
+            // Titik menandai "ada yang menunggu". Tanggal yang sudah lewat tidak
+            // menunggu apa pun lagi, jadi titiknya dilepas — kisi bulan berjalan
+            // jadi hanya berisi penanda yang masih berarti.
+            const jumlah = tgl >= ini ? perTanggal.get(tgl)?.length ?? 0 : 0;
             return (
               <button
                 key={tgl}
@@ -162,6 +206,8 @@ export default function Agenda({ aktif = true }) {
           })}
         </div>
       </div>
+      {/* Setinggi nol dan tak terlihat; hanya penanda posisi bagi pengamat. */}
+      <div ref={penjaga} className="kalender-penjaga" aria-hidden="true" />
 
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
 
@@ -214,6 +260,12 @@ export default function Agenda({ aktif = true }) {
         ))
       )}
 
+      </PullRefresh>
+
+      {/* fab dan lembar sengaja di luar PullRefresh: isinya digeser dengan
+          transform saat ditarik, dan sebuah transform membuat elemen
+          position: fixed di dalamnya berpatokan ke situ, bukan ke layar —
+          akibatnya tombolnya ikut melorot mengikuti tarikan jari. */}
       {/* fab pakai position: fixed, jadi posisinya lepas dari .pane — kalau selalu
           dirender, ia tetap menempel di layar walau tab Agenda sudah digeser
           keluar layar (Agenda tidak dilepas dari DOM, hanya tergulir). Digerbang
@@ -270,7 +322,7 @@ export default function Agenda({ aktif = true }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, FileText, Settings2, Users, X } from 'lucide-react';
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
 import { NoteListSkeleton } from '../components/Skeleton.jsx';
-import ConfirmationGroup from '../components/ConfirmationGroup.jsx';
+import KonfirmasiGrup from '../components/KonfirmasiGrup.jsx';
 import { KEMBALI_KE_GRUP } from '../nav.js';
 
 /**
@@ -18,15 +18,28 @@ import { KEMBALI_KE_GRUP } from '../nav.js';
 export default function GroupNotes() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /**
+   * Halaman ini naik dari bawah saat dibuka dari tab Grup. Tapi kembali dari
+   * sebuah catatan grup juga memasang ulang halaman ini, dan menganimasikannya
+   * lagi di situ terasa salah: yang barusan terjadi adalah menutup catatan yang
+   * terbuka di atasnya, bukan membuka grupnya lagi. `NoteEditor` menitipkan
+   * penanda lewat state navigasi; dibaca sekali saat dipasang supaya perubahan
+   * state berikutnya tidak memicu animasi di tengah pemakaian.
+   */
+  const [beranimasi] = useState(() => !location.state?.tanpaAnimasi);
   const [grup, setGrup] = useState(null);
   const [catatan, setCatatan] = useState(null);
   const [error, setError] = useState('');
   const [konfirmasi, setKonfirmasi] = useState(null);
   const [kolabUntuk, setKolabUntuk] = useState(null);
 
+  // Kerangka pemuatannya ditahan seperti daftar lain (v1.7): tanpa jeda minimum
+  // ia berkedip sekejap pada sambungan cepat, dan kedipan itu lebih kacau
+  // daripada menunggu setengah detik.
   const muatCatatan = () =>
-    api
-      .catatanGrup(id)
+    withMinDelay(api.catatanGrup(id))
       .then((d) => setCatatan(d.catatan))
       .catch(() => setCatatan([]));
 
@@ -57,7 +70,7 @@ export default function GroupNotes() {
   }
 
   return (
-    <div className="app panel-naik">
+    <div className={`app ${beranimasi ? 'panel-naik' : ''}`}>
       <header className="topbar">
         <button className="icon-btn" aria-label="Kembali" onClick={() => navigate('/', KEMBALI_KE_GRUP)}>
           <ArrowLeft size={20} strokeWidth={1.75} />
@@ -183,7 +196,7 @@ export default function GroupNotes() {
       )}
 
       {konfirmasi && (
-        <ConfirmationGroup
+        <KonfirmasiGrup
           data={konfirmasi}
           grup={grup}
           onBatal={() => setKonfirmasi(null)}

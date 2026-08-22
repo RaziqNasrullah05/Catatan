@@ -61,7 +61,7 @@ notes/
 │       │   ├── TableEditor.jsx     # penyunting tabel berbentuk kisi (tanpa CodeMirror)
 │       │   ├── NoteMenu.jsx        # menu kontekstual: sematkan / hapus
 │       │   ├── PullRefresh.jsx     # tarik untuk muat ulang, efek ketapel
-│       │   ├── ConfirmationGroup.jsx  # lembar konfirmasi, dipakai dua halaman grup
+│       │   ├── KonfirmasiGrup.jsx  # lembar konfirmasi, dipakai dua halaman grup
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
 │       │   └── ErrorBoundary.jsx   # menangkap error render agar layar tak kosong
 │       │
@@ -83,7 +83,7 @@ notes/
 │           │   └── selection.css   # seleksi teks dimatikan di halaman utama
 │           ├── layout/
 │           │   ├── shell.css       # kerangka .app, topbar, pencarian
-│           │   ├── transition.css    # cara halaman masuk (.panel-naik)
+│           │   ├── transisi.css    # cara halaman masuk (.panel-naik)
 │           │   ├── pager.css       # panel geser Catatan/Tugas (menimpa .segmented)
 │           │   └── responsive.css  # penyesuaian layar lebar — dimuat paling akhir
 │           ├── pages/
@@ -296,7 +296,7 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 
 ### Admin (`/api/admin`, butuh peran admin)
 
-`GET /users`, `GET /invites`, `POST /invites`, `POST /users/:id/access`
+`GET /users` (termasuk `username`), `GET /invites`, `POST /invites`, `POST /users/:id/access`
 
 ---
 
@@ -476,13 +476,60 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.33** — Fase 5c: poles halaman utama dan Agenda, plus dua perbaikan.
+
+**Perbaikan: halaman grup tidak lagi naik ulang saat keluar dari catatan grup.** `.panel-naik`
+terpasang setiap kali halaman itu dipasang, termasuk saat `NoteEditor` kembali ke sana — panelnya
+melompat ke bawah lalu naik lagi, padahal yang barusan terjadi adalah menutup sesuatu yang terbuka di
+atasnya. `NoteEditor` kini menitipkan penanda lewat state navigasi, dan `GroupNotes` membacanya sekali
+saat dipasang.
+
+**Perbaikan: kerangka pemuatan halaman grup berkedip.** Daftar catatannya diambil tanpa
+`withMinDelay`, jadi pada sambungan cepat kerangkanya lewat begitu saja dan yang terlihat cuma
+kedipan. Sekarang mengikuti jeda minimum yang sama seperti daftar lain sejak v1.7.
+
+**Tarik-untuk-muat-ulang di semua tab.** Sebelumnya hanya Catatan dan Tugas. Panel Grup memuat
+datanya sendiri dan tidak ikut `reloadKey`, jadi ia mendapat `refreshGrup` terpisah — menyatukannya
+berarti menarik daftar catatan tiap kali orang menyegarkan daftar grup. `Agenda` sekarang merender
+pane-nya sendiri lewat `PullRefresh`; fab dan lembar formulirnya sengaja **di luar** komponen itu,
+karena isinya digeser dengan `transform` saat ditarik, dan sebuah transform membuat elemen
+`position: fixed` di dalamnya berpatokan ke situ alih-alih ke layar — akibatnya tombolnya ikut
+melorot mengikuti jari.
+
+**Kalender Agenda menempel dan mengabur** saat daftar "yang akan datang" digulir naik. Yang lengket
+kotak kalendernya, bukan seluruh kepala panel, sehingga tanggal yang sedang dilihat tetap terlihat
+sementara acaranya lewat di belakangnya. Keadaan menempel dibaca `IntersectionObserver` atas sebuah
+penjaga setinggi nol di bawah kisi, bukan kejadian scroll — supaya tidak ada perhitungan di setiap
+frame gulir. Peramban tanpa `backdrop-filter` mendapat latar padat lewat `@supports not`, kalau tidak
+daftar acaranya terbaca menembus kalender.
+
+**Titik pada tanggal yang sudah lewat dilepas.** Titik itu berarti "ada yang menunggu"; tanggal yang
+sudah lewat tidak menunggu apa pun lagi. **Batang gulir di lembar buat/ubah acara disembunyikan** —
+gulirnya tetap jalan, yang dilepas hanya penandanya, karena batang tipis yang menempel di tepi kotak
+membulat terlihat seperti cacat gambar.
+
+**Animasi saat menyematkan catatan.** Kartu dipudarkan di posisi lamanya, baru daftarnya disusun
+ulang, sehingga ia muncul kembali di tempat barunya alih-alih melompat. Yang dianimasikan `opacity`
+dan `transform`; lamanya dijaga sama di `PUDAR_MS` (Home.jsx) dan CSS — kalau CSS lebih lambat,
+daftar tersusun ulang sementara kartunya masih setengah terlihat, dan yang tampak justru kedipan.
+
+**Lencana grup di kartu catatan jadi ikon saja.** Nama grupnya sudah dipanjangkan di halaman grup,
+dan di kartu sempit teks itu memakan ruang yang dibutuhkan judul; yang perlu terbaca sekilas cuma
+"ada orang lain yang melihat ini". Namanya tetap ada sebagai `title` dan `aria-label`.
+
+**Kartu "Orang di aplikasi ini" kini tertutup secara bawaan** dan hanya menampilkan jumlah akun.
+Diketuk, ia membuka kolom pencarian beserta daftarnya; nama pengguna jadi judul baris dan emailnya
+turun ke keterangan. Penyaringan dilakukan di peramban karena seluruh daftar memang sudah diambil
+untuk menghitung jumlahnya, jadi mengetik tidak menyentuh jaringan. `GET /api/admin/users` kini ikut
+mengembalikan `username`.
+
 **v1.32** — Fase 5b: halaman grup dipecah dua.
 
 `GroupDetail.jsx` memuat empat urusan berbeda dalam satu gulungan — undangan, catatan, anggota,
 tombol bubarkan — dan yang paling sering dibuka justru berada di tengah. Sekarang `/grup/:id` adalah
 `GroupNotes.jsx` yang hanya berisi catatan grup, dan pengelolaannya pindah ke
 `/grup/:id/pengaturan` (`GroupSettings.jsx`), dijangkau lewat tombol gerigi di kanan nama grup.
-Lembar konfirmasi ditarik ke `components/ConfirmationGroup.jsx` karena kini dipakai dua halaman:
+Lembar konfirmasi ditarik ke `components/KonfirmasiGrup.jsx` karena kini dipakai dua halaman:
 mengeluarkan catatan ditanyakan di halaman catatan, sisanya di halaman pengaturan. Konstanta tujuan
 "kembali ke tab Grup" pindah ke `src/nav.js` dengan alasan yang sama.
 
@@ -492,7 +539,7 @@ kosong. Menambahkan satu selektor pada blok deklarasi token membuat halaman peng
 kartu grup di tab Grup memakai bentuk yang sama tanpa satu pun aturan digandakan. Latar halaman
 penuh tetap hanya `.settings-page`, karena `.m3-scope` sering cuma membungkus sepotong halaman.
 
-**Halaman grup naik dari bawah** lewat `.panel-naik` di modul baru `styles/layout/transition.css`.
+**Halaman grup naik dari bawah** lewat `.panel-naik` di modul baru `styles/layout/transisi.css`.
 Sengaja bukan `.sheet-page`: kelas itu juga memasang gagang seret, mematikan `touch-action` di bilah
 atas, dan sejak v1.31 dikecualikan dari `user-select: none` karena isinya tulisan untuk disalin.
 Halaman grup tidak menginginkan satu pun dari itu — yang dipinjam hanya cara masuknya.
@@ -796,7 +843,7 @@ bukan bersama Catatan dan Tugas.
 kosong; isinya menyusul. Tab yang aktif menampilkan ikon beserta teksnya, sisanya ikon saja. Penanda
 geser `.thumb` dilepas karena lebarnya dihitung dengan persen dan itu hanya sahih saat semua tab sama
 lebar — sekarang tombol aktif sendiri yang jadi penanda, melebar lewat animasi `flex-grow` (`width:
-auto` tidak bisa ditransitionkan). Urutan DOM menaruh Grup paling kiri, jadi posisi gulir pager
+auto` tidak bisa ditransisikan). Urutan DOM menaruh Grup paling kiri, jadi posisi gulir pager
 ditempatkan ke panel Catatan di `useLayoutEffect` sebelum lukisan pertama, dengan `scroll-snap`
 dimatikan sekejap karena ia menolak penetapan `scrollLeft` langsung.
 

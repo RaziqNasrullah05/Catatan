@@ -31,6 +31,9 @@ const TABS = [
 ];
 
 // Grup berada di kiri, tapi yang dibuka pertama tetap Catatan.
+/** Lama kartu memudar sebelum daftar disusun ulang. Cocokkan dengan CSS. */
+const PUDAR_MS = 170;
+
 const TAB_GRUP = TABS.findIndex((t) => t.id === 'grup');
 const TAB_CATATAN = TABS.findIndex((t) => t.id === 'catatan');
 const TAB_AGENDA = TABS.findIndex((t) => t.id === 'agenda');
@@ -74,6 +77,8 @@ export default function Home({ user, onSignOut }) {
   const [menu, setMenu] = useState(null);
   const [held, setHeld] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  // Kartu yang sedang memudar karena baru disemat atau dilepas sematannya.
+  const [memudar, setMemudar] = useState(null);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const lastScroll = useRef(0);
@@ -215,10 +220,23 @@ export default function Home({ user, onSignOut }) {
     if (Math.hypot(e.clientX - awal.x, e.clientY - awal.y) > 10) cancelHold();
   }
 
+  /**
+   * Menyemat memindahkan kartu ke puncak daftar. Tanpa apa pun, kartunya
+   * sekadar berpindah tempat dan mata sulit mengikuti mana yang barusan
+   * berubah. Jadi kartu itu dipudarkan dulu di posisi lamanya, baru daftarnya
+   * disusun ulang — ia muncul kembali di tempat barunya sebagai kartu yang
+   * timbul, bukan melompat.
+   *
+   * Jedanya sama dengan lama transisi di CSS (.note-row.is-memudar). Kalau
+   * salah satunya diubah, ubah keduanya.
+   */
   async function pinFromMenu() {
     const note = menu.note;
     setMenu(null);
+    setMemudar(note.id);
+    await new Promise((r) => setTimeout(r, PUDAR_MS));
     setNotes((list) => list.map((n) => (n.id === note.id ? { ...n, pinned: !n.pinned } : n)));
+    setMemudar(null);
     try {
       await api.updateNote(note.id, { pinned: !note.pinned });
       setReloadKey((k) => k + 1);
@@ -238,6 +256,24 @@ export default function Home({ user, onSignOut }) {
       setError(err.message);
     }
   }
+
+  /**
+   * Tarik-untuk-muat-ulang pada panel Grup. Terpisah dari `refresh` karena
+   * panel ini memuat datanya sendiri dan tidak ikut `reloadKey`; menyatukan
+   * keduanya berarti menarik daftar catatan setiap kali orang menyegarkan
+   * daftar grup, dan sebaliknya.
+   */
+  const refreshGrup = useCallback(async () => {
+    setGrup(null);
+    try {
+      const d = await withMinDelay(api.listGrup());
+      setGrup(d.grup);
+      setError('');
+    } catch (err) {
+      setError(err.message);
+      setGrup([]);
+    }
+  }, []);
 
   /** Dipanggil tarik-untuk-muat-ulang; menunggu data benar-benar datang. */
   const refresh = useCallback(async () => {
@@ -456,7 +492,7 @@ export default function Home({ user, onSignOut }) {
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
 
       <div className="pager" ref={pagerRef} onScroll={onPagerScroll}>
-        <div className="pane" role="tabpanel" aria-label="Grup">
+        <PullRefresh onRefresh={refreshGrup} role="tabpanel" aria-label="Grup">
           {grup === null ? (
             <PeopleSkeleton />
           ) : grup.length === 0 ? (
@@ -490,7 +526,7 @@ export default function Home({ user, onSignOut }) {
               </div>
             </div>
           )}
-        </div>
+        </PullRefresh>
 
         <PullRefresh
           onRefresh={refresh}
@@ -525,7 +561,9 @@ export default function Home({ user, onSignOut }) {
             {notes.map((note) => (
               <button
                 key={note.id}
-                className={`note-row ${held === note.id ? 'is-held' : ''}`}
+                className={`note-row ${held === note.id ? 'is-held' : ''} ${
+                  memudar === note.id ? 'is-memudar' : ''
+                }`}
                 onPointerDown={(e) => onCardPointerDown(note, e)}
                 onPointerMove={onCardPointerMove}
                 onPointerUp={cancelHold}
@@ -572,12 +610,16 @@ export default function Home({ user, onSignOut }) {
                     </span>
                   )}
                   {note.grup?.length > 0 && (
+                    // Ikon saja: nama grupnya sudah dipanjangkan di halaman
+                    // grup, dan di kartu sempit teks itu memakan ruang yang
+                    // dibutuhkan judul. Yang perlu terbaca sekilas cuma "ada
+                    // orang lain yang melihat ini".
                     <span
-                      className="badge grup"
+                      className="badge grup ikon"
                       title={`Terlihat oleh anggota: ${note.grup.join(', ')}`}
+                      aria-label={`Dibagikan ke ${note.grup.length} grup`}
                     >
-                      <Users size={11} strokeWidth={2} />
-                      {note.grup.length === 1 ? note.grup[0] : `${note.grup.length} grup`}
+                      <Users size={12} strokeWidth={2} />
                     </span>
                   )}
                 </span>
@@ -626,11 +668,16 @@ export default function Home({ user, onSignOut }) {
           )}
         </PullRefresh>
 
-        <div className="pane" role="tabpanel" aria-label="Agenda">
-          {/* Dipasang hanya saat panelnya dikunjungi: kisi kalender memuat acara
-              sebulan penuh, dan itu tidak perlu terjadi saat membuka Catatan. */}
-          {agendaPernahDibuka && <Agenda aktif={index === TAB_AGENDA} />}
-        </div>
+        {/* Dipasang hanya saat panelnya dikunjungi: kisi kalender memuat acara
+            sebulan penuh, dan itu tidak perlu terjadi saat membuka Catatan.
+            Sebelum itu tetap perlu ada satu pane kosong, karena lebar pane-lah
+            yang menentukan posisi gulir tiap tab. Agenda merender pane-nya
+            sendiri (lewat PullRefresh), jadi di sini tidak dibungkus lagi. */}
+        {agendaPernahDibuka ? (
+          <Agenda aktif={index === TAB_AGENDA} />
+        ) : (
+          <div className="pane" role="tabpanel" aria-label="Agenda" />
+        )}
       </div>
 
       {menu && (

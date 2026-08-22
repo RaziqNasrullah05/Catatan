@@ -283,7 +283,7 @@ adminRouter.use(requireAuth, requireAdmin);
 adminRouter.get('/users', (_req, res) => {
   res.json({
     users: db
-      .prepare('SELECT id, email, role, disabled, created_at, last_seen_at FROM users ORDER BY created_at')
+      .prepare('SELECT id, email, username, role, disabled, created_at, last_seen_at FROM users ORDER BY created_at')
       .all(),
   });
 });

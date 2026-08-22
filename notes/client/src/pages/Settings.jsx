@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
+  ChevronDown,
   ChevronRight,
   Columns2,
   Columns3,
@@ -15,6 +16,7 @@ import {
   Palette,
   Check,
   Rows3,
+  Search,
   ShieldCheck,
   Sun,
   UserPlus,
@@ -487,6 +489,11 @@ function Invites({ user }) {
   const [lastInvite, setLastInvite] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  // Daftar akun tertutup secara bawaan. Yang dicari sehari-hari adalah membuat
+  // undangan, bukan menyisir orang; daftar panjang di atasnya cuma mendorong
+  // isian undangan makin jauh dari puncak.
+  const [daftarTerbuka, setDaftarTerbuka] = useState(false);
+  const [cari, setCari] = useState('');
 
   const refresh = () =>
     withMinDelay(api.users())
@@ -510,6 +517,21 @@ function Invites({ user }) {
       setError(err.message);
     }
   }
+
+  /**
+   * Penyaringan dilakukan di peramban, bukan lewat permintaan baru: seluruh
+   * daftar akun memang sudah diambil sekaligus untuk menghitung jumlahnya, jadi
+   * mengetik tidak perlu menyentuh jaringan sama sekali.
+   */
+  const terpakai = (() => {
+    const kata = cari.trim().toLowerCase().replace(/^@/, '');
+    if (!kata) return users || [];
+    return (users || []).filter(
+      (u) =>
+        u.email.toLowerCase().includes(kata) ||
+        (u.username || '').toLowerCase().includes(kata)
+    );
+  })();
 
   async function copy(text) {
     try {
@@ -560,24 +582,67 @@ function Invites({ user }) {
 
       <h2 className="m3-section-title">Orang di aplikasi ini</h2>
       <div className="m3-card">
-        <Row
-          icon={Users}
-          title={users ? `${users.length} akun` : 'Memuat…'}
-          desc="Mencabut akses langsung menghapus semua sesi aktif orang tersebut."
-        />
-        {!users && <PeopleSkeleton />}
-        {(users || []).map((u) => (
+        <button
+          className="m3-row tappable"
+          aria-expanded={daftarTerbuka}
+          onClick={() => setDaftarTerbuka((v) => !v)}
+        >
+          <span className="m3-icon">
+            <Users size={19} strokeWidth={1.7} />
+          </span>
+          <span className="m3-body">
+            <span className="m3-title">{users ? `${users.length} akun` : 'Memuat…'}</span>
+            <p className="m3-desc">
+              {daftarTerbuka
+                ? 'Mencabut akses langsung menghapus semua sesi aktif orang tersebut.'
+                : 'Ketuk untuk mencari dan mengelola akun.'}
+            </p>
+          </span>
+          <span className="m3-action m3-chevron">
+            <ChevronDown size={19} strokeWidth={1.8} className={daftarTerbuka ? 'terbuka' : ''} />
+          </span>
+        </button>
+
+        {daftarTerbuka && (
+          <>
+            <div className="m3-divider" />
+            <div className="m3-cari">
+              <Search size={16} strokeWidth={1.9} />
+              <input
+                value={cari}
+                onChange={(e) => setCari(e.target.value)}
+                placeholder="Cari nama pengguna atau email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck="false"
+                aria-label="Cari akun"
+              />
+            </div>
+          </>
+        )}
+
+        {daftarTerbuka && !users && <PeopleSkeleton />}
+        {daftarTerbuka && users && terpakai.length === 0 && (
+          <p className="m3-hint" style={{ padding: '4px 22px 18px' }}>
+            Tidak ada akun yang cocok dengan “{cari.trim()}”.
+          </p>
+        )}
+        {(daftarTerbuka ? terpakai : []).map((u) => (
           <div key={u.id}>
             <div className="m3-divider" />
             <div className="m3-row">
-              <span className="m3-avatar">{u.email[0]}</span>
+              <span className="m3-avatar">{(u.username || u.email)[0]}</span>
               <span className="m3-body">
                 <span className="m3-title">
-                  {u.email}
+                  {u.username ? `@${u.username}` : u.email}
                   {u.role === 'admin' && <span className="m3-status">Admin</span>}
                   {Boolean(u.disabled) && <span className="m3-status muted">Dicabut</span>}
                 </span>
+                {/* Nama pengguna jadi judul kalau ada, dan emailnya turun ke
+                    baris keterangan — keduanya tetap terlihat, karena pencarian
+                    di atas mencocokkan dua-duanya. */}
                 <p className="m3-desc">
+                  {u.username ? `${u.email} · ` : ''}
                   {u.last_seen_at
                     ? `Terakhir aktif ${new Date(u.last_seen_at).toLocaleDateString('id-ID', {
                         day: 'numeric',

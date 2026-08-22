@@ -289,3 +289,37 @@
 /* .m3-title memakai flex, jadi keterangan di bawahnya perlu dipaksa satu baris
    penuh saat ia berupa <span> di dalam kartu grup. */
 .m3-desc.blok { display: block; }
+
+/* ---------- Daftar akun yang bisa dibuka-tutup ---------- */
+
+/* Panah ikut berputar saat dibuka, jadi arahnya sendiri yang memberi tahu
+   keadaan — bukan hanya isi yang muncul dan hilang. */
+.m3-chevron svg { transition: transform 0.2s ease; }
+.m3-chevron svg.terbuka { transform: rotate(180deg); }
+
+.m3-cari {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 22px 6px;
+  padding: 0 14px;
+  border: 1px solid var(--s-outline);
+  border-radius: 999px;
+  color: var(--s-on-variant);
+}
+.m3-cari:focus-within { border-color: var(--s-primary); }
+.m3-cari > svg { flex: none; }
+.m3-cari input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 0;
+  border: none;
+  background: none;
+  color: var(--s-on);
+  font-size: 14.5px;
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-chevron svg { transition: none; }
+}
