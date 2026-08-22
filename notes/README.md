@@ -63,6 +63,7 @@ notes/
 │       │   ├── PullRefresh.jsx     # tarik untuk muat ulang, efek ketapel
 │       │   ├── GroupConfirm.jsx    # lembar konfirmasi, dipakai dua halaman grup
 │       │   ├── Sheet.jsx         # lembar yang naik dan turun; tangani Esc
+│       │   ├── TagRow.jsx        # deret tag + grup di antara judul dan isi
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
 │       │   └── ErrorBoundary.jsx   # menangkap error render agar layar tak kosong
 │       │
@@ -248,6 +249,8 @@ Semua endpoint diawali `/api`. Permintaan yang mengubah data **wajib** membawa h
 | POST | `/` | Buat catatan kosong. |
 | GET/PATCH/DELETE | `/:id` | Ambil, ubah, hapus (soft delete 30 hari). |
 | GET | `/tasks/all` | Semua checkbox dari seluruh catatan. |
+| PUT | `/:id/tags` | Menetapkan seluruh daftar tag sekaligus. Cukup bisa membaca catatannya; tag milik pemanggil, bukan penulis. |
+| GET | `/tags/all` | Semua tag yang pernah dipakai orang ini, beserta jumlah catatannya. |
 | POST | `/tasks` | Tambah tugas cepat ke catatan berjudul "Tugas". |
 | POST | `/:id/tasks/:line/toggle` | Centang satu baris tugas. |
 
@@ -476,6 +479,41 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.38** — Fase 5e: tag catatan.
+
+Baris baru di antara judul dan isi penyunting (`components/TagRow.jsx`) memuat tag milik pembaca dan
+grup tempat catatan itu terbit. Keduanya disatukan dalam satu deret meski asalnya berbeda: yang
+dijawab baris ini satu pertanyaan yang sama — "catatan ini termasuk apa" — dan memisahkannya jadi dua
+deret hanya menebalkan ruang antara judul dan kalimat pertama. Bedanya tetap terbaca: tag beraksen
+dan bersilang, grup abu-abu tanpa silang, karena grup ditentukan lewat menu catatan di daftar dan
+memberi silang yang tidak melakukan apa-apa lebih membingungkan daripada tidak memberinya.
+
+**Tag milik masing-masing orang.** Ia tidak ikut pindah ke grup, dan `PUT /:id/tags` sengaja hanya
+menuntut catatannya bisa dibaca — bukan harus milik sendiri. Yang dicatat adalah bagaimana *pembaca*
+menandai sesuatu, bukan bagaimana penulisnya menamainya, jadi menandai catatan orang lain untuk
+keperluan sendiri itu sah dan tidak terlihat siapa pun.
+
+**Disimpan sebagai tabel kaitan `catatan_tag`,** bukan satu kolom teks dipisah koma. Pertanyaan yang
+harus dijawab cepat adalah "catatan apa saja yang bertag X", dan kolom teks memaksa seluruh tabel
+dibaca untuk menjawabnya. `user_id` ikut jadi bagian kunci, sehingga dua orang boleh memakai kata
+yang sama tanpa saling mengganggu.
+
+**Normalisasi terjadi di server, bukan di peramban** — aturan itulah yang menentukan apakah dua tag
+dianggap sama, dan kalau ia hanya ada di klien, permintaan dari mana pun selain layar penyunting akan
+menyelundupkan bentuk lain. Huruf dikecilkan, spasi jadi tanda hubung, awalan pagar dilepas, dan
+hanya huruf-angka-hubung yang bertahan; hasilnya dipotong 32 huruf, paling banyak 12 tag per catatan.
+Klien memasang apa yang dikembalikan server, bukan apa yang diketik, karena bentuk akhirnya bisa
+berbeda.
+
+**v1.37** — Kilatan biru bawaan saat mengetuk dimatikan untuk seluruh dokumen.
+
+`-webkit-tap-highlight-color: transparent` sudah ada sejak awal, tapi hanya pada `button` — dan itu
+meleset. Kilatannya digambar peramban pada elemen terdekat yang punya penangan klik, bukan pada
+elemen yang benar-benar disentuh. Di lembar konfirmasi, elemen itu adalah latar gelapnya, yang
+menutupi seluruh layar; jadi mengetuk tombol di dalam lembar membuat satu layar penuh berkedip biru
+sementara tombolnya sendiri sudah bersih. Sifat ini diwariskan, jadi dipindah ke `html` sekali dan
+menutup semua elemen, termasuk `div` dan `span` yang diberi penangan klik.
 
 **v1.36** — Fase 5d: animasi navigasi, dan dua berkas berganti nama.
 

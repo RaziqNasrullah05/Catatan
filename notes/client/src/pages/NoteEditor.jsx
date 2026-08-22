@@ -5,6 +5,7 @@ import { api } from '../api.js';
 
 import FormatRail from '../components/FormatRail.jsx';
 import { NoteEditorSkeleton } from '../components/Skeleton.jsx';
+import TagRow from '../components/TagRow.jsx';
 import { withMinDelay } from '../utils.js';
 import TableEditor from '../components/TableEditor.jsx';
 import { findTableAtLine } from '../cm/table.js';
@@ -179,7 +180,7 @@ export default function NoteEditor() {
     if (!el) return;
     el.style.animation = 'none';
     el.style.transition = `transform ${CLOSE_ANIM}ms cubic-bezier(0.4, 0, 1, 1)`;
-    // Satu frame jeda supaya peramban mencatat posisi awal transition.
+    // Satu frame jeda supaya peramban mencatat posisi awal transisi.
     requestAnimationFrame(() => {
       el.style.transform = 'translateY(100%)';
     });
@@ -362,6 +363,13 @@ export default function NoteEditor() {
               }}
             />
             <p className="save-state" aria-live="polite">{statusLabel}</p>
+
+            <TagRow
+              key={note.id}
+              noteId={note.id}
+              tagAwal={note.tag || []}
+              grup={note.grup || []}
+            />
 
             <div className="editor-scroll">
               {mode === 'baca' ? (

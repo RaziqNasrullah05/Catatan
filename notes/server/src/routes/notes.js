@@ -129,13 +129,50 @@ notesRouter.get('/index', (req, res) => {
   });
 });
 
+/**
+ * Membersihkan satu tag: huruf dikecilkan, spasi jadi tanda hubung, dan hanya
+ * huruf-angka-hubung yang bertahan.
+ *
+ * Dinormalkan di server, bukan di peramban, karena aturan inilah yang menentukan
+ * apakah dua tag dianggap sama. Kalau normalisasinya cuma di klien, permintaan
+ * dari mana pun selain layar penyunting akan menyelundupkan bentuk lain, dan
+ * "Gagal Jantung" jadi tag yang berbeda dari "gagal-jantung".
+ */
+function rapikanTag(mentah) {
+  return String(mentah || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^#+/, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^\p{L}\p{N}-]/gu, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 32);
+}
+
+const MAX_TAG = 12;
+
+/** Tag milik seseorang pada sebuah catatan, urut abjad. */
+function tagCatatan(userId, noteId) {
+  return db
+    .prepare('SELECT nama FROM catatan_tag WHERE note_id = ? AND user_id = ? ORDER BY nama')
+    .all(noteId, userId)
+    .map((r) => r.nama);
+}
+
 notesRouter.get('/:id', (req, res) => {
   const akses = aksesCatatan(req.user.id, req.params.id);
   if (!akses) return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
 
   if (akses === 'pemilik') {
     return res.json({
-      note: { ...getNote(req.user.id, req.params.id), bisaSunting: true, milikSendiri: true },
+      note: {
+        ...getNote(req.user.id, req.params.id),
+        bisaSunting: true,
+        milikSendiri: true,
+        tag: tagCatatan(req.user.id, req.params.id),
+        grup: grupCatatan(req.user.id, req.params.id).map((g) => g.nama),
+      },
     });
   }
 
@@ -155,6 +192,10 @@ notesRouter.get('/:id', (req, res) => {
       bisaSunting: akses === 'tulis',
       milikSendiri: false,
       penulis: sebutan(penulis),
+      // Tag milik pembaca sendiri, bukan milik penulisnya: tag tidak ikut
+      // dibagikan lewat grup. Pembaca boleh menandai catatan orang lain untuk
+      // keperluannya sendiri tanpa terlihat siapa pun.
+      tag: tagCatatan(req.user.id, n.id),
       grup: grupCatatan(req.user.id, n.id).map((g) => g.nama),
     },
   });
@@ -205,6 +246,55 @@ notesRouter.put('/:id/groups', (req, res) => {
   })();
 
   res.json({ grup: grupCatatan(req.user.id, req.params.id) });
+});
+
+/**
+ * Menetapkan seluruh daftar tag sekaligus, mengikuti pola `PUT /:id/groups`.
+ *
+ * Tag boleh dipasang pada catatan apa pun yang bisa dibaca, termasuk milik
+ * orang lain — yang dicatat adalah bagaimana *pembaca* menandai sesuatu, bukan
+ * bagaimana penulisnya menamainya. Karena itu syaratnya cuma `aksesCatatan`
+ * mengembalikan sesuatu, bukan harus 'pemilik'.
+ */
+notesRouter.put('/:id/tags', (req, res) => {
+  if (!aksesCatatan(req.user.id, req.params.id)) {
+    return res.status(404).json({ error: 'Catatan tidak ditemukan.' });
+  }
+  if (!Array.isArray(req.body?.tag)) return res.status(400).json({ error: 'Daftar tag tidak valid.' });
+
+  // Set membuang kembaran yang muncul setelah dirapikan: "Gagal Jantung" dan
+  // "gagal-jantung" jadi satu tag yang sama.
+  const bersih = [...new Set(req.body.tag.map(rapikanTag).filter(Boolean))].slice(0, MAX_TAG);
+  const now = new Date().toISOString();
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM catatan_tag WHERE note_id = ? AND user_id = ?').run(
+      req.params.id,
+      req.user.id
+    );
+    const sisip = db.prepare(
+      'INSERT INTO catatan_tag (note_id, user_id, nama, created_at) VALUES (?, ?, ?, ?)'
+    );
+    for (const nama of bersih) sisip.run(req.params.id, req.user.id, nama, now);
+  })();
+
+  res.json({ tag: tagCatatan(req.user.id, req.params.id) });
+});
+
+/**
+ * Semua tag yang pernah dipakai orang ini, beserta jumlah catatannya. Dipakai
+ * saran saat mengetik, supaya tag yang sudah ada dipakai ulang alih-alih
+ * ditulis ulang sedikit berbeda.
+ */
+notesRouter.get('/tags/all', (req, res) => {
+  res.json({
+    tag: db
+      .prepare(
+        `SELECT nama, COUNT(*) AS jumlah FROM catatan_tag
+          WHERE user_id = ? GROUP BY nama ORDER BY jumlah DESC, nama`
+      )
+      .all(req.user.id),
+  });
 });
 
 notesRouter.patch('/:id', (req, res) => {

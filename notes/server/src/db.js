@@ -154,6 +154,29 @@ CREATE TABLE IF NOT EXISTS gambar (
 );
 
 CREATE INDEX IF NOT EXISTS idx_gambar_note ON gambar(note_id);
+
+-- Tag catatan. Milik masing-masing orang: tag tidak ikut pindah ke grup, dan
+-- dua orang boleh memakai kata yang sama tanpa saling mengganggu — karenanya
+-- user_id ikut jadi bagian kunci, bukan sekadar keterangan.
+--
+-- Dipilih tabel kaitan, bukan satu kolom teks dipisah koma di tabel notes.
+-- Pertanyaan yang harus dijawab cepat adalah "catatan apa saja yang bertag X",
+-- dan kolom teks memaksa seluruh isi tabel dibaca untuk menjawabnya. Tabel
+-- kaitan menjawabnya lewat indeks.
+--
+-- Kolom nama disimpan sudah dikecilkan hurufnya, sehingga "Jantung" dan "jantung"
+-- adalah tag yang sama. Tanpa itu daftar tag cepat penuh kembaran yang bedanya
+-- cuma huruf pertama.
+CREATE TABLE IF NOT EXISTS catatan_tag (
+  note_id    TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  nama       TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (note_id, user_id, nama)
+);
+
+-- Menjawab "catatan apa saja yang bertag X, milik siapa".
+CREATE INDEX IF NOT EXISTS idx_catatan_tag_nama ON catatan_tag(user_id, nama);
 `);
 
 // Migrasi: kolom-kolom ini ditambahkan belakangan, jadi dicek dulu agar

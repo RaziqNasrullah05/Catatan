@@ -58,6 +58,8 @@ export const api = {
   createGrup: (nama) => request('/groups', { method: 'POST', body: { nama } }),
   renameGrup: (id, nama) => request(`/groups/${id}`, { method: 'PATCH', body: { nama } }),
   deleteGrup: (id) => request(`/groups/${id}`, { method: 'DELETE' }),
+  semuaTag: () => request('/notes/tags/all'),
+  simpanTag: (id, tag) => request(`/notes/${id}/tags`, { method: 'PUT', body: { tag } }),
   undangKeGrup: (id, orang) => request(`/groups/${id}/invite`, { method: 'POST', body: { orang } }),
   saranAnggota: (id, q) => request(`/groups/${id}/candidates?q=${encodeURIComponent(q)}`),
   batalUndangan: (id, notifId) => request(`/groups/${id}/invites/${notifId}`, { method: 'DELETE' }),
