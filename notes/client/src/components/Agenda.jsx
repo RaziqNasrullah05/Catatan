@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Repeat, Trash2 } from 'lucide-react';
 import { api } from '../api.js';
 import PullRefresh from './PullRefresh.jsx';
+import Sheet from './Sheet.jsx';
 import { withMinDelay } from '../utils.js';
 
 const HARI = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
@@ -66,9 +67,10 @@ export default function Agenda({ aktif = true }) {
   const [form, setForm] = useState(null);
   const [hapus, setHapus] = useState(null);
   const [muatUlang, setMuatUlang] = useState(0);
-  // Kalender menempel di puncak begitu kisinya tergulir keluar layar.
-  const [menempel, setMenempel] = useState(false);
-  const penjaga = useRef(null);
+  // Kalender diburamkan bertahap mengikuti gulir; nilainya ditulis langsung ke
+  // gaya elemen, bukan ke state React (lihat onGulir).
+  const kalender = useRef(null);
+  const rafId = useRef(0);
 
   const sel = useMemo(() => petakBulan(kursor.tahun, kursor.bulan), [kursor]);
 
@@ -133,21 +135,31 @@ export default function Agenda({ aktif = true }) {
   }, [sel, ini]);
 
   /**
-   * Kalender lengket. Sebuah penjaga setinggi nol ditaruh tepat di bawah kisi;
-   * begitu ia keluar dari puncak daerah gulir, kalender dianggap menempel dan
-   * isinya diburamkan. IntersectionObserver dipilih daripada kejadian scroll
-   * karena ia tidak menjalankan apa pun di setiap frame gulir.
+   * Kalender memudar bertahap mengikuti gulir.
+   *
+   * Efek yang bertahap butuh nilai yang berubah terus-menerus, jadi kali ini
+   * kejadian scroll memang harus dibaca — IntersectionObserver hanya bisa
+   * menjawab "sudah lewat atau belum". Dua hal menjaga ongkosnya tetap kecil:
+   * pembacaannya dikumpulkan ke satu requestAnimationFrame, dan hasilnya
+   * ditulis sebagai variabel CSS langsung ke elemen. Lewat state React, setiap
+   * frame gulir akan merender ulang seluruh daftar acara.
+   *
+   * Ukurannya adalah tinggi kalender itu sendiri: setelah tergulir sejauh itu,
+   * ia sudah sepenuhnya tertutup daftar di atasnya, dan nilainya berhenti di 1.
    */
-  useEffect(() => {
-    const el = penjaga.current;
-    if (!el) return undefined;
-    const pengamat = new IntersectionObserver(
-      ([masuk]) => setMenempel(!masuk.isIntersecting),
-      { threshold: 0 }
-    );
-    pengamat.observe(el);
-    return () => pengamat.disconnect();
-  }, []);
+  const onGulir = (e) => {
+    const atas = e.currentTarget.scrollTop;
+    if (rafId.current) return;
+    rafId.current = requestAnimationFrame(() => {
+      rafId.current = 0;
+      const el = kalender.current;
+      if (!el) return;
+      const p = Math.min(1, Math.max(0, atas / (el.offsetHeight || 1)));
+      el.style.setProperty('--pudar', p.toFixed(3));
+    });
+  };
+
+  useEffect(() => () => rafId.current && cancelAnimationFrame(rafId.current), []);
 
   const geserBulan = (arah) => {
     setDipilih(null);
@@ -161,8 +173,25 @@ export default function Agenda({ aktif = true }) {
 
   return (
     <>
-      <PullRefresh onRefresh={muatUlangTarik} className="agenda" role="tabpanel" aria-label="Agenda">
-      <div className={`kalender ${menempel ? 'menempel' : ''}`}>
+      <PullRefresh
+        onRefresh={muatUlangTarik}
+        onScroll={onGulir}
+        className="agenda"
+        role="tabpanel"
+        aria-label="Agenda"
+      >
+      {/* Kepala berada di atas kalender dan menempel di puncak. Kalender lewat
+          di belakangnya saat digulir, memudar sampai tertutup seluruhnya. */}
+      <div className="agenda-kepala">
+        <h3>{dipilih ? tanggalPanjang(dipilih) : 'Yang akan datang'}</h3>
+        {dipilih && (
+          <button className="btn ghost kecil" onClick={() => setDipilih(null)}>
+            Tampilkan semua
+          </button>
+        )}
+      </div>
+
+      <div className="kalender" ref={kalender}>
         <div className="kalender-kepala">
           <button className="icon-btn" aria-label="Bulan sebelumnya" onClick={() => geserBulan(-1)}>
             <ChevronLeft size={19} strokeWidth={1.8} />
@@ -206,19 +235,8 @@ export default function Agenda({ aktif = true }) {
           })}
         </div>
       </div>
-      {/* Setinggi nol dan tak terlihat; hanya penanda posisi bagi pengamat. */}
-      <div ref={penjaga} className="kalender-penjaga" aria-hidden="true" />
 
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
-
-      <div className="agenda-kepala">
-        <h3>{dipilih ? tanggalPanjang(dipilih) : 'Yang akan datang'}</h3>
-        {dipilih && (
-          <button className="btn ghost kecil" onClick={() => setDipilih(null)}>
-            Tampilkan semua
-          </button>
-        )}
-      </div>
 
       {acara === null ? (
         <p className="agenda-kosong">Memuat…</p>
@@ -292,35 +310,37 @@ export default function Agenda({ aktif = true }) {
       )}
 
       {hapus && (
-        <div className="sheet-backdrop" onClick={() => setHapus(null)}>
-          <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <h3>Hapus acara ini?</h3>
-            <p>
-              “{hapus.judul}” dihapus.
-              {hapus.ulang && ' Acara ini berulang, jadi seluruh kemunculannya ikut hilang.'}
-            </p>
-            <div className="row">
-              <button className="btn ghost" onClick={() => setHapus(null)}>
-                Batal
-              </button>
-              <button
-                className="btn danger"
-                onClick={async () => {
-                  const a = hapus;
-                  setHapus(null);
-                  try {
-                    await api.hapusAcara(a.id);
-                    setMuatUlang((n) => n + 1);
-                  } catch (err) {
-                    setError(err.message);
-                  }
-                }}
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        </div>
+        <Sheet onTutup={() => setHapus(null)}>
+          {(tutup) => (
+            <>
+              <h3>Hapus acara ini?</h3>
+              <p>
+                “{hapus.judul}” dihapus.
+                {hapus.ulang && ' Acara ini berulang, jadi seluruh kemunculannya ikut hilang.'}
+              </p>
+              <div className="row">
+                <button className="btn ghost" onClick={tutup}>
+                  Batal
+                </button>
+                <button
+                  className="btn danger"
+                  onClick={async () => {
+                    const a = hapus;
+                    tutup();
+                    try {
+                      await api.hapusAcara(a.id);
+                      setMuatUlang((n) => n + 1);
+                    } catch (err) {
+                      setError(err.message);
+                    }
+                  }}
+                >
+                  Hapus
+                </button>
+              </div>
+            </>
+          )}
+        </Sheet>
       )}
     </>
   );
@@ -339,11 +359,7 @@ function FormAcara({ awal, onTutup, onSimpan }) {
   const [error, setError] = useState('');
   const [sibuk, setSibuk] = useState(false);
 
-  useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onTutup();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onTutup]);
+  // Tombol Esc dan animasi turun ditangani komponen Sheet.
 
   async function simpan() {
     setError('');
@@ -360,8 +376,9 @@ function FormAcara({ awal, onTutup, onSimpan }) {
   }
 
   return (
-    <div className="sheet-backdrop" onClick={onTutup}>
-      <div className="sheet" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+    <Sheet onTutup={onTutup}>
+      {(tutup) => (
+        <>
         <h3>{awal.mode === 'ubah' ? 'Ubah acara' : 'Acara baru'}</h3>
 
         <div className="acara-form">
@@ -425,14 +442,15 @@ function FormAcara({ awal, onTutup, onSimpan }) {
         </div>
 
         <div className="row">
-          <button className="btn ghost" onClick={onTutup} disabled={sibuk}>
+          <button className="btn ghost" onClick={tutup} disabled={sibuk}>
             Batal
           </button>
           <button className="btn" onClick={simpan} disabled={sibuk || !judul.trim() || !tanggal}>
             {sibuk ? 'Menyimpan…' : 'Simpan'}
           </button>
         </div>
-      </div>
-    </div>
+        </>
+      )}
+    </Sheet>
   );
 }
