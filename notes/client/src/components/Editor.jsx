@@ -3,7 +3,7 @@ import { EditorState, Prec } from '@codemirror/state';
 import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { livePreview } from '../cm/livePreview.js';
+import { livePreview, tabelBlok } from '../cm/livePreview.js';
 import {
   autocompletion,
   closeBrackets,
@@ -95,6 +95,9 @@ export default function Editor({ docKey, initialValue, onChange, onReady, indeks
           Prec.high(keymap.of([...closeBracketsKeymap, ...completionKeymap])),
           keymap.of([...defaultKeymap, ...historyKeymap]),
           markdown({ base: markdownLanguage, addKeymap: true }),
+          // Harus sebelum livePreview: widget tabel datang dari state (dekorasi
+          // blok dilarang dari plugin), sedangkan sisanya dari plugin.
+          tabelBlok,
           livePreview,
           EditorView.lineWrapping,
           cmPlaceholder('Mulai menulis. Ketik markdown atau pakai tombol format di bawah.'),
