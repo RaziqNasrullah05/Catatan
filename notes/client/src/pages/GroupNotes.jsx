@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, Settings2, Users, X } from 'lucide-react';
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
 import { NoteListSkeleton } from '../components/Skeleton.jsx';
-import KonfirmasiGrup from '../components/KonfirmasiGrup.jsx';
+import ConfirmationGroup from '../components/ConfirmationGroup.jsx';
 import { KEMBALI_KE_GRUP } from '../nav.js';
 
 /**
@@ -196,7 +196,7 @@ export default function GroupNotes() {
       )}
 
       {konfirmasi && (
-        <KonfirmasiGrup
+        <ConfirmationGroup
           data={konfirmasi}
           grup={grup}
           onBatal={() => setKonfirmasi(null)}

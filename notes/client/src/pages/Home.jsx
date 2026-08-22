@@ -227,7 +227,7 @@ export default function Home({ user, onSignOut }) {
    * disusun ulang — ia muncul kembali di tempat barunya sebagai kartu yang
    * timbul, bukan melompat.
    *
-   * Jedanya sama dengan lama transisi di CSS (.note-row.is-memudar). Kalau
+   * Jedanya sama dengan lama transition di CSS (.note-row.is-memudar). Kalau
    * salah satunya diubah, ubah keduanya.
    */
   async function pinFromMenu() {
