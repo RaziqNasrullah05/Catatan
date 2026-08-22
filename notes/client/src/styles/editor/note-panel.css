@@ -1,0 +1,143 @@
+/* ---------- Catatan sebagai panel yang naik dari bawah ---------- */
+
+.sheet-page {
+  border-radius: 22px 22px 0 0;
+  overflow: hidden;
+  will-change: transform;
+  animation: sheet-up 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+}
+/* Menutup dan menyeret dikendalikan lewat gaya inline di NoteEditor.jsx,
+   supaya animasinya selalu berlanjut dari posisi panel saat itu. */
+
+.sheet-page .topbar {
+  position: relative;
+  touch-action: none;
+  cursor: grab;
+  padding-top: 14px;
+}
+.sheet-page .topbar:active { cursor: grabbing; }
+
+.grabber {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--rule-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-page { animation: none; }
+}
+
+/* ---------- Baris tag di antara judul dan isi ---------- */
+
+/*
+ * Deret chip yang membungkus. `position: relative` dipasang karena daftar saran
+ * mengambang dari sini; tanpa itu ia berpatokan ke halaman dan mendarat di
+ * tempat yang salah begitu isinya digulir.
+ */
+.tag-row {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  /* 20px menyamai .title-input dan .save-state, supaya tag berbaris lurus
+     dengan judul di atasnya. */
+  padding: 0 20px 10px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* Tag berwarna aksen karena ia milik dan kendali pembacanya sendiri. */
+.chip.tag { background: var(--accent-soft); color: var(--accent); }
+
+/* Grup abu-abu dan tanpa silang: ia ditentukan di tempat lain, dan memberi
+   silang yang ternyata tidak melakukan apa-apa lebih membingungkan daripada
+   tidak memberinya sama sekali. */
+.chip.grup { background: var(--rule); color: var(--ink-soft); }
+
+.chip.tambah {
+  border: 1px dashed var(--rule-strong);
+  color: var(--ink-faint);
+  background: none;
+}
+.chip.tambah:active { background: var(--rule); }
+
+.chip-x {
+  display: flex;
+  margin: 0 -4px 0 1px;
+  padding: 2px;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.75;
+}
+.chip-x:active { opacity: 1; background: var(--accent-soft); }
+
+.chip-isian {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.chip-isian input {
+  /* Melebar mengikuti isi, tapi tidak pernah menyempit sampai kursornya
+     tersembunyi. */
+  width: 84px;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: 12px;
+  outline: none;
+  padding: 0;
+}
+
+.tag-saran {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  left: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 40px);
+  padding: 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: 0 10px 28px -16px rgb(0 0 0 / 0.4);
+}
+.tag-saran button {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tag-error {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--danger);
+}

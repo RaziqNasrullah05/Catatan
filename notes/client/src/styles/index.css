@@ -39,7 +39,7 @@
 @import './editor/codemirror.css';
 @import './editor/table-widget.css';
 @import './editor/preview.css';
-@import './editor/sheet.css';
+@import './editor/note-panel.css';
 
 /* Komponen mengambang — tampil di atas yang lain. */
 @import './components/sheet.css';

@@ -490,6 +490,21 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.41** — Perbaikan: seluruh lembar modal kehilangan gayanya.
+
+Gejalanya: tidak ada latar gelap, kartunya tidak membulat, isian menempel ke tepi layar, dan tombol
+Batal/Simpan menumpuk alih-alih berjajar. Sebabnya bukan aturan yang salah melainkan berkas yang
+hilang — ada **dua berkas berbeda yang sama-sama bernama `sheet.css`**, satu di `styles/components/`
+(lembar modal) dan satu di `styles/editor/` (panel catatan). Keduanya sempat dikirim di batch yang
+berbeda sebagai "sheet.css", dan yang satu menimpa yang lain.
+
+Yang di penyunting diganti nama jadi `styles/editor/note-panel.css`, sehingga tidak ada lagi dua
+berkas bernama sama di seluruh `client/src`. Aturannya sendiri tidak diubah sebaris pun.
+
+**Aturan baru:** tidak boleh ada dua berkas dengan nama sama di seluruh pohon sumber, sekalipun
+foldernya berbeda. Berkas dikirim sebagai daftar nama, dan nama yang kembar cepat atau lambat akan
+disalin ke tempat yang salah — tanpa galat, tanpa peringatan lint, tanpa build gagal.
+
 **v1.40** — Dua perbaikan: formulir tugas berantakan, dan Agenda ditata ulang lagi.
 
 **Formulir tugas berhenti meminjam kelas milik halaman lain.** Versi v1.39 memakai `.acara-form` dan
