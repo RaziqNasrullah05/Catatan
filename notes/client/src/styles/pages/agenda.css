@@ -1,13 +1,6 @@
 /* ---------- Agenda: kisi kalender dan daftar acara ---------- */
 
-.agenda {
-  /* Tinggi kepala yang menempel, dipakai .kalender untuk berhenti tepat di
-     bawahnya. Dideklarasikan di induk, bukan di .agenda-kepala sendiri —
-     variabel CSS diwariskan ke bawah, tidak menyeberang ke elemen saudara. */
-  --agenda-kepala-h: 44px;
-
-  padding-bottom: 96px;
-}
+.agenda { padding-bottom: 96px; }
 
 /*
  * Kalender diam di tempat; daftar acara yang naik menimpanya.
@@ -29,8 +22,7 @@
 .kalender {
   --pudar: 0;
   position: sticky;
-  /* Tepat di bawah kepala yang menempel di puncak. */
-  top: var(--agenda-kepala-h);
+  top: 0;
   z-index: 1;
   margin: 10px 16px 14px;
   padding: 10px 10px 12px;
@@ -56,11 +48,24 @@
  * sepenuhnya, bahkan ketika acaranya cuma satu atau tidak ada sama sekali.
  * Tanpa itu tidak ada yang bisa digulir, dan efeknya tidak pernah terjadi.
  */
+/*
+ * Lapisan "yang akan datang": kepala dan daftar acaranya, satu kotak.
+ *
+ * Kepalanya judul bagi acara di bawahnya, jadi ia tinggal di dalam kotak yang
+ * sama — bukan elemen terpisah yang kebetulan berada di dekatnya. Latarnya
+ * padat karena tugas kotak ini memang menutup: kalender ada tepat di
+ * belakangnya, dan latar tembus pandang membuat angka tanggal terbaca menembus
+ * acara.
+ *
+ * Tingginya mengikuti banyaknya acara. Tidak ada tinggi minimum: kalau acaranya
+ * cuma dua, kotaknya memang pendek dan kalender tetap terlihat seluruhnya.
+ * Memaksa tinggi layar penuh hanya menghasilkan ruang kosong yang bisa digulir
+ * tanpa ada apa-apa di dalamnya.
+ */
 .agenda-daftar {
   position: relative;
   z-index: 2;
-  min-height: 100vh;
-  padding-top: 4px;
+  padding-bottom: 8px;
   border-radius: 20px 20px 0 0;
   background: var(--bg);
   box-shadow: 0 -8px 24px -14px rgb(0 0 0 / 0.28);
@@ -150,6 +155,12 @@
  * dipakai supaya perpindahannya tidak terasa seperti tirai yang jatuh, tapi
  * warnanya tetap cukup pekat untuk menutup.
  */
+/*
+ * Kepala menempel di puncak lapisannya. Latarnya padat dan sama persis dengan
+ * lapisan, bukan tembus pandang: begitu acara mulai lewat di belakangnya,
+ * apa pun yang kurang dari padat akan membuat judulnya terbaca bertumpuk.
+ * Sudut membulatnya diteruskan supaya kepala tidak menutupi lengkungan kotak.
+ */
 .agenda-kepala {
   position: sticky;
   top: 0;
@@ -159,14 +170,9 @@
   justify-content: space-between;
   gap: 10px;
   margin: 0;
-  padding: 14px 16px 8px;
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
-  backdrop-filter: blur(12px) saturate(1.3);
-  -webkit-backdrop-filter: blur(12px) saturate(1.3);
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .agenda-kepala { background: var(--bg); }
+  padding: 16px 16px 10px;
+  border-radius: 20px 20px 0 0;
+  background: var(--bg);
 }
 .agenda-kepala h3 {
   margin: 0;

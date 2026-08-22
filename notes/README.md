@@ -490,6 +490,22 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.42** — Agenda: kepala dan daftar jadi satu kotak.
+
+Di v1.40 kepala "Yang akan datang" masih elemen tersendiri yang kebetulan berada di dekat daftarnya,
+dan yang naik menimpa kalender hanya daftarnya. Sekarang keduanya satu lapisan: kepala tinggal di
+dalam kotak yang sama, sebab ia judul bagi acara di bawahnya. Kotak itu yang bergerak naik, utuh
+bersama judulnya. Kepalanya menempel di puncak lapisan, dan sudut membulatnya diteruskan supaya ia
+tidak menutupi lengkungan kotak.
+
+**Tinggi lapisan mengikuti banyaknya acara.** `min-height: 100vh` dari v1.40 dilepas: kalau acaranya
+cuma dua, kotaknya memang pendek dan kalender tetap terlihat seluruhnya. Memaksa tinggi layar penuh
+hanya menghasilkan ruang kosong yang bisa digulir tanpa ada apa-apa di dalamnya. Konsekuensinya
+disengaja — kalender baru benar-benar tertutup kalau acaranya cukup banyak untuk menutupinya.
+
+Kalender kini menempel di `top: 0` karena tidak ada lagi kepala di atasnya, dan variabel
+`--agenda-kepala-h` ikut dilepas.
+
 **v1.41** — Perbaikan: seluruh lembar modal kehilangan gayanya.
 
 Gejalanya: tidak ada latar gelap, kartunya tidak membulat, isian menempel ke tepi layar, dan tombol

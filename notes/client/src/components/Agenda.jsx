@@ -180,17 +180,6 @@ export default function Agenda({ aktif = true }) {
         role="tabpanel"
         aria-label="Agenda"
       >
-      {/* Kepala berada di atas kalender dan menempel di puncak. Kalender lewat
-          di belakangnya saat digulir, memudar sampai tertutup seluruhnya. */}
-      <div className="agenda-kepala">
-        <h3>{dipilih ? tanggalPanjang(dipilih) : 'Yang akan datang'}</h3>
-        {dipilih && (
-          <button className="btn ghost kecil" onClick={() => setDipilih(null)}>
-            Tampilkan semua
-          </button>
-        )}
-      </div>
-
       <div className="kalender" ref={kalender}>
         <div className="kalender-kepala">
           <button className="icon-btn" aria-label="Bulan sebelumnya" onClick={() => geserBulan(-1)}>
@@ -244,6 +233,18 @@ export default function Agenda({ aktif = true }) {
         ditarik ke atas.
       */}
       <div className="agenda-daftar">
+      {/* Kepala tinggal di dalam lapisan yang sama dengan daftarnya — ia judul
+          bagi acara di bawahnya, bukan elemen terpisah yang kebetulan berada
+          di dekatnya. Menempel di puncak lapisan saat digulir. */}
+      <div className="agenda-kepala">
+        <h3>{dipilih ? tanggalPanjang(dipilih) : 'Yang akan datang'}</h3>
+        {dipilih && (
+          <button className="btn ghost kecil" onClick={() => setDipilih(null)}>
+            Tampilkan semua
+          </button>
+        )}
+      </div>
+
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
 
       {acara === null ? (
