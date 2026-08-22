@@ -3,51 +3,41 @@
 .agenda { padding-bottom: 96px; }
 
 /*
- * Kalender menempel di puncak saat daftar "yang akan datang" digulir naik.
+ * Kalender memudar dan mengabur bertahap saat digulir, sampai tertutup penuh
+ * oleh daftar "yang akan datang" di atasnya.
  *
- * Yang lengket kotaknya, bukan seluruh kepala panel: tanggal yang sedang
- * dilihat tetap terlihat sementara acaranya lewat di belakangnya. Saat menempel
- * ia diburamkan dan sedikit menciut, jadi terbaca sebagai lapisan di belakang
- * daftar — bukan bagian daftar yang kebetulan berhenti bergerak.
+ * Di v1.33 kalenderlah yang lengket dan daftarnya lewat di belakang. Sekarang
+ * terbalik: kepala daftar yang menempel di puncak, dan kalender yang menghilang
+ * di belakangnya. Bedanya bukan sekadar selera — dengan urutan ini, layar yang
+ * tergulir penuh dipakai seluruhnya oleh acara, bukan separuhnya oleh kisi
+ * tanggal yang sudah tidak dilihat lagi.
  *
- * `top` diberi jarak negatif sebesar margin atasnya supaya kotaknya benar-benar
- * mencium puncak daerah gulir, bukan berhenti 12px di bawahnya.
+ * `--pudar` berjalan dari 0 ke 1, ditulis dari JS mengikuti posisi gulir.
+ * Bilangan tanpa satuan supaya bisa dikalikan jadi piksel maupun dipakai
+ * langsung sebagai opacity.
  */
 .kalender {
-  position: sticky;
-  top: -12px;
-  z-index: 2;
+  --pudar: 0;
   margin: 12px 16px 4px;
   padding: 10px 10px 12px;
   border: 1px solid var(--rule);
   border-radius: 16px;
   background: var(--paper);
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
 
-.kalender.menempel {
-  /* Warna semi-tembus supaya blur di belakangnya ada gunanya; tanpa alfa,
-     backdrop-filter tidak terlihat sama sekali. */
-  background: color-mix(in srgb, var(--paper) 72%, transparent);
-  backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  border-color: var(--rule-strong);
-  box-shadow: 0 6px 20px -12px rgb(0 0 0 / 0.35);
-}
-
-/* Peramban yang tidak mendukung backdrop-filter tetap harus punya latar padat,
-   kalau tidak daftar acaranya terbaca menembus kalender. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .kalender.menempel { background: var(--paper); }
+  opacity: calc(1 - var(--pudar));
+  /* Blur dibatasi 8px: di atas itu ongkosnya naik tajam di ponsel sementara
+     bedanya tidak lagi terlihat, karena elemennya sudah nyaris tembus pandang. */
+  filter: blur(calc(var(--pudar) * 8px));
+  transform: scale(calc(1 - var(--pudar) * 0.03));
+  transform-origin: 50% 0;
+  will-change: opacity, filter;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kalender { transition: none; }
+  /* Memudar tetap dipertahankan — itu yang memberi tahu kalendernya pergi.
+     Yang dilepas hanya blur dan penyusutan, yang murni hiasan. */
+  .kalender { filter: none; transform: none; }
 }
-
-/* Penanda posisi setinggi nol, tepat di bawah kisi. Tidak menampilkan apa pun;
-   yang dibaca hanya perpotongannya oleh IntersectionObserver. */
-.kalender-penjaga { height: 0; }
 
 .kalender-kepala {
   display: flex;
@@ -119,12 +109,31 @@
 
 /* ---------- Daftar acara ---------- */
 
+/*
+ * Kepala daftar menempel di puncak dan menutupi kalender yang tergulir naik.
+ *
+ * Latarnya harus benar-benar menutup: kalender lewat tepat di belakangnya, dan
+ * latar tembus pandang akan membuat angka tanggal terbaca menembus judul. Blur
+ * dipakai supaya perpindahannya tidak terasa seperti tirai yang jatuh, tapi
+ * warnanya tetap cukup pekat untuk menutup.
+ */
 .agenda-kepala {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin: 18px 16px 4px;
+  margin: 0;
+  padding: 14px 16px 8px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .agenda-kepala { background: var(--bg); }
 }
 .agenda-kepala h3 {
   margin: 0;

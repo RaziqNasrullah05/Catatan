@@ -25,6 +25,30 @@
   from { transform: translateY(100%); }
 }
 
+/*
+ * Menutup: lembarnya turun kembali, tidak lenyap dalam satu frame.
+ *
+ * `forwards` penting — tanpa itu lembarnya melompat balik ke posisi terbuka di
+ * frame terakhir animasi, tepat sebelum komponennya dilepas, dan yang terlihat
+ * justru kedipan.
+ *
+ * Lamanya harus sama dengan TUTUP_MS di components/Sheet.jsx. Kalau CSS lebih
+ * lambat, lembarnya dilepas sebelum sempat sampai bawah.
+ */
+.sheet-backdrop.menutup {
+  animation: scrim-out 0.24s ease-in forwards;
+  pointer-events: none;
+}
+.sheet-backdrop.menutup .sheet {
+  animation: sheet-fall 0.24s cubic-bezier(0.3, 0, 0.75, 0.2) forwards;
+}
+@keyframes scrim-out {
+  to { opacity: 0; }
+}
+@keyframes sheet-fall {
+  to { transform: translateY(100%); }
+}
+
 .sheet h3 { margin: 0 0 6px; font-family: var(--serif); font-size: 19px; font-weight: 500; }
 .sheet p { margin: 0 0 16px; color: var(--ink-soft); font-size: 14px; }
 .sheet .row { display: flex; gap: 10px; }
