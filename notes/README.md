@@ -490,6 +490,36 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.40** — Dua perbaikan: formulir tugas berantakan, dan Agenda ditata ulang lagi.
+
+**Formulir tugas berhenti meminjam kelas milik halaman lain.** Versi v1.39 memakai `.acara-form` dan
+`.grup-field`, dan hasilnya bertabrakan: `.grup-field input` memasang `flex: 1` sementara
+`.acara-form input` memasang `width: 100%`, jarak bawah isian diatur dua aturan berbeda (18px dan
+14px), dan `danger-text` ternyata hanya berlaku untuk `.m3-btn` — pada `.btn` biasa ia tidak
+melakukan apa pun, apalagi tokennya `--s-danger` tidak ada di luar `.m3-scope`. Sekarang ada
+`.task-form` dan `.task-field` sendiri. `autoFocus` dilepas karena papan ketik yang naik bersamaan
+dengan lembar yang sedang beranimasi membuat tata letaknya melompat. Tombol Hapus diratakan sebagai
+flex, sebab `.btn` bukan flex dan ikonnya jatuh ke garis dasar yang berbeda dari teksnya.
+
+Pelajarannya dicatat: meminjam kelas milik halaman lain menghemat beberapa baris dan membayarnya
+dengan tabrakan yang baru kelihatan di layar, bukan di lint maupun build.
+
+**Agenda: yang bergerak sekarang daftarnya, bukan kalendernya.** v1.33 membuat kalender lengket dan
+daftar lewat di belakangnya; v1.34 membalik dan membuat kalender tergulir pergi sambil memudar.
+Keduanya salah dalam hal yang sama — yang bergerak selalu kalendernya. Sekarang kalender `sticky`
+tepat di bawah kepala sebagai lapisan bawah, dan daftar "yang akan datang" diberi latar padat serta
+sudut membulat di atas sehingga ia naik **menimpa** kalender seperti lembar yang ditarik.
+
+`min-height: 100vh` pada lapisan daftar memastikan ia bisa naik sampai menutup kalender sepenuhnya
+meski acaranya cuma satu atau kosong; tanpa itu tidak ada yang bisa digulir dan efeknya tidak pernah
+terjadi. Pemudaran kalender dipertahankan tapi diturunkan (opacity berhenti di 0,15, blur 6px):
+kalender yang tertutup separuh terlihat aneh kalau masih setajam aslinya. Latar daftar harus padat —
+kalender ada tepat di belakangnya, dan latar tembus pandang membuat angka tanggal terbaca menembus
+acara.
+
+Tinggi kepala hidup di `--agenda-kepala-h`, dideklarasikan di `.agenda`, bukan di `.agenda-kepala`
+sendiri: variabel CSS diwariskan ke bawah dan tidak menyeberang ke elemen saudara.
+
 **v1.39** — Fase 5f: tugas jadi barang tersendiri. Fase 5 selesai.
 
 Sampai v1.38 tugas cuma baris `- [ ]` di dalam markdown, dan tab Tugas bekerja dengan menyisir

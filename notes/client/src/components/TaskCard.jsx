@@ -121,18 +121,17 @@ export function TaskForm({ awal, onTutup, onSimpan, onHapus }) {
         <>
           <h3>{ubah ? 'Ubah tugas' : 'Tugas baru'}</h3>
 
-          <div className="acara-form">
-            <label className="grup-field">
+          <div className="task-form">
+            <label className="task-field">
               <span>Judul</span>
               <input
                 value={judul}
                 onChange={(e) => setJudul(e.target.value)}
                 placeholder="Apa yang harus dikerjakan"
-                autoFocus={!ubah}
               />
             </label>
 
-            <label className="grup-field">
+            <label className="task-field">
               <span>Isi tugas</span>
               <textarea
                 rows={3}
@@ -142,19 +141,19 @@ export function TaskForm({ awal, onTutup, onSimpan, onHapus }) {
               />
             </label>
 
-            <label className="grup-field">
+            <label className="task-field">
               <span>Tenggat</span>
               <input type="date" value={tenggat} onChange={(e) => setTenggat(e.target.value)} />
-              <p className="m3-hint">Kosongkan kalau tidak ada tenggatnya.</p>
+              <p className="task-hint">Kosongkan kalau tidak ada tenggatnya.</p>
             </label>
 
-            {error && <p className="m3-note bad">{error}</p>}
+            {error && <p className="notice bad">{error}</p>}
           </div>
 
           <div className="row">
             {ubah ? (
               <button
-                className="btn ghost danger-text"
+                className="btn ghost hapus"
                 disabled={sibuk}
                 onClick={async () => {
                   setSibuk(true);

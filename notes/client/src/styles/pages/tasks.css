@@ -101,3 +101,86 @@
 @media (prefers-reduced-motion: reduce) {
   .task-card { transition: none; }
 }
+
+/* ---------- Formulir tugas ---------- */
+
+/*
+ * Kelasnya sendiri, tidak meminjam `.acara-form` dan `.grup-field`.
+ *
+ * Versi pertama meminjam keduanya dan hasilnya berantakan: `.grup-field input`
+ * memasang `flex: 1` sementara `.acara-form input` memasang `width: 100%`,
+ * jarak bawahnya diatur dua aturan yang berbeda (18px dan 14px), dan
+ * `danger-text` ternyata cuma berlaku untuk `.m3-btn` — di `.btn` biasa ia
+ * tidak melakukan apa pun, apalagi tokennya `--s-danger` tidak ada di luar
+ * `.m3-scope`. Meminjam kelas milik halaman lain menghemat beberapa baris dan
+ * membayar dengan tabrakan yang baru kelihatan di layar.
+ */
+.task-form {
+  max-height: 58vh;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  /* Batang gulir disembunyikan seperti lembar acara; gulirnya tetap jalan. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.task-form::-webkit-scrollbar { display: none; }
+
+.task-field { display: block; margin-bottom: 14px; }
+.task-field:last-child { margin-bottom: 0; }
+.task-field > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.task-field input,
+.task-field textarea {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.16s;
+}
+.task-field input:focus,
+.task-field textarea:focus { border-color: var(--accent); }
+.task-field textarea { resize: vertical; line-height: 1.55; }
+
+/* Safari iOS memberi input tanggal tinggi dan perataannya sendiri. */
+.task-field input[type='date'] {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 46px;
+}
+.task-field input[type='date']::-webkit-date-and-time-value { text-align: left; }
+
+.task-hint {
+  margin: 7px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+/* `.btn` bukan flex, jadi ikon dan teks di dalamnya jatuh ke garis dasar yang
+   berbeda. Diratakan di sini saja, bukan di `.btn` global, supaya tombol lain
+   yang sudah terlanjur rapi tidak ikut bergeser. */
+.sheet .row .btn.hapus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-field input,
+  .task-field textarea { transition: none; }
+}

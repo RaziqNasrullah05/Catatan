@@ -1,41 +1,74 @@
 /* ---------- Agenda: kisi kalender dan daftar acara ---------- */
 
-.agenda { padding-bottom: 96px; }
+.agenda {
+  /* Tinggi kepala yang menempel, dipakai .kalender untuk berhenti tepat di
+     bawahnya. Dideklarasikan di induk, bukan di .agenda-kepala sendiri —
+     variabel CSS diwariskan ke bawah, tidak menyeberang ke elemen saudara. */
+  --agenda-kepala-h: 44px;
+
+  padding-bottom: 96px;
+}
 
 /*
- * Kalender memudar dan mengabur bertahap saat digulir, sampai tertutup penuh
- * oleh daftar "yang akan datang" di atasnya.
+ * Kalender diam di tempat; daftar acara yang naik menimpanya.
  *
- * Di v1.33 kalenderlah yang lengket dan daftarnya lewat di belakang. Sekarang
- * terbalik: kepala daftar yang menempel di puncak, dan kalender yang menghilang
- * di belakangnya. Bedanya bukan sekadar selera — dengan urutan ini, layar yang
- * tergulir penuh dipakai seluruhnya oleh acara, bukan separuhnya oleh kisi
- * tanggal yang sudah tidak dilihat lagi.
+ * Di v1.33 kalender lengket dan daftar lewat di belakangnya. Di v1.34 kalender
+ * tergulir pergi sambil memudar. Keduanya salah dalam hal yang sama: yang
+ * bergerak adalah kalendernya. Yang diinginkan justru sebaliknya — kalender
+ * tinggal di tempatnya sebagai lapisan bawah, dan "yang akan datang" naik
+ * menutupinya seperti lembar yang ditarik ke atas.
  *
- * `--pudar` berjalan dari 0 ke 1, ditulis dari JS mengikuti posisi gulir.
- * Bilangan tanpa satuan supaya bisa dikalikan jadi piksel maupun dipakai
- * langsung sebagai opacity.
+ * Karena itu kalender `sticky` tepat di bawah kepala, dan daftar acara diberi
+ * latar padat plus sudut membulat di atas. Yang tergulir cuma daftarnya.
+ *
+ * `--pudar` (0 ke 1, ditulis dari JS mengikuti posisi gulir) tetap dipakai:
+ * kalender yang tertutup separuh akan terlihat aneh kalau masih setajam
+ * aslinya, sebab ia sudah tidak bisa dibaca utuh. Ia memudar seiring tertutup,
+ * bukan menggantikan efek tertutupnya.
  */
 .kalender {
   --pudar: 0;
-  margin: 12px 16px 4px;
+  position: sticky;
+  /* Tepat di bawah kepala yang menempel di puncak. */
+  top: var(--agenda-kepala-h);
+  z-index: 1;
+  margin: 10px 16px 14px;
   padding: 10px 10px 12px;
   border: 1px solid var(--rule);
   border-radius: 16px;
   background: var(--paper);
 
-  opacity: calc(1 - var(--pudar));
-  /* Blur dibatasi 8px: di atas itu ongkosnya naik tajam di ponsel sementara
-     bedanya tidak lagi terlihat, karena elemennya sudah nyaris tembus pandang. */
-  filter: blur(calc(var(--pudar) * 8px));
-  transform: scale(calc(1 - var(--pudar) * 0.03));
+  opacity: calc(1 - var(--pudar) * 0.85);
+  /* Blur dibatasi 6px: di atas itu ongkosnya naik tajam di ponsel sementara
+     bedanya tidak lagi terlihat, karena bagian yang tersisa tinggal sepotong. */
+  filter: blur(calc(var(--pudar) * 6px));
+  transform: scale(calc(1 - var(--pudar) * 0.04));
   transform-origin: 50% 0;
   will-change: opacity, filter;
 }
 
+/*
+ * Lapisan "yang akan datang". Latarnya padat karena tugasnya memang menutup —
+ * kalender ada tepat di belakangnya, dan latar tembus pandang akan membuat
+ * angka tanggal terbaca menembus daftar acara.
+ *
+ * Tinggi minimumnya memastikan lapisan ini bisa naik sampai menutup kalender
+ * sepenuhnya, bahkan ketika acaranya cuma satu atau tidak ada sama sekali.
+ * Tanpa itu tidak ada yang bisa digulir, dan efeknya tidak pernah terjadi.
+ */
+.agenda-daftar {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  padding-top: 4px;
+  border-radius: 20px 20px 0 0;
+  background: var(--bg);
+  box-shadow: 0 -8px 24px -14px rgb(0 0 0 / 0.28);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  /* Memudar tetap dipertahankan — itu yang memberi tahu kalendernya pergi.
-     Yang dilepas hanya blur dan penyusutan, yang murni hiasan. */
+  /* Tertutupnya kalender tetap terjadi — itu tata letak, bukan hiasan. Yang
+     dilepas hanya blur dan penyusutannya. */
   .kalender { filter: none; transform: none; }
 }
 

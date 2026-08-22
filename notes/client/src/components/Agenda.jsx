@@ -236,6 +236,14 @@ export default function Agenda({ aktif = true }) {
         </div>
       </div>
 
+      {/*
+        Daftar acara dibungkus lapisannya sendiri. Ia berlatar padat dan
+        bersudut membulat di atas, jadi saat digulir ia naik menimpa kalender —
+        kalendernya diam di tempat (sticky) dan tertutup dari bawah, bukan ikut
+        tergulir pergi. Itulah yang membuat daftar terasa seperti lembar yang
+        ditarik ke atas.
+      */}
+      <div className="agenda-daftar">
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
 
       {acara === null ? (
@@ -278,6 +286,7 @@ export default function Agenda({ aktif = true }) {
         ))
       )}
 
+      </div>
       </PullRefresh>
 
       {/* fab dan lembar sengaja di luar PullRefresh: isinya digeser dengan
