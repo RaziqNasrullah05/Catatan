@@ -30,6 +30,8 @@ Domain produksi: `https://catatan.warkophajisobirin.fun`
 ```
 notes/
 ├── README.md
+├── package.json                    # hanya untuk lint; klien dan server tetap paket terpisah
+├── eslint.config.js                # no-undef untuk client/src dan server/src
 ├── CONTEXT.md                      # orientasi untuk sesi lanjutan: keputusan,
 │                                   #   cara kerja, dan hal yang masih menggantung
 ├── .gitignore                      # dist/, data/, .env, node_modules/
@@ -72,7 +74,8 @@ notes/
 │           ├── index.css           # titik masuk; mendaftarkan semua modul
 │           ├── base/
 │           │   ├── tokens.css      # variabel warna, font, ukuran; tema gelap
-│           │   └── reset.css       # dasar dokumen, tipografi, elemen mentah
+│           │   ├── reset.css       # dasar dokumen, tipografi, elemen mentah
+│           │   └── selection.css   # seleksi teks dimatikan di halaman utama
 │           ├── layout/
 │           │   ├── shell.css       # kerangka .app, topbar, pencarian
 │           │   ├── pager.css       # panel geser Catatan/Tugas (menimpa .segmented)
@@ -145,6 +148,19 @@ cd ../server && NODE_ENV=production npm start
 
 Express otomatis melayani `client/dist`, jadi antarmuka dan API satu origin. Nginx cukup diarahkan ke
 port 3000 saja.
+
+### Memeriksa kode
+
+```bash
+cd notes
+npm install      # sekali saja, hanya ESLint
+npm run lint     # memeriksa client/src dan server/src
+```
+
+**Jalankan ini sebelum menganggap sebuah perubahan selesai.** `npm run build` tidak menangkap variabel
+yang tidak terdefinisi di dalam komponen — dua bug produksi pernah lolos karenanya. Yang
+menangkapnya `no-undef`. Aturannya sengaja sedikit: ini bukan penata gaya penulisan, hanya penjaring
+kesalahan nyata.
 
 ### Variabel lingkungan
 
@@ -386,6 +402,10 @@ klik tautan email".
 **`WorkingDirectory` di systemd** harus menunjuk folder `server`, karena `CLIENT_DIR` relatif terhadap
 direktori kerja. Alternatifnya pakai jalur absolut.
 
+**`npm run build` tidak menangkap nama yang tidak terdefinisi.** Bundler hanya menyusun modul; ia tidak
+tahu bahwa sebuah nama tidak pernah dideklarasikan di mana pun. Sejak v1.31 ada `npm run lint` di akar
+proyek — jalankan sebelum menyerahkan perubahan.
+
 **`scroll-snap` beradu dengan `scrollTo({behavior:'smooth'})`.** Snap menarik balik posisi sementara
 animasi masih berjalan, terlihat sebagai kedipan. `Home.jsx` mematikan `scrollSnapType` selama geseran
 yang dipicu tombol, lalu memulihkannya. Kejadian scroll juga diabaikan selama itu agar tidak memicu
@@ -440,6 +460,40 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.31** — Fase 5a: dua bug ditutup, dan ESLint dipasang.
+
+**Kembali dari sebuah grup kini mendarat di tab Grup.** Sebelumnya `GroupDetail` memanggil
+`navigate('/')` dan `Home` selalu membuka `TAB_CATATAN`, jadi siapa pun yang menekan tombol kembali —
+atau baru saja keluar dari grup, atau membubarkannya — menemukan dirinya di tab yang tidak ada
+hubungannya dengan tempat ia barusan berada, dan harus menggeser balik satu tab setiap kali. `Home`
+sekarang membaca `location.state.tab` sebagai nilai awal `index`, dan `GroupDetail` menyertakannya di
+ketiga jalan keluarnya. Bentuknya mengikuti pola `dariGrup` milik `NoteEditor` (v1.26): asal dibawa
+lewat state navigasi, bukan disimpan di tempat lain. Nama tab yang tidak dikenali diabaikan diam-diam,
+sehingga tautan lama tetap membuka Catatan, bukan halaman kosong.
+
+Penempatan posisi gulir awal ikut disesuaikan. Efeknya berjalan di setiap render, jadi ia memakai
+`indexAwal` yang direkam sekali lewat `useRef` — memakai `index` berarti posisi gulir ditetapkan ulang
+di tengah geseran jari. Sekalian, tiga indeks tab yang masih ditulis sebagai angka (`index === 0`,
+`TABS.length - 1`) diganti konstanta bernama.
+
+**Seleksi teks dimatikan di seluruh halaman utama** (`styles/base/selection.css`). Tekan-lama dipakai
+sebagai gerakan sungguhan di aplikasi ini, sementara di peramban ponsel gerakan yang sama berarti
+"blokir kata ini" — yang muncul adalah gagang seleksi dan menu salin bawaan, menutupi menu aplikasi
+yang justru diminta. v1.10 menambalnya per kartu catatan; sekarang diselesaikan sekali lewat
+`.app:not(.sheet-page)`. Penyunting catatan sengaja dikecualikan: di sana isinya tulisan untuk dibaca
+dan disalin. Isian, `.preview`, dan `.cm-editor` tetap bisa diseleksi, karena tanpa itu memindahkan
+kursor di kolom pencarian terasa rusak. `-webkit-touch-callout` diikutkan karena Safari iOS
+memunculkan menu bawaannya lewat jalur terpisah dari `user-select`.
+
+**ESLint dipasang di akar proyek** — `package.json` dan `eslint.config.js` baru, dengan `npm run lint`
+yang memeriksa `client/src` dan `server/src` sekaligus. Klien dan server tetap paket terpisah; yang di
+akar hanya perkakas. Aturannya sengaja sedikit dan berpusat pada `no-undef`, ditambah `no-unused-vars`
+dan segelintir penangkap kesalahan nyata; `react-hooks/rules-of-hooks` galat, `exhaustive-deps` hanya
+peringatan karena beberapa efek di proyek ini memang sengaja tidak menyebut seluruh dependensinya.
+Kode yang ada lolos tanpa satu pun galat — pemasangannya diuji dengan menyisipkan variabel yang tidak
+terdefinisi lebih dulu, untuk memastikan ia benar-benar memeriksa dan bukan diam karena berkasnya
+terlewat.
 
 **v1.0** — Rilis awal. Catatan markdown, live preview, agregasi tugas, autentikasi magic link,
 undangan admin, desain mobile-first.

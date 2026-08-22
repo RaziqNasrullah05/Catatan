@@ -168,7 +168,7 @@ function ProfilDialog({ user, onSimpan, onClose }) {
               autoCorrect="off"
               spellCheck="false"
               inputMode="text"
-              placeholder="Muhammad Ibrahim"
+              placeholder="Username Anda"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />

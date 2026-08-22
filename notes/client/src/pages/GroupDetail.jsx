@@ -5,6 +5,17 @@ import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
 import { PeopleSkeleton } from '../components/Skeleton.jsx';
 
+/**
+ * Keluar dari sebuah grup harus mendarat di tab Grup, bukan di Catatan. Tanpa
+ * state ini `Home` selalu membuka Catatan, sehingga pengguna yang menekan
+ * tombol kembali menemukan dirinya di tab yang tidak ada hubungannya dengan
+ * tempat ia barusan berada — dan harus menggeser balik satu tab setiap kali.
+ *
+ * Bentuknya mengikuti pola `dariGrup` yang sudah dipakai `NoteEditor`: asal
+ * dibawa lewat state navigasi, bukan disimpan di tempat lain.
+ */
+const KEMBALI_KE_GRUP = { state: { tab: 'grup' } };
+
 export default function GroupDetail({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -62,7 +73,7 @@ export default function GroupDetail({ user }) {
   return (
     <div className="app">
       <header className="topbar">
-        <button className="icon-btn" aria-label="Kembali" onClick={() => navigate('/')}>
+        <button className="icon-btn" aria-label="Kembali" onClick={() => navigate('/', KEMBALI_KE_GRUP)}>
           <ArrowLeft size={20} strokeWidth={1.75} />
         </button>
         <span className="wordmark">{grup?.nama || 'Grup'}</span>
@@ -301,10 +312,10 @@ export default function GroupDetail({ user }) {
             setKonfirmasi(null);
             if (k.jenis === 'bubarkan') {
               await jalankan(() => api.deleteGrup(id));
-              navigate('/');
+              navigate('/', KEMBALI_KE_GRUP);
             } else if (k.jenis === 'keluar') {
               await jalankan(() => api.keluarGrup(id));
-              navigate('/');
+              navigate('/', KEMBALI_KE_GRUP);
             } else if (k.jenis === 'keluarkan') {
               await jalankan(() => api.keluarkanAnggota(id, k.anggota.id), `${k.anggota.nama} dikeluarkan.`);
             } else if (k.jenis === 'keluarkanCatatan') {

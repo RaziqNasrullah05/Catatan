@@ -1,0 +1,14 @@
+{
+  "name": "catatan",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint client/src server/src"
+  },
+  "devDependencies": {
+    "eslint": "^9.15.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^15.12.0"
+  }
+}

@@ -1,0 +1,40 @@
+/* ---------- Seleksi teks ---------- */
+
+/*
+ * Halaman utama tidak boleh terblok saat ditekan lama.
+ *
+ * Aplikasi ini memakai tekan-lama sebagai gerakan sungguhan — menu kartu
+ * catatan, dan nanti penyuntingan tugas. Di peramban ponsel, tekan-lama pada
+ * teks biasa berarti "blokir kata ini", jadi kedua tafsir itu berebut gerakan
+ * yang sama: yang muncul adalah gagang seleksi biru dan menu salin bawaan,
+ * menutupi menu aplikasi yang justru diminta. Di v1.10 ini ditambal per kartu;
+ * di sini diselesaikan sekali untuk seluruh halaman utama.
+ *
+ * `-webkit-touch-callout` diikutkan karena Safari iOS memunculkan menu bawaannya
+ * lewat jalur terpisah dari seleksi — mematikan `user-select` saja tidak cukup.
+ *
+ * Yang dikecualikan adalah `.sheet-page`, yaitu penyunting catatan. Di sana
+ * memblok teks memang yang diinginkan: isinya tulisan untuk dibaca dan disalin,
+ * bukan daftar untuk diketuk.
+ */
+.app:not(.sheet-page) {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/*
+ * Yang tetap harus bisa diblok, disalin, dan diseleksi dengan gagang: apa pun
+ * yang berisi tulisan sungguhan atau isian yang sedang diketik. Tanpa ini,
+ * memilih sepotong teks di kolom pencarian atau menggeser kursor di dalam isian
+ * nama grup terasa rusak di ponsel.
+ */
+.app:not(.sheet-page) input,
+.app:not(.sheet-page) textarea,
+.app:not(.sheet-page) [contenteditable='true'],
+.app:not(.sheet-page) .preview,
+.app:not(.sheet-page) .cm-editor {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}

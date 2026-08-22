@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
   CalendarDays,
@@ -30,8 +30,21 @@ const TABS = [
 ];
 
 // Grup berada di kiri, tapi yang dibuka pertama tetap Catatan.
+const TAB_GRUP = TABS.findIndex((t) => t.id === 'grup');
 const TAB_CATATAN = TABS.findIndex((t) => t.id === 'catatan');
 const TAB_AGENDA = TABS.findIndex((t) => t.id === 'agenda');
+
+/**
+ * Halaman lain bisa meminta tab tertentu lewat state navigasi, mis.
+ * `navigate('/', { state: { tab: 'grup' } })`. Tanpa ini, kembali dari sebuah
+ * grup selalu mendarat di Catatan — tab yang tidak ada hubungannya dengan
+ * tempat pengguna barusan berada. Nama tab yang tidak dikenali diabaikan
+ * diam-diam, bukan membuat halaman kosong.
+ */
+function tabDariState(state) {
+  const i = TABS.findIndex((t) => t.id === state?.tab);
+  return i >= 0 ? i : TAB_CATATAN;
+}
 
 function timeAgo(iso) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -44,7 +57,10 @@ function timeAgo(iso) {
 
 export default function Home({ user, onSignOut }) {
   const navigate = useNavigate();
-  const [index, setIndex] = useState(TAB_CATATAN);
+  const location = useLocation();
+  // Dibaca sekali lewat inisialisasi useState: tab awal ditentukan saat halaman
+  // dipasang, dan sesudah itu jari penggunalah yang menentukan.
+  const [index, setIndex] = useState(() => tabDariState(location.state));
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -131,17 +147,23 @@ export default function Home({ user, onSignOut }) {
 
   /**
    * Panel pertama dalam urutan DOM adalah Grup, sedangkan yang harus terlihat
-   * saat halaman dibuka adalah Catatan. Posisinya digeser sebelum lukisan
-   * pertama supaya tidak terlihat melompat. scroll-snap dimatikan sekejap
-   * karena ia menolak penetapan scrollLeft secara langsung.
+   * saat halaman dibuka biasanya Catatan — atau tab lain bila pemanggilnya
+   * meminta. Posisinya digeser sebelum lukisan pertama supaya tidak terlihat
+   * melompat. scroll-snap dimatikan sekejap karena ia menolak penetapan
+   * scrollLeft secara langsung.
+   *
+   * Dipakai `indexAwal`, bukan `index`, karena efek ini berjalan di setiap
+   * render: memakai `index` berarti posisi gulir ditetapkan ulang di tengah
+   * geseran jari.
    */
   const sudahDitempatkan = useRef(false);
+  const indexAwal = useRef(index);
   useLayoutEffect(() => {
     const pager = pagerRef.current;
     if (!pager || sudahDitempatkan.current || !pager.clientWidth) return;
     sudahDitempatkan.current = true;
     pager.style.scrollSnapType = 'none';
-    pager.scrollLeft = TAB_CATATAN * pager.clientWidth;
+    pager.scrollLeft = indexAwal.current * pager.clientWidth;
     requestAnimationFrame(() => {
       pager.style.scrollSnapType = '';
     });
@@ -320,13 +342,13 @@ export default function Home({ user, onSignOut }) {
   }, [reloadKey]);
 
   useEffect(() => {
-    if (index === TABS.length - 1) setAgendaPernahDibuka(true);
+    if (index === TAB_AGENDA) setAgendaPernahDibuka(true);
   }, [index]);
 
   // Grup dimuat saat panelnya pertama kali dikunjungi, bukan di awal — pemakaian
   // sehari-hari berada di Catatan dan Tugas.
   useEffect(() => {
-    if (index !== 0 || grup !== null) return;
+    if (index !== TAB_GRUP || grup !== null) return;
     api
       .listGrup()
       .then((d) => setGrup(d.grup))
@@ -717,7 +739,7 @@ export default function Home({ user, onSignOut }) {
         </button>
       )}
 
-      {index === 0 && (
+      {index === TAB_GRUP && (
         <button className="fab" onClick={() => setGrupBaru('')}>
           <Plus size={18} strokeWidth={2} />
           Grup baru
@@ -735,7 +757,7 @@ export default function Home({ user, onSignOut }) {
                 value={grupBaru}
                 onChange={(e) => setGrupBaru(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && buatGrup()}
-                placeholder="mis. Koas Paru 2026"
+                placeholder="Buat Grup"
                 aria-label="Nama grup"
               />
             </label>

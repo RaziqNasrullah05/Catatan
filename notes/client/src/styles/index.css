@@ -17,6 +17,7 @@
 /* Token warna, tipografi, dan ukuran — dipakai semua modul lain. */
 @import './base/tokens.css';
 @import './base/reset.css';
+@import './base/selection.css';
 
 /* Kerangka umum yang membungkus hampir semua halaman. */
 @import './layout/shell.css';

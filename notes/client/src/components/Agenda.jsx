@@ -315,7 +315,7 @@ function FormAcara({ awal, onTutup, onSimpan }) {
         <div className="acara-form">
           <label className="grup-field">
             <span>Judul</span>
-            <input value={judul} onChange={(e) => setJudul(e.target.value)} placeholder="mis. Visite pagi" autoFocus />
+            <input value={judul} onChange={(e) => setJudul(e.target.value)} placeholder="Buat Acara" autoFocus />
           </label>
 
           <label className="grup-field">
