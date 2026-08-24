@@ -3,7 +3,7 @@ import { ArrowLeft, Search } from 'lucide-react';
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
 import { PeopleSkeleton } from '../components/Skeleton.jsx';
-import { usePanel } from '../panel.js';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Daftar akun, sebagai halaman tersendiri.
@@ -16,19 +16,19 @@ import { usePanel } from '../panel.js';
  */
 export default function People({ user }) {
   /**
-   * Tanpa animasi masuk. Halaman ini dibuka dari sebuah baris di dalam
-   * Pengaturan, dan Pengaturan sendiri sudah masuk dari kanan — menggeser lagi
-   * dari arah yang sama membuatnya terbaca seperti berpindah dua kali untuk
-   * satu ketukan. Keluarnya tetap beranimasi: di situ layar memang pergi.
+   * Tanpa animasi sama sekali, masuk maupun keluar.
+   *
+   * Halaman ini dan Pengaturan adalah satu tempat yang sama dilihat dari dua
+   * kedalaman, bukan dua layar yang saling menggantikan. Menggesernya dari
+   * kanan — arah yang sama dengan cara Pengaturan sendiri masuk — membuat satu
+   * ketukan terbaca seperti berpindah dua kali.
+   *
+   * Kembalinya mendarat di "Undang orang", bukan di bagian pertama: bagian itu
+   * satu-satunya jalan menuju halaman ini, jadi mendarat di "Keamanan" berarti
+   * pengguna harus mencari jalannya kembali sendiri.
    */
-  const { kelas, tutup } = usePanel('kanan', { tanpaMasuk: true });
-
-  /**
-   * Kembali ke bagian yang membuka halaman ini, bukan ke bagian pertama.
-   * Daftar akun hanya bisa dijangkau dari "Undang orang", jadi mendarat di
-   * "Keamanan" berarti pengguna harus mencari jalannya kembali sendiri.
-   */
-  const kembali = () => tutup('/pengaturan', { state: { section: 'undang' } });
+  const navigate = useNavigate();
+  const kembali = () => navigate('/pengaturan', { state: { section: 'undang' } });
   const [users, setUsers] = useState(null);
   const [cari, setCari] = useState('');
   const [error, setError] = useState('');
@@ -59,7 +59,7 @@ export default function People({ user }) {
     : users || [];
 
   return (
-    <div className={`app settings-page m3-scope ${kelas}`}>
+    <div className="app settings-page m3-scope">
       <header className="topbar">
         <button className="icon-btn" aria-label="Kembali" onClick={kembali}>
           <ArrowLeft size={20} strokeWidth={1.75} />

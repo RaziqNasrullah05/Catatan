@@ -4,6 +4,37 @@
 
 html, body, #root { height: 100%; }
 
+/*
+ * Dokumen tidak boleh bisa digeser mendatar, titik.
+ *
+ * Ini kunci ketiga untuk keluhan yang sama, dan dua yang sebelumnya
+ * (v1.45 di `.settings-page .scroll`, v1.47 di `.settings-page`) tidak
+ * menghentikannya. Artinya yang melebar bukan anak halaman itu melainkan
+ * sesuatu di luar jangkauan keduanya, dan saya belum berhasil menunjuk apa.
+ *
+ * Yang dilakukan di sini memotong akibatnya, bukan menghilangkan sebabnya —
+ * dan itu ditulis terang-terangan supaya tidak dikira sudah beres. Kalau nanti
+ * ada yang terlihat terpotong di tepi kanan, sebabnya masih ada di sana.
+ *
+ * Aman terhadap elemen sticky: semuanya berada di dalam `.pane`, `.scroll`,
+ * atau `.agenda-daftar`, yang masing-masing daerah gulirnya sendiri. Tidak ada
+ * satu pun yang berpatokan pada gulir dokumen.
+ */
+html, body { overflow-x: hidden; }
+
+/*
+ * Kilatan biru bawaan saat mengetuk dimatikan untuk seluruh dokumen.
+ *
+ * Dulu ini hanya dipasang pada `button`, dan itu meleset: kilatannya digambar
+ * peramban pada elemen terdekat yang punya penangan klik, bukan pada elemen
+ * yang benar-benar disentuh. Di lembar konfirmasi, elemen itu adalah latar
+ * gelapnya — yang menutupi seluruh layar. Jadi mengetuk tombol di dalam lembar
+ * membuat satu layar penuh berkedip biru, sementara tombolnya sendiri sudah
+ * bersih. Sifatnya diwariskan, jadi memasangnya di `html` sekali menutup semua
+ * elemen sekaligus, termasuk div dan span yang diberi penangan klik.
+ */
+html { -webkit-tap-highlight-color: transparent; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -24,8 +55,6 @@ button {
   padding: 0;
   cursor: pointer;
   color: inherit;
-  /* Peramban seluler memberi kilatan biru saat elemen diketuk; kita atur sendiri. */
-  -webkit-tap-highlight-color: transparent;
 }
 
 a { color: var(--accent); text-underline-offset: 2px; }

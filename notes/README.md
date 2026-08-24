@@ -510,6 +510,24 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.48** — Dokumen dikunci mendatar, dan daftar akun berhenti beranimasi.
+
+**`html, body { overflow-x: hidden }`.** Ini kunci ketiga untuk keluhan yang sama. v1.45 mengunci
+daerah gulir halaman Pengaturan, v1.47 mengunci halamannya sendiri, dan keduanya tidak
+menghentikannya — artinya yang melebar bukan anak halaman itu melainkan sesuatu di luar jangkauan
+keduanya. **Saya belum berhasil menunjuk apa.** Yang dilakukan di sini memotong akibatnya, bukan
+menghilangkan sebabnya, dan itu ditulis terang-terangan di komentar berkasnya supaya tidak dikira
+sudah beres: kalau nanti ada yang terlihat terpotong di tepi kanan, sebabnya masih ada di sana.
+
+Aman terhadap elemen sticky, karena semuanya berada di dalam `.pane`, `.scroll`, atau
+`.agenda-daftar` — masing-masing daerah gulirnya sendiri, dan tidak satu pun berpatokan pada gulir
+dokumen.
+
+**Daftar akun tidak beranimasi sama sekali,** masuk maupun keluar. v1.47 melepas animasi masuknya
+tapi menahan yang keluar; ternyata itu sama janggalnya. Halaman ini dan Pengaturan adalah satu tempat
+yang sama dilihat dari dua kedalaman, bukan dua layar yang saling menggantikan. `usePanel` dilepas
+seluruhnya dari sana.
+
 **v1.47** — Empat perbaikan navigasi dan tata letak.
 
 **Halaman grup akhirnya berhenti naik ulang saat kembali dari pengaturan grup.** Ini percobaan ketiga,
