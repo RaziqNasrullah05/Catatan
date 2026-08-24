@@ -94,7 +94,11 @@ export default function FormatRail({ view, noteId }) {
         setGambarSibuk(false);
         return setGambarError(
           `Gambar terlalu besar (${ukuranTerbaca(berkas.size)}). Maksimal 2 MB.` +
-            (berkas.type === 'image/gif' ? ' GIF beranimasi tidak bisa dikecilkan otomatis.' : '')
+            (berkas.type === 'image/gif'
+              ? ' GIF beranimasi tidak dikecilkan otomatis karena animasinya akan hilang.'
+              : dikecilkan
+                ? ` Sudah dikecilkan dari ${ukuranTerbaca(asal)}, tapi masih belum cukup.`
+                : ' Peramban ini tidak bisa membacanya untuk dikecilkan — coba simpan ulang sebagai JPEG.')
         );
       }
 
@@ -202,7 +206,10 @@ export default function FormatRail({ view, noteId }) {
       <input
         ref={berkasRef}
         type="file"
-        accept="image/png,image/jpeg,image/gif,image/webp"
+        // Dibuka ke semua tipe gambar sejak v1.50. Daftar putih yang lama
+        // menyembunyikan foto HEIC/HEIF dari kamera ponsel di pemilih berkas,
+        // padahal sekarang semuanya dikonversi ke JPEG di peramban.
+        accept="image/*"
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0];

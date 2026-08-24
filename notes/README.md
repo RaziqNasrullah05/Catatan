@@ -511,6 +511,32 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.50** — Perbaikan: gambar besar masih ditolak meski pengecilan sudah ada.
+
+Dua lubang di v1.49, keduanya membuat berkas lolos tanpa pernah dikecilkan.
+
+**Daftar putih tipe berkas meleset.** v1.49 hanya mencoba `image/jpeg`, `image/png`, dan `image/webp`.
+Kamera ponsel sekarang kerap menghasilkan HEIC atau HEIF, dan sebagian pemilih berkas mengirim tipe
+kosong — semuanya lewat tanpa disentuh lalu ditolak server. Sekarang kebalikannya: **semua dicoba
+kecuali GIF**, dan yang peramban tidak bisa membacanya jatuh ke penanganan galat. `accept` pada
+pemilih berkas ikut dibuka ke `image/*`, sebab daftar lama menyembunyikan foto HEIC dari daftar
+padahal sekarang semuanya dikonversi ke JPEG.
+
+**Satu putaran mutu tidak cukup.** v1.49 mengecilkan ke 2000 piksel lalu menjajal empat tingkat mutu.
+Foto 12 megapiksel yang penuh detail — dedaunan, kerumunan, tulisan kecil — masih di atas 2 MB pada
+mutu 0,55, karena yang membuatnya besar bukan mutunya melainkan banyaknya detail yang harus disimpan.
+Yang menolong di situ mengecilkan ukurannya, bukan menurunkan mutunya lebih jauh: 0,55 pada 2000
+piksel sudah mulai terlihat kotor, sedangkan 0,85 pada 1400 piksel masih bersih. Sekarang empat ukuran
+(2000, 1600, 1200, 900) dijajal, masing-masing dengan tiga tingkat mutu.
+
+Kalau semua kombinasi masih di atas batas, yang dikembalikan **hasil terkecil**, bukan berkas aslinya
+— supaya angka di pesan penolakan jadi angka yang masuk akal, bukan 34 MB yang membuat orang mengira
+tidak terjadi apa-apa. Pesan penolakannya sekarang menyebut sebabnya: GIF, sudah dikecilkan tapi masih
+kurang, atau tidak bisa dibaca peramban.
+
+Diuji dengan PNG 4032×3024 berisi derau murni — kasus terburuk, hampir tidak bisa dikompresi:
+**34,9 MB → 1,5 MB**. Berkas yang sama dengan tipe `image/heic` dan dengan tipe kosong ikut lulus.
+
 **v1.49** — Gambar dikecilkan sebelum diunggah, dan halaman grup dirombak.
 
 **Gambar dikecilkan di peramban** (`client/src/image.js`). Foto ponsel lazimnya 3–6 MB dan 4000 piksel
