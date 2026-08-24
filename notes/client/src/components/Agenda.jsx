@@ -94,11 +94,35 @@ export default function Agenda({ aktif = true }) {
   const bulanKursor = `${kursor.tahun}-${String(kursor.bulan + 1).padStart(2, '0')}`;
   const [libur, setLibur] = useState([]);
 
+  /**
+   * Singgahan bulan yang sudah pernah diambil, selama halaman ini hidup.
+   *
+   * Server sudah menyinggah dan mengambil setahun sekali jalan, tapi menggeser
+   * bulan bolak-balik tetap berarti satu perjalanan ke server tiap kali. Peta
+   * ini menghapus perjalanan itu: bulan yang sudah pernah dilihat muncul di
+   * frame yang sama, tanpa kedipan.
+   *
+   * Disimpan di ref, bukan state, karena mengisinya tidak boleh memicu render —
+   * yang memicu render adalah `setLibur` di bawahnya.
+   */
+  const singgahan = useRef(new Map());
+
   useEffect(() => {
+    const tersimpan = singgahan.current.get(bulanKursor);
+    if (tersimpan) {
+      setLibur(tersimpan);
+      return undefined;
+    }
+
     let hidup = true;
     api
       .liburBulan(bulanKursor)
-      .then((d) => hidup && setLibur(d.libur))
+      .then((d) => {
+        // Disimpan apa pun keadaannya, termasuk daftar kosong: bulan tanpa
+        // libur juga tidak perlu ditanyakan dua kali.
+        singgahan.current.set(bulanKursor, d.libur);
+        if (hidup) setLibur(d.libur);
+      })
       .catch(() => hidup && setLibur([]));
     return () => {
       hidup = false;
@@ -250,12 +274,16 @@ export default function Agenda({ aktif = true }) {
             // jadi hanya berisi penanda yang masih berarti.
             const jumlah = tgl >= ini ? perTanggal.get(tgl)?.length ?? 0 : 0;
             const namaLibur = liburPerTanggal.get(tgl);
+            // Minggu berada di kolom pertama (HARI dimulai dari 'Min'), jadi
+            // kolomnya bisa dibaca dari posisi selnya sendiri — tanpa membuat
+            // objek Date untuk tiap sel, dan tanpa bergantung pada zona waktu.
+            const minggu = i % 7 === 0;
             return (
               <button
                 key={tgl}
                 role="gridcell"
                 className={`sel ${tgl === ini ? 'ini' : ''} ${tgl === dipilih ? 'dipilih' : ''} ${
-                  namaLibur ? 'libur' : ''
+                  namaLibur || minggu ? 'libur' : ''
                 }`}
                 // Nama liburnya masuk ke aria-label, bukan cuma jadi warna:
                 // merah saja tidak memberi tahu apa-apa bagi yang memakai
@@ -268,9 +296,27 @@ export default function Agenda({ aktif = true }) {
                 onClick={() => setDipilih((lama) => (lama === tgl ? null : tgl))}
               >
                 <span className="angka">{+tgl.slice(8, 10)}</span>
-                {/* Titik menandai ada isinya; jumlahnya tidak ditulis karena
-                    di sel selebar ini angka kecil justru sulit dibaca. */}
-                {jumlah > 0 && <span className="titik" aria-hidden="true" />}
+                {/*
+                  Titik sebanyak acaranya, sampai tiga. Lebih dari itu diganti
+                  satu garis.
+
+                  Angka tidak ditulis karena di sel selebar ini angka kecil
+                  justru sulit dibaca, sedangkan satu, dua, atau tiga titik bisa
+                  dihitung sekilas tanpa membacanya. Di atas tiga, menghitung
+                  sudah tidak mungkin dilakukan sekilas dan titiknya mulai
+                  berdesakan — garis mengatakan hal yang memang dimaksud di situ,
+                  yaitu "hari ini penuh", bukan jumlah yang persis.
+                */}
+                {jumlah > 0 &&
+                  (jumlah > 3 ? (
+                    <span className="garis" aria-hidden="true" />
+                  ) : (
+                    <span className="titik-deret" aria-hidden="true">
+                      {Array.from({ length: jumlah }, (_, n) => (
+                        <span key={n} className="titik" />
+                      ))}
+                    </span>
+                  ))}
               </button>
             );
           })}

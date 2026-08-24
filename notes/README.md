@@ -511,6 +511,33 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.54** — Kalender: Minggu merah, titik mengikuti jumlah, dan libur setahun sekali ambil.
+
+**Semua hari Minggu ikut merah,** memakai kelas yang sama dengan libur nasional — bagi yang melihat
+kalender, keduanya berarti hal yang sama: hari itu bukan hari kerja. Bedanya hanya di daftar "yang
+akan datang", yang tetap cuma menyebut libur nasional; menuliskan "Minggu" lima kali sebulan tidak
+memberi tahu apa pun. Kolom Minggu dibaca dari posisi selnya (`i % 7 === 0`, sebab `HARI` dimulai dari
+'Min'), bukan dengan membuat objek `Date` per sel — lebih murah, dan bebas dari zona waktu. Diuji atas
+24 bulan berturut-turut: setiap sel di kolom pertama benar-benar hari Minggu.
+
+**Titik sebanyak acaranya, sampai tiga; lebih dari itu jadi garis.** Angka tidak ditulis karena di sel
+selebar ini angka kecil justru sulit dibaca, sedangkan satu sampai tiga titik bisa dihitung sekilas.
+Di atas tiga, menghitung sudah tidak mungkin dilakukan sekilas dan titiknya mulai berdesakan — garis
+mengatakan hal yang memang dimaksud di situ, yaitu "hari ini penuh", bukan jumlah yang persis.
+Garisnya dibuat selebar tiga titik beserta selanya supaya terbaca sebagai kelanjutan deret itu, dan
+deret titiknya diberi tinggi tetap supaya sel berisi satu acara dan sel berisi tiga sama tingginya —
+kalau tidak, barisnya bergeser naik-turun dan kisinya terlihat goyah.
+
+**Hari libur diambil setahun sekali jalan.** Sumbernya menerima `?year=` tanpa `month`, dan setahun
+hanya berisi belasan baris — sama murahnya dengan meminta satu bulan. Hasilnya dipecah ke dua belas
+baris singgahan dalam satu transaksi, **termasuk bulan yang tidak punya libur**, yang disimpan sebagai
+daftar kosong. Baris kosong itu penting: tanpanya, bulan tanpa libur terlihat seperti "belum pernah
+diambil" dan memicu permintaan keluar setiap kali dibuka, selamanya. Diuji: membuka dua belas bulan
+berturut-turut menghasilkan **satu** panggilan ke API luar.
+
+Di sisi klien ditambahkan singgahan dalam memori, jadi bulan yang sudah pernah dilihat muncul tanpa
+perjalanan ke server sama sekali — tanpa kedipan saat menggeser bulan bolak-balik.
+
 **v1.53** — Pengerasan rute hari libur.
 
 Dua celah yang ketahuan saat memeriksa ulang v1.52, keduanya soal memercayai layanan pihak ketiga

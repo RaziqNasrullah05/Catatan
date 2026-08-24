@@ -79,14 +79,26 @@ async function bacaJson(res) {
   return JSON.parse(Buffer.concat(potongan).toString('utf8'));
 }
 
-async function ambilDariLuar(tahun, bulan) {
+/**
+ * Mengambil hari libur **setahun penuh** sekali jalan.
+ *
+ * Sumbernya menerima `?year=` tanpa `month`, dan setahun hanya berisi belasan
+ * baris — sama murahnya dengan meminta satu bulan. Karena itu yang diminta
+ * selalu setahun, lalu dipecah ke dua belas baris singgahan sekaligus.
+ *
+ * Bedanya terasa saat menggeser bulan: dulu tiap bulan baru berarti satu
+ * permintaan keluar dan satu jeda menunggu. Sekarang bulan pertama yang dibuka
+ * membayar ongkosnya untuk sebelas bulan sisanya, dan sisa tahun itu terbuka
+ * seketika.
+ */
+async function ambilDariLuar(tahun) {
   let galatTerakhir = null;
 
   for (const dasar of CERMIN) {
     try {
       // AbortSignal.timeout dipakai supaya satu cermin yang menggantung tidak
       // menahan permintaan penggunanya sampai peramban menyerah sendiri.
-      const res = await fetch(`${dasar}?month=${bulan}&year=${tahun}`, {
+      const res = await fetch(`${dasar}?year=${tahun}`, {
         signal: AbortSignal.timeout(TIMEOUT_MS),
         headers: { Accept: 'application/json' },
       });
@@ -161,14 +173,34 @@ holidaysRouter.get('/', async (req, res) => {
   const segar = baris && Date.now() - Date.parse(baris.diambil_at) < SEGAR_MS;
   if (segar) return res.json({ libur: JSON.parse(baris.data), sumber: 'singgahan' });
 
-  const [tahun, bln] = bulan.split('-');
+  const tahun = bulan.slice(0, 4);
   try {
-    const libur = await ambilDariLuar(tahun, Number(bln));
-    db.prepare(
+    const setahun = await ambilDariLuar(tahun);
+
+    /*
+     * Seluruh dua belas bulan ditulis, bukan hanya yang diminta — termasuk
+     * bulan yang tidak punya libur sama sekali, yang disimpan sebagai daftar
+     * kosong. Baris kosong itu penting: tanpanya, bulan tanpa libur akan
+     * terlihat seperti "belum pernah diambil" dan memicu permintaan keluar
+     * setiap kali dibuka, selamanya.
+     */
+    const perBulan = new Map();
+    for (let b = 1; b <= 12; b++) perBulan.set(`${tahun}-${String(b).padStart(2, '0')}`, []);
+    for (const l of setahun) {
+      const kunci = l.tanggal.slice(0, 7);
+      if (perBulan.has(kunci)) perBulan.get(kunci).push(l);
+    }
+
+    const now = new Date().toISOString();
+    const simpan = db.prepare(
       `INSERT INTO libur (bulan, data, diambil_at) VALUES (?, ?, ?)
        ON CONFLICT(bulan) DO UPDATE SET data = excluded.data, diambil_at = excluded.diambil_at`
-    ).run(bulan, JSON.stringify(libur), new Date().toISOString());
-    res.json({ libur, sumber: 'luar' });
+    );
+    db.transaction(() => {
+      for (const [b, isi] of perBulan) simpan.run(b, JSON.stringify(isi), now);
+    })();
+
+    res.json({ libur: perBulan.get(bulan) || [], sumber: 'luar' });
   } catch {
     // Singgahan basi lebih baik daripada tidak ada: hari libur tidak berubah
     // sesering itu, dan yang tersimpan minggu lalu hampir pasti masih benar.

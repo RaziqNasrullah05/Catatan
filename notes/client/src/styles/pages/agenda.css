@@ -137,13 +137,37 @@
 }
 .kalender-kisi .sel.dipilih .angka { color: #fff; font-weight: 600; }
 
+/*
+ * Satu sampai tiga titik, atau satu garis kalau lebih.
+ *
+ * Deretnya diberi tinggi tetap sebesar titiknya supaya sel yang berisi satu
+ * acara dan sel yang berisi tiga punya tinggi yang sama — kalau tidak, barisnya
+ * bergeser naik-turun mengikuti isi dan kisinya terlihat goyah.
+ */
+.kalender-kisi .titik-deret {
+  display: flex;
+  gap: 2px;
+  height: 5px;
+  align-items: center;
+}
 .kalender-kisi .titik {
   width: 5px;
   height: 5px;
   border-radius: 50%;
   background: var(--accent);
 }
-.kalender-kisi .sel.dipilih .titik { background: #fff; }
+
+/* Selebar tiga titik beserta selanya, jadi ia terbaca sebagai kelanjutan dari
+   deret itu — bukan bentuk lain yang tidak ada hubungannya. */
+.kalender-kisi .garis {
+  width: 19px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.kalender-kisi .sel.dipilih .titik,
+.kalender-kisi .sel.dipilih .garis { background: #fff; }
 
 /* ---------- Daftar acara ---------- */
 
@@ -301,6 +325,13 @@
  * dua-duanya sudah memakai latar. Warna angka bebas dari perebutan itu: sebuah
  * sel bisa sekaligus hari ini, terpilih, dan tanggal merah tanpa satu pun
  * penanda menutupi yang lain.
+ */
+/*
+ * Merah dipakai untuk dua hal sekaligus: hari libur nasional dan setiap hari
+ * Minggu. Keduanya memakai kelas yang sama karena bagi yang melihat kalender,
+ * keduanya berarti hal yang sama — hari itu bukan hari kerja. Bedanya hanya
+ * muncul di daftar "yang akan datang", yang cuma menyebut libur nasional:
+ * menuliskan "Minggu" lima kali sebulan tidak memberi tahu apa pun.
  */
 .sel.libur .angka { color: var(--danger); font-weight: 600; }
 
