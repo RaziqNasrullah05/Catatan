@@ -84,7 +84,7 @@ export default function FormatRail({ view, noteId }) {
       // langkah ini jalur yang paling wajar — memotret lalu menyisipkannya —
       // hampir selalu berakhir ditolak, dan penggunanya tidak punya cara
       // memperbaikinya dari dalam aplikasi.
-      const { berkas, dikecilkan, asal } = await kecilkanGambar(file, BATAS_GAMBAR);
+      const { berkas, dikecilkan, asal, sebab } = await kecilkanGambar(file, BATAS_GAMBAR);
 
       // Batas tetap diperiksa di sini walau server juga memeriksanya: menolak
       // setelah terkirim berarti membuang kuota data penggunanya lebih dulu.
@@ -98,7 +98,11 @@ export default function FormatRail({ view, noteId }) {
               ? ' GIF beranimasi tidak dikecilkan otomatis karena animasinya akan hilang.'
               : dikecilkan
                 ? ` Sudah dikecilkan dari ${ukuranTerbaca(asal)}, tapi masih belum cukup.`
-                : ' Peramban ini tidak bisa membacanya untuk dikecilkan — coba simpan ulang sebagai JPEG.')
+                : // Sebab sesungguhnya ikut ditampilkan, bukan diringkas jadi
+                  // "tidak bisa dibaca". Kalimat itu tidak memberi tahu apa pun
+                  // yang bisa dilakukan, dan menyembunyikan satu-satunya
+                  // petunjuk kalau ternyata ada yang salah di sini.
+                  ` Gagal dikecilkan: ${sebab || 'sebabnya tidak diketahui'}.`)
         );
       }
 

@@ -53,7 +53,31 @@ const MUTU = [0.85, 0.72, 0.6];
  */
 const JANGAN_SENTUH = new Set(['image/gif']);
 
-function muatGambar(file) {
+/**
+ * Membaca berkas jadi sesuatu yang bisa digambar ke kanvas.
+ *
+ * Dicoba `createImageBitmap` lebih dulu. Ia mendekode di luar utas utama, tidak
+ * lewat URL objek, dan menangani lebih banyak format daripada elemen `<img>` —
+ * termasuk sebagian yang dikirim kamera ponsel. `<img>` tetap disiapkan sebagai
+ * cadangan, karena `createImageBitmap` belum ada di peramban lama dan pada
+ * sebagian versi Safari ia menolak berkas yang justru bisa dibaca `<img>`.
+ *
+ * Keduanya gagal berarti berkasnya memang tidak terbaca di sini, dan alasannya
+ * dibawa keluar apa adanya — bukan ditelan jadi "tidak bisa dibaca" yang tidak
+ * memberi tahu siapa pun apa yang harus dilakukan.
+ */
+async function muatGambar(file) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bmp = await createImageBitmap(file);
+      if (bmp.width && bmp.height) {
+        return { sumber: bmp, lebar: bmp.width, tinggi: bmp.height, lepas: () => bmp.close?.() };
+      }
+    } catch {
+      // Jatuh ke cadangan di bawah.
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -61,11 +85,15 @@ function muatGambar(file) {
       // URL objek dilepas begitu gambarnya terbaca; kalau tidak, berkasnya
       // ditahan di memori selama halaman hidup.
       URL.revokeObjectURL(url);
-      resolve(img);
+      if (!img.naturalWidth || !img.naturalHeight) {
+        reject(new Error('Gambarnya terbaca tapi ukurannya nol.'));
+        return;
+      }
+      resolve({ sumber: img, lebar: img.naturalWidth, tinggi: img.naturalHeight, lepas: () => {} });
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Gambar tidak bisa dibaca.'));
+      reject(new Error(`Peramban tidak bisa mendekode berkas ${file.type || 'tanpa tipe'}.`));
     };
     img.src = url;
   });
@@ -78,7 +106,7 @@ function keBlob(canvas, mutu) {
 /**
  * @param {File} file    Berkas asli dari pemilih berkas.
  * @param {number} batas Ukuran maksimum dalam byte.
- * @returns {Promise<{berkas: File, dikecilkan: boolean, asal: number}>}
+ * @returns {Promise<{berkas: File, dikecilkan: boolean, asal: number, sebab?: string}>}
  */
 export async function kecilkanGambar(file, batas) {
   const asal = file.size;
@@ -89,19 +117,20 @@ export async function kecilkanGambar(file, batas) {
 
   const namaBaru = `${file.name.replace(/\.[^.]+$/, '') || 'gambar'}.jpg`;
   let terkecil = null;
+  let gambar = null;
 
   try {
-    const img = await muatGambar(file);
-    const sisiTerpanjang = Math.max(img.naturalWidth, img.naturalHeight);
-    if (!sisiTerpanjang) return hasilApaAdanya;
+    gambar = await muatGambar(file);
+    const sisiTerpanjang = Math.max(gambar.lebar, gambar.tinggi);
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Kanvas 2D tidak tersedia di peramban ini.');
 
     for (const sisi of SISI) {
       const skala = Math.min(1, sisi / sisiTerpanjang);
-      canvas.width = Math.round(img.naturalWidth * skala);
-      canvas.height = Math.round(img.naturalHeight * skala);
+      canvas.width = Math.round(gambar.lebar * skala);
+      canvas.height = Math.round(gambar.tinggi * skala);
       if (!canvas.width || !canvas.height) continue;
 
       // JPEG tidak punya alfa; tanpa latar putih, bagian tembus pandang pada
@@ -109,7 +138,7 @@ export async function kecilkanGambar(file, batas) {
       // mengubah ukuran kanvas mengosongkan isinya.
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(gambar.sumber, 0, 0, canvas.width, canvas.height);
 
       for (const mutu of MUTU) {
         const blob = await keBlob(canvas, mutu);
@@ -124,11 +153,17 @@ export async function kecilkanGambar(file, batas) {
         }
       }
     }
-  } catch {
-    // Peramban tidak bisa membaca berkasnya — HEIC di peramban yang belum
+  } catch (err) {
+    // Berkasnya tidak terbaca di sini — HEIC di peramban yang belum
     // mendukungnya, berkas rusak, atau kanvas kehabisan memori pada gambar
-    // raksasa. Kembalikan aslinya; server yang menolak dengan pesannya sendiri.
-    return hasilApaAdanya;
+    // raksasa. Aslinya dikembalikan supaya server yang menolak, tapi alasannya
+    // ikut dibawa: menelannya jadi "tidak bisa dibaca" tidak memberi tahu siapa
+    // pun apa yang harus dilakukan, dan menyulitkan pelacakan kalau salah.
+    return { ...hasilApaAdanya, sebab: err?.message || String(err) };
+  } finally {
+    // ImageBitmap menahan memori sampai ditutup; pada foto 12 megapiksel itu
+    // puluhan megabyte yang tidak akan dilepas sendiri di ponsel.
+    gambar?.lepas();
   }
 
   /*
@@ -146,7 +181,9 @@ export async function kecilkanGambar(file, batas) {
     };
   }
 
-  return hasilApaAdanya;
+  // Terbaca, tapi tidak satu pun percobaan menghasilkan blob. Biasanya kanvas
+  // yang gagal mengekspor pada perangkat dengan memori terbatas.
+  return { ...hasilApaAdanya, sebab: 'Kanvas gagal mengekspor gambarnya.' };
 }
 
 /** "3,4 MB" atau "820 KB" — untuk pesan yang dibaca orang, bukan log. */

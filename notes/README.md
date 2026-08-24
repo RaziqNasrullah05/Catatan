@@ -511,6 +511,31 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.51** — Perbaikan: pengecilan gagal diam-diam, dan galatnya ditelan.
+
+Pesan yang muncul di lapangan: *"Gambar terlalu besar (2,3 MB). Peramban ini tidak bisa membacanya
+untuk dikecilkan."* Kalimat itu keluar untuk berkas PNG dan JPEG biasa — yang jelas bisa dibaca
+peramban — dan itu menandakan dua kesalahan sekaligus.
+
+**Kesalahan pertama: galatnya ditelan.** `catch` di v1.49 membuang pesan aslinya dan mengembalikan
+berkas apa adanya, sehingga apa pun yang salah di dalam sana keluar sebagai satu kalimat yang sama.
+Itu menyembunyikan satu-satunya petunjuk yang ada. Sekarang alasannya dibawa keluar lewat medan
+`sebab` dan ditampilkan apa adanya di pesan penolakan.
+
+**Kesalahan kedua: satu jalur dekode saja.** v1.49 dan v1.50 hanya memakai elemen `<img>` lewat URL
+objek. Sekarang `createImageBitmap` dicoba lebih dulu — ia mendekode di luar utas utama, tidak lewat
+URL objek, dan menangani lebih banyak format — dengan `<img>` tetap sebagai cadangan, sebab
+`createImageBitmap` belum ada di peramban lama dan pada sebagian versi Safari justru menolak berkas
+yang bisa dibaca `<img>`. Dua jalur, dan yang satu menutupi kegagalan yang lain.
+
+Ikutannya: `ImageBitmap` ditutup di blok `finally`. Ia menahan memori sampai ditutup, dan pada foto 12
+megapiksel itu puluhan megabyte yang tidak akan dilepas sendiri di ponsel. Ketiadaan konteks kanvas 2D
+juga kini dilempar dengan pesannya sendiri, bukan jadi kegagalan senyap.
+
+Diuji empat jalur: tanpa `createImageBitmap` (peramban lama), lewat `createImageBitmap`,
+`createImageBitmap` yang menolak sehingga cadangan `<img>` dipakai, dan berkas yang benar-benar tidak
+terbaca — yang terakhir mengembalikan sebab yang bisa dibaca orang, bukan kalimat umum.
+
 **v1.50** — Perbaikan: gambar besar masih ditolak meski pengecilan sudah ada.
 
 Dua lubang di v1.49, keduanya membuat berkas lolos tanpa pernah dikecilkan.
