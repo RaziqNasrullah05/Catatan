@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { usePanel } from '../panel.js';
 import { ArrowLeft, FileText, Settings2, Users, X } from 'lucide-react';
 import { api } from '../api.js';
@@ -7,6 +7,9 @@ import { withMinDelay } from '../utils.js';
 import { NoteListSkeleton } from '../components/Skeleton.jsx';
 import GroupConfirm from '../components/GroupConfirm.jsx';
 import { KEMBALI_KE_GRUP } from '../nav.js';
+
+/** Penanda "aku sedang masuk ke subhalaman grup ini". Lihat penjelasan di bawah. */
+const KUNCI_KEMBALI = 'grup-kembali';
 
 /**
  * Halaman utama sebuah grup: catatan yang disimpan di dalamnya.
@@ -19,17 +22,45 @@ import { KEMBALI_KE_GRUP } from '../nav.js';
 export default function GroupNotes() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
 
   /**
-   * Halaman ini naik dari bawah saat dibuka dari tab Grup. Tapi kembali dari
-   * sebuah catatan grup juga memasang ulang halaman ini, dan menganimasikannya
-   * lagi di situ terasa salah: yang barusan terjadi adalah menutup catatan yang
-   * terbuka di atasnya, bukan membuka grupnya lagi. `NoteEditor` menitipkan
-   * penanda lewat state navigasi; dibaca sekali saat dipasang supaya perubahan
-   * state berikutnya tidak memicu animasi di tengah pemakaian.
+   * Halaman ini naik dari bawah saat dibuka dari tab Grup, tapi tidak saat
+   * kembali dari sesuatu yang terbuka di atasnya — catatan grup atau pengaturan
+   * grup. Yang barusan terjadi di situ adalah menutup, bukan membuka.
+   *
+   * Penandanya dititipkan ke sessionStorage oleh halaman ini sendiri sesaat
+   * sebelum ia pergi ke subhalaman, bukan dibawa balik oleh subhalamannya.
+   * Bedanya penting: state navigasi hanya sampai kalau yang menavigasi adalah
+   * tombol di dalam aplikasi. Gestur kembali dan tombol kembali peramban
+   * memunculkan lagi entri riwayat lama, yang tidak membawa penanda apa pun —
+   * dan di situlah animasinya dulu tetap muncul meski sudah "diperbaiki".
+   *
+   * Dibaca dan langsung dihapus, sehingga hanya berlaku untuk satu kali kembali.
    */
-  const { kelas, tutup } = usePanel('naik', { tanpaMasuk: Boolean(location.state?.tanpaAnimasi) });
+  const [tanpaMasuk] = useState(() => {
+    try {
+      const dari = sessionStorage.getItem(KUNCI_KEMBALI);
+      if (dari === id) {
+        sessionStorage.removeItem(KUNCI_KEMBALI);
+        return true;
+      }
+    } catch {
+      // Mode penyamaran di sebagian peramban melarang sessionStorage. Kehilangan
+      // penanda cuma berarti animasinya muncul lagi, bukan halaman yang rusak.
+    }
+    return false;
+  });
+  const { kelas, tutup } = usePanel('naik', { tanpaMasuk });
+
+  /** Dipanggil sesaat sebelum pergi ke sesuatu yang terbuka di atas halaman ini. */
+  const keSubhalaman = (tujuan, opsi) => {
+    try {
+      sessionStorage.setItem(KUNCI_KEMBALI, id);
+    } catch {
+      // lihat catatan di atas
+    }
+    navigate(tujuan, opsi);
+  };
   const [grup, setGrup] = useState(null);
   const [catatan, setCatatan] = useState(null);
   const [error, setError] = useState('');
@@ -82,7 +113,7 @@ export default function GroupNotes() {
             className="icon-btn"
             aria-label="Pengaturan grup"
             title="Pengaturan grup"
-            onClick={() => navigate(`/grup/${id}/pengaturan`)}
+            onClick={() => keSubhalaman(`/grup/${id}/pengaturan`)}
           >
             <Settings2 size={19} strokeWidth={1.75} />
           </button>
@@ -107,7 +138,7 @@ export default function GroupNotes() {
               </span>
               <button
                 className="grup-teks tombol"
-                onClick={() => navigate(`/catatan/${c.id}`, { state: { dariGrup: id } })}
+                onClick={() => keSubhalaman(`/catatan/${c.id}`, { state: { dariGrup: id } })}
               >
                 <span className="nama">
                   {c.title || 'Tanpa judul'}

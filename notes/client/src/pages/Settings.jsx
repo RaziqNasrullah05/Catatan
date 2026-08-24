@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { usePanel } from '../panel.js';
 import {
   ArrowLeft,
@@ -216,7 +217,16 @@ export default function Settings({ user, onUserChange }) {
     { id: 'tampilan', label: 'Tampilan', Icon: Palette },
     ...(isAdmin ? [{ id: 'undang', label: 'Undang orang', Icon: UserPlus }] : []),
   ];
-  const [section, setSection] = useState('keamanan');
+  /**
+   * Bagian awal bisa diminta lewat state navigasi, mis. saat kembali dari
+   * daftar akun — yang hanya bisa dijangkau dari "Undang orang". Dibaca sekali
+   * lewat inisialisasi useState: sesudah dipasang, jari penggunalah yang
+   * menentukan. Nama bagian yang tidak dikenali diabaikan diam-diam.
+   */
+  const location = useLocation();
+  const [section, setSection] = useState(() =>
+    sections.some((s) => s.id === location.state?.section) ? location.state.section : 'keamanan'
+  );
 
   return (
     <div className={`app settings-page ${kelas}`}>

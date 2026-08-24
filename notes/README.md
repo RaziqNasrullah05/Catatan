@@ -510,6 +510,32 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.47** — Empat perbaikan navigasi dan tata letak.
+
+**Halaman grup akhirnya berhenti naik ulang saat kembali dari pengaturan grup.** Ini percobaan ketiga,
+dan dua yang sebelumnya salah menebak sebabnya. v1.33 dan v1.43 menitipkan penanda lewat state
+navigasi, yang hanya sampai kalau yang menavigasi adalah tombol di dalam aplikasi — sedangkan gestur
+kembali dan tombol kembali peramban memunculkan lagi entri riwayat lama, yang tidak membawa penanda
+apa pun. Sekarang penandanya ditulis ke `sessionStorage` oleh halaman grup itu sendiri, sesaat sebelum
+ia pergi ke subhalaman, lalu dibaca dan dihapus saat ia dipasang kembali. Siapa pun yang menavigasi,
+penandanya sudah ada di sana. Kunci penandanya menyertakan id grup, sehingga kembali ke grup lain tidak
+ikut memakainya.
+
+**Halaman Pengaturan dikunci mendatar di dua lapis.** v1.45 hanya mengunci daerah gulirnya, dan itu
+belum cukup: bilah bagian (`.m3-tabs`) berada di luar `.scroll`, jadi apa pun yang melebar di sana
+tetap melebarkan halaman. Sekarang `.settings-page` sendiri ikut `overflow: hidden` — ia sudah
+`height: 100dvh` dengan anak yang mengurus gulir tegaknya sendiri, jadi tidak ada gulir yang hilang.
+
+**Daftar akun tidak lagi beranimasi saat dibuka.** Ia dijangkau dari sebuah baris di dalam Pengaturan,
+dan Pengaturan sendiri sudah masuk dari kanan; menggeser lagi dari arah yang sama membuatnya terbaca
+seperti berpindah dua kali untuk satu ketukan. Keluarnya tetap beranimasi, karena di situ layar memang
+pergi.
+
+**Keluar dari daftar akun mendarat kembali di "Undang orang"**, bukan di "Keamanan". Bagian itu
+satu-satunya jalan menuju daftar akun, jadi mendarat di bagian pertama berarti pengguna harus mencari
+jalannya kembali sendiri. `Settings` kini membaca `location.state.section`, mengikuti pola tab yang
+sudah dipakai `Home` sejak v1.31.
+
 **v1.46** — Saring catatan menurut tag, dan daftar akun jadi halaman sendiri.
 
 **Tombol saring di samping kolom pencarian**, satu baris, kira-kira 80 : 20. Diketuk, ia membuka

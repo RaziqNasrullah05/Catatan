@@ -15,7 +15,20 @@ import { usePanel } from '../panel.js';
  * ada di puncak dan yang tergulir hanya daftarnya.
  */
 export default function People({ user }) {
-  const { kelas, tutup } = usePanel('kanan');
+  /**
+   * Tanpa animasi masuk. Halaman ini dibuka dari sebuah baris di dalam
+   * Pengaturan, dan Pengaturan sendiri sudah masuk dari kanan — menggeser lagi
+   * dari arah yang sama membuatnya terbaca seperti berpindah dua kali untuk
+   * satu ketukan. Keluarnya tetap beranimasi: di situ layar memang pergi.
+   */
+  const { kelas, tutup } = usePanel('kanan', { tanpaMasuk: true });
+
+  /**
+   * Kembali ke bagian yang membuka halaman ini, bukan ke bagian pertama.
+   * Daftar akun hanya bisa dijangkau dari "Undang orang", jadi mendarat di
+   * "Keamanan" berarti pengguna harus mencari jalannya kembali sendiri.
+   */
+  const kembali = () => tutup('/pengaturan', { state: { section: 'undang' } });
   const [users, setUsers] = useState(null);
   const [cari, setCari] = useState('');
   const [error, setError] = useState('');
@@ -48,7 +61,7 @@ export default function People({ user }) {
   return (
     <div className={`app settings-page m3-scope ${kelas}`}>
       <header className="topbar">
-        <button className="icon-btn" aria-label="Kembali" onClick={() => tutup('/pengaturan')}>
+        <button className="icon-btn" aria-label="Kembali" onClick={kembali}>
           <ArrowLeft size={20} strokeWidth={1.75} />
         </button>
         <span className="wordmark">Orang di aplikasi ini</span>

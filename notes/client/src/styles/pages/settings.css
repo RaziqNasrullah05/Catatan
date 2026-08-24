@@ -36,10 +36,25 @@
   color: var(--s-on);
 }
 
-/* Jaring pengaman: apa pun yang lolos tetap tidak boleh membuat halaman ini
-   bisa digeser mendatar. Dipasang di daerah gulirnya, bukan di `.app`, supaya
-   tidak mengubah induk penampung bagi elemen sticky di halaman lain. */
+/*
+ * Halaman ini dikunci mendatar di dua lapis.
+ *
+ * v1.45 hanya mengunci daerah gulirnya, dan itu ternyata belum cukup: bilah
+ * bagian (`.m3-tabs`) berada di luar `.scroll`, jadi apa pun yang melebar di
+ * sana tetap melebarkan halaman. Yang terlihat adalah seluruh layar bisa
+ * digeser ke kanan dan diperkecil, dengan bagian kanan yang kosong — gejala
+ * yang tidak menunjukkan sedikit pun di mana sebabnya.
+ *
+ * Karena itu `.settings-page` sendiri ikut dikunci. Ia sudah `height: 100dvh`
+ * dengan anak yang mengurus gulir tegaknya sendiri, jadi mengunci di sini tidak
+ * menghilangkan gulir apa pun — hanya memotong yang keluar dari tepi.
+ */
+.settings-page { overflow: hidden; }
 .settings-page .scroll { overflow-x: hidden; }
+
+/* Bilah bagian menggulir sendiri; pastikan ia tidak pernah ikut melebarkan
+   induknya walau chip-nya bertambah. */
+.m3-tabs { max-width: 100%; min-width: 0; }
 
 .settings-page .topbar { background: var(--s-bg); }
 .settings-page .topbar .wordmark { color: var(--s-on); font-family: var(--sans); font-size: 19px; font-weight: 600; }

@@ -1,18 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { ArrowLeft, Crown, LogOut, Trash2, UserPlus, Users } from 'lucide-react';
 import { api } from '../api.js';
 import { withMinDelay } from '../utils.js';
 import { PeopleSkeleton } from '../components/Skeleton.jsx';
 import GroupConfirm from '../components/GroupConfirm.jsx';
 import { KEMBALI_KE_GRUP } from '../nav.js';
+import { usePanel } from '../panel.js';
 
 /** Jeda sebelum kata kunci dikirim, supaya tiap huruf tidak jadi satu permintaan. */
 const JEDA_SARAN = 250;
 
 export default function GroupSettings({ user }) {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { kelas, tutup } = usePanel('kanan');
+
+  /**
+   * Halaman catatan grup tidak beranimasi saat dimasuki kembali dari sini —
+   * tapi penandanya dititipkan olehnya sendiri sebelum ia pergi ke sini, bukan
+   * dibawa balik dari sini. Lihat GroupNotes.jsx. Jadi tidak ada yang perlu
+   * dikirim di sini, dan gestur kembali pun ikut terurus.
+   */
+  const kembali = () => tutup(`/grup/${id}`);
   const [grup, setGrup] = useState(null);
   const [orang, setOrang] = useState('');
   const [saran, setSaran] = useState([]);
@@ -91,9 +100,9 @@ export default function GroupSettings({ user }) {
   }
 
   return (
-    <div className="app settings-page m3-scope">
+    <div className={`app settings-page m3-scope ${kelas}`}>
       <header className="topbar">
-        <button className="icon-btn" aria-label="Kembali" onClick={() => navigate(`/grup/${id}`)}>
+        <button className="icon-btn" aria-label="Kembali" onClick={kembali}>
           <ArrowLeft size={20} strokeWidth={1.75} />
         </button>
         <span className="wordmark">Pengaturan grup</span>
@@ -270,10 +279,10 @@ export default function GroupSettings({ user }) {
             setKonfirmasi(null);
             if (k.jenis === 'bubarkan') {
               await jalankan(() => api.deleteGrup(id));
-              navigate('/', KEMBALI_KE_GRUP);
+              tutup('/', KEMBALI_KE_GRUP);
             } else if (k.jenis === 'keluar') {
               await jalankan(() => api.keluarGrup(id));
-              navigate('/', KEMBALI_KE_GRUP);
+              tutup('/', KEMBALI_KE_GRUP);
             } else if (k.jenis === 'keluarkan') {
               await jalankan(
                 () => api.keluarkanAnggota(id, k.anggota.id),
