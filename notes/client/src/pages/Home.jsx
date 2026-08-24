@@ -4,6 +4,7 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
+  ListFilter,
   CircleCheck,
   LogOut,
   MoreVertical,
@@ -18,6 +19,7 @@ import {
 import NoteMenu from '../components/NoteMenu.jsx';
 import PullRefresh from '../components/PullRefresh.jsx';
 import TaskCard, { TaskForm } from '../components/TaskCard.jsx';
+import TagFilter from '../components/TagFilter.jsx';
 import Agenda from '../components/Agenda.jsx';
 import { NoteListSkeleton, PeopleSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
@@ -75,6 +77,10 @@ export default function Home({ user, onSignOut }) {
   const [layout, setLayout] = useState(readLayout);
   // Tugas yang sedang dibuat atau disunting; null berarti formulirnya tertutup.
   const [formTugas, setFormTugas] = useState(null);
+  // Tag yang sedang dipakai menyaring daftar catatan, dan apakah pemilihnya
+  // sedang terbuka.
+  const [tagAktif, setTagAktif] = useState([]);
+  const [pilihTag, setPilihTag] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [menu, setMenu] = useState(null);
@@ -113,7 +119,7 @@ export default function Home({ user, onSignOut }) {
       try {
         setError('');
         const [noteData, taskData] = await withMinDelay(
-          Promise.all([api.listNotes(query), api.listTugas()])
+          Promise.all([api.listNotes(query, tagAktif), api.listTugas()])
         );
         if (!alive) return;
         setNotes(noteData.notes);
@@ -128,7 +134,7 @@ export default function Home({ user, onSignOut }) {
       alive = false;
       clearTimeout(timer);
     };
-  }, [query, reloadKey]);
+  }, [query, reloadKey, tagAktif]);
 
   /**
    * Menggeser panel saat tombol segmented ditekan.
@@ -285,7 +291,7 @@ export default function Home({ user, onSignOut }) {
     setLoading(true);
     try {
       const [noteData, taskData] = await withMinDelay(
-        Promise.all([api.listNotes(query), api.listTugas()])
+        Promise.all([api.listNotes(query, tagAktif), api.listTugas()])
       );
       setNotes(noteData.notes);
       setTasks(taskData.tugas);
@@ -295,7 +301,10 @@ export default function Home({ user, onSignOut }) {
     } finally {
       setLoading(false);
     }
-  }, [query]);
+    // Saringan tag ikut jadi dependensi: tanpa itu tarik-untuk-muat-ulang
+    // memakai daftar tag yang sudah basi dan mengembalikan catatan yang barusan
+    // disaring keluar.
+  }, [query, tagAktif]);
 
   /**
    * Kolom pencarian muncul saat menggulir ke arah atas dan menyingkir saat
@@ -548,15 +557,28 @@ export default function Home({ user, onSignOut }) {
           aria-label="Catatan"
           header={
             <div className={`search-slot ${searchOpen ? 'is-open' : ''}`}>
-              <div className="search">
-                <Search size={17} strokeWidth={1.75} />
-                <input
-                  ref={searchInput}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Cari judul atau isi catatan"
-                  aria-label="Cari catatan"
-                />
+              <div className="search-baris">
+                <div className="search">
+                  <Search size={17} strokeWidth={1.75} />
+                  <input
+                    ref={searchInput}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Cari judul atau isi catatan"
+                    aria-label="Cari catatan"
+                  />
+                </div>
+                <button
+                  className={`saring-btn ${tagAktif.length ? 'aktif' : ''}`}
+                  onClick={() => setPilihTag(true)}
+                  aria-label={
+                    tagAktif.length ? `Saring tag, ${tagAktif.length} dipilih` : 'Saring menurut tag'
+                  }
+                  title="Saring menurut tag"
+                >
+                  <ListFilter size={18} strokeWidth={1.8} />
+                  {tagAktif.length > 0 && <span className="saring-jumlah">{tagAktif.length}</span>}
+                </button>
               </div>
             </div>
           }
@@ -804,6 +826,17 @@ export default function Home({ user, onSignOut }) {
           <Plus size={18} strokeWidth={2} />
           Tugas baru
         </button>
+      )}
+
+      {pilihTag && (
+        <TagFilter
+          terpilih={tagAktif}
+          onTutup={() => setPilihTag(false)}
+          onTerapkan={(daftar) => {
+            setTagAktif(daftar);
+            setPilihTag(false);
+          }}
+        />
       )}
 
       {formTugas && (

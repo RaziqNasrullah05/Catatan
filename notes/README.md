@@ -510,6 +510,30 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.46** — Saring catatan menurut tag, dan daftar akun jadi halaman sendiri.
+
+**Tombol saring di samping kolom pencarian**, satu baris, kira-kira 80 : 20. Diketuk, ia membuka
+lembar berisi semua tag yang pernah dipakai beserta jumlah catatannya. Pilihannya baru berlaku saat
+Terapkan ditekan — bukan demi menghemat permintaan, melainkan karena memilih tiga tag berarti tiga
+kali daftar di belakang lembar berubah susunan, dan yang terlihat justru kekacauan. Tombolnya
+beraksen selama masih ada tag terpilih; tanpa penanda itu, catatan yang "hilang" akan terbaca sebagai
+kerusakan.
+
+Maknanya **"atau"**, bukan "dan": memilih dua tag menampilkan catatan yang punya salah satunya.
+Saringan ini untuk melihat lebih banyak, bukan menyempitkan sampai habis — memilih tag kedua yang tak
+pernah dipasang bersama tag pertama seharusnya tidak mengosongkan layar. Bisa dipadu dengan kata
+kunci; keduanya berlaku bersamaan. `GET /api/notes` menerima `?tag=a,b`, dirapikan dengan aturan yang
+sama seperti saat disimpan sehingga `#STEMI` tetap mencocokkan `stemi`.
+
+Penyaringan dilakukan setelah pengambilan, bukan lewat JOIN di kueri utama: kuerinya ada dua bentuk
+(dengan dan tanpa kata kunci), dan menyisipkan klausa tag ke keduanya menggandakan tempat yang bisa
+salah demi menghemat satu langkah atas paling banyak 200 baris.
+
+**"Orang di aplikasi ini" jadi halaman tersendiri** (`/pengaturan/orang`). Sebagai kartu yang
+dibuka-tutup, kolom pencarian dan hasilnya terdorong jauh ke bawah oleh kartu di atasnya, dan
+menggulirnya berarti menggulir seluruh halaman Pengaturan. Sekarang pencariannya di puncak dan yang
+tergulir hanya daftarnya. Kartunya di Pengaturan tinggal satu baris berisi jumlah akun.
+
 **v1.45** — Tiga perbaikan kecil dan satu tambahan.
 
 **Kilatan biru saat mengetuk, ronde kedua.** v1.37 memasang `-webkit-tap-highlight-color: transparent`

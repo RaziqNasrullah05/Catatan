@@ -240,7 +240,9 @@ export default function Settings({ user, onUserChange }) {
         <div className="m3-container">
           {section === 'keamanan' && <Security user={user} onUserChange={onUserChange} />}
           {section === 'tampilan' && <Appearance />}
-          {section === 'undang' && isAdmin && <Invites user={user} />}
+          {section === 'undang' && isAdmin && (
+            <Invites user={user} keOrang={() => tutup('/pengaturan/orang')} />
+          )}
         </div>
       </div>
     </div>
@@ -483,17 +485,12 @@ function Appearance() {
 
 /* ---------- Undang orang ---------- */
 
-function Invites({ user }) {
+function Invites({ user, keOrang }) {
   const [email, setEmail] = useState('');
   const [users, setUsers] = useState(null);
   const [lastInvite, setLastInvite] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  // Daftar akun tertutup secara bawaan. Yang dicari sehari-hari adalah membuat
-  // undangan, bukan menyisir orang; daftar panjang di atasnya cuma mendorong
-  // isian undangan makin jauh dari puncak.
-  const [daftarTerbuka, setDaftarTerbuka] = useState(false);
-  const [cari, setCari] = useState('');
 
   const refresh = () =>
     withMinDelay(api.users())
@@ -517,21 +514,6 @@ function Invites({ user }) {
       setError(err.message);
     }
   }
-
-  /**
-   * Penyaringan dilakukan di peramban, bukan lewat permintaan baru: seluruh
-   * daftar akun memang sudah diambil sekaligus untuk menghitung jumlahnya, jadi
-   * mengetik tidak perlu menyentuh jaringan sama sekali.
-   */
-  const terpakai = (() => {
-    const kata = cari.trim().toLowerCase().replace(/^@/, '');
-    if (!kata) return users || [];
-    return (users || []).filter(
-      (u) =>
-        u.email.toLowerCase().includes(kata) ||
-        (u.username || '').toLowerCase().includes(kata)
-    );
-  })();
 
   async function copy(text) {
     try {
@@ -582,92 +564,22 @@ function Invites({ user }) {
 
       <h2 className="m3-section-title">Orang di aplikasi ini</h2>
       <div className="m3-card">
-        <button
-          className="m3-row tappable"
-          aria-expanded={daftarTerbuka}
-          onClick={() => setDaftarTerbuka((v) => !v)}
-        >
+        {/* Sejak v1.46 daftarnya halaman tersendiri. Sebagai kartu yang
+            dibuka-tutup, pencarian dan hasilnya terdorong jauh ke bawah oleh
+            kartu di atasnya, dan menggulirnya berarti menggulir seluruh
+            halaman Pengaturan. */}
+        <button className="m3-row tappable" onClick={() => keOrang()}>
           <span className="m3-icon">
             <Users size={19} strokeWidth={1.7} />
           </span>
           <span className="m3-body">
             <span className="m3-title">{users ? `${users.length} akun` : 'Memuat…'}</span>
-            <p className="m3-desc">
-              {daftarTerbuka
-                ? 'Mencabut akses langsung menghapus semua sesi aktif orang tersebut.'
-                : 'Ketuk untuk mencari dan mengelola akun.'}
-            </p>
+            <p className="m3-desc">Cari, cabut, dan pulihkan akses.</p>
           </span>
-          <span className="m3-action m3-chevron">
-            <ChevronDown size={19} strokeWidth={1.8} className={daftarTerbuka ? 'terbuka' : ''} />
+          <span className="m3-action">
+            <ChevronRight size={18} strokeWidth={1.75} />
           </span>
         </button>
-
-        {daftarTerbuka && (
-          <>
-            <div className="m3-divider" />
-            <div className="m3-cari">
-              <Search size={16} strokeWidth={1.9} />
-              <input
-                value={cari}
-                onChange={(e) => setCari(e.target.value)}
-                placeholder="Cari nama pengguna atau email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck="false"
-                aria-label="Cari akun"
-              />
-            </div>
-          </>
-        )}
-
-        {daftarTerbuka && !users && <PeopleSkeleton />}
-        {daftarTerbuka && users && terpakai.length === 0 && (
-          <p className="m3-hint" style={{ padding: '4px 22px 18px' }}>
-            Tidak ada akun yang cocok dengan “{cari.trim()}”.
-          </p>
-        )}
-        {(daftarTerbuka ? terpakai : []).map((u) => (
-          <div key={u.id}>
-            <div className="m3-divider" />
-            <div className="m3-row">
-              <span className="m3-avatar">{(u.username || u.email)[0]}</span>
-              <span className="m3-body">
-                <span className="m3-title">
-                  {u.username ? `@${u.username}` : u.email}
-                  {u.role === 'admin' && <span className="m3-status">Admin</span>}
-                  {Boolean(u.disabled) && <span className="m3-status muted">Dicabut</span>}
-                </span>
-                {/* Nama pengguna jadi judul kalau ada, dan emailnya turun ke
-                    baris keterangan — keduanya tetap terlihat, karena pencarian
-                    di atas mencocokkan dua-duanya. */}
-                <p className="m3-desc">
-                  {u.username ? `${u.email} · ` : ''}
-                  {u.last_seen_at
-                    ? `Terakhir aktif ${new Date(u.last_seen_at).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}`
-                    : 'Belum pernah masuk'}
-                </p>
-              </span>
-              {u.id !== user.id && (
-                <span className="m3-action">
-                  <button
-                    className={u.disabled ? 'm3-btn text' : 'm3-btn danger-text'}
-                    onClick={async () => {
-                      await api.setAccess(u.id, !u.disabled);
-                      refresh();
-                    }}
-                  >
-                    {u.disabled ? 'Pulihkan' : 'Cabut'}
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
       </div>
     </>
   );

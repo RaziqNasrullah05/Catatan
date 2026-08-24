@@ -61,11 +61,26 @@
   .search-slot { transition: none; }
 }
 
+/*
+ * Kolom pencarian dan tombol saring berbagi satu baris, kira-kira 80 : 20.
+ * Marginnya pindah ke baris ini supaya keduanya rata dengan tepi yang sama;
+ * `.search` sendiri tidak lagi mengatur jarak luarnya.
+ */
+.search-baris {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0 16px 6px;
+}
+
 .search {
+  flex: 1;
+  /* Tanpa ini isian di dalamnya menolak menyempit dan mendorong tombol saring
+     keluar layar pada tulisan panjang. */
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 16px 6px;
   padding: 9px 12px;
   background: var(--paper);
   border: 1px solid var(--rule);
@@ -80,3 +95,33 @@
   min-width: 0;
 }
 .search input::placeholder { color: var(--ink-faint); }
+/* ---------- Tombol saring tag ---------- */
+
+.saring-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink-soft);
+}
+
+/* Saat ada tag yang dipilih, tombolnya beraksen — kalau tidak, tidak ada
+   petunjuk bahwa daftar di bawah sedang disaring, dan catatan yang "hilang"
+   akan terbaca sebagai kerusakan. */
+.saring-btn.aktif {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.saring-btn:active { background: var(--rule); }
+.saring-btn.aktif:active { background: var(--accent-soft); }
+
+.saring-jumlah {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

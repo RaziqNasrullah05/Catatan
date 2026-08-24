@@ -58,3 +58,35 @@
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet-backdrop { animation: none; }
 }
+
+/* ---------- Pemilih tag untuk menyaring ---------- */
+
+.saring-daftar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  max-height: 44vh;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  scrollbar-width: none;
+}
+.saring-daftar::-webkit-scrollbar { display: none; }
+
+.saring-kosong { margin: 0; font-size: 14px; color: var(--ink-soft); }
+
+/* Chip yang belum dipilih dibiarkan pucat, bukan diberi garis putus-putus:
+   yang membedakan terpilih dan tidak harus terbaca sekilas dalam deret padat,
+   dan perbedaan warna latar lebih cepat ditangkap daripada bentuk tepi. */
+.chip.pilihan {
+  background: var(--rule);
+  color: var(--ink-soft);
+  padding: 5px 11px;
+  font-size: 12.5px;
+}
+.chip.pilihan.terpilih { background: var(--accent-soft); color: var(--accent); }
+
+.chip-jumlah {
+  opacity: 0.65;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}

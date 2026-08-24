@@ -11,6 +11,7 @@ import Login from './pages/Login.jsx';
 import NoteEditor from './pages/NoteEditor.jsx';
 import Notification from './pages/Notification.jsx';
 import Settings from './pages/Settings.jsx';
+import People from './pages/People.jsx';
 
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = belum diketahui
@@ -57,6 +58,7 @@ export default function App() {
       <Route path="/grup/:id" element={<GroupNotes />} />
       <Route path="/grup/:id/pengaturan" element={<GroupSettings user={user} />} />
       <Route path="/pengaturan" element={<Settings user={user} onUserChange={setUser} />} />
+      <Route path="/pengaturan/orang" element={<People user={user} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

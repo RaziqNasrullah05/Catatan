@@ -342,3 +342,7 @@
 @media (prefers-reduced-motion: reduce) {
   .m3-chevron svg { transition: none; }
 }
+
+/* Kolom pencarian yang berdiri sendiri di luar kartu, dipakai halaman daftar
+   akun. Jaraknya mengikuti kartu di sekitarnya, bukan baris di dalam kartu. */
+.m3-cari.luar { margin: 4px 0 14px; }

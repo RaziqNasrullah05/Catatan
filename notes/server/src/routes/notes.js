@@ -27,6 +27,23 @@ const excerpt = (content) =>
 
 notesRouter.get('/', (req, res) => {
   const q = String(req.query.q || '').trim();
+
+  /**
+   * Saringan tag, dikirim sebagai daftar dipisah koma. Maknanya "atau", bukan
+   * "dan": memilih dua tag menampilkan catatan yang punya salah satunya.
+   * Saringan ini dipakai untuk melihat lebih banyak, bukan menyempitkan sampai
+   * habis — memilih tag kedua yang tidak pernah dipasang bersama tag pertama
+   * seharusnya tidak mengosongkan layar.
+   *
+   * Nama tag dirapikan dengan aturan yang sama seperti saat disimpan, supaya
+   * "#STEMI" dari mana pun tetap mencocokkan "stemi" di basis data.
+   */
+  const tag = String(req.query.tag || '')
+    .split(',')
+    .map(rapikanTag)
+    .filter(Boolean)
+    .slice(0, MAX_TAG);
+
   const rows = q
     ? db
         .prepare(
@@ -43,6 +60,25 @@ notesRouter.get('/', (req, res) => {
         )
         .all(req.user.id);
 
+  // Disaring setelah pengambilan, bukan lewat JOIN di kueri utama. Kuerinya ada
+  // dua bentuk (dengan dan tanpa kata kunci), dan menyisipkan klausa tag ke
+  // keduanya menggandakan tempat yang bisa salah demi menghemat satu langkah
+  // atas paling banyak 200 baris.
+  const tersaring = tag.length
+    ? (() => {
+        const cocok = new Set(
+          db
+            .prepare(
+              `SELECT DISTINCT note_id FROM catatan_tag
+                WHERE user_id = ? AND nama IN (${tag.map(() => '?').join(',')})`
+            )
+            .all(req.user.id, ...tag)
+            .map((r) => r.note_id)
+        );
+        return rows.filter((n) => cocok.has(n.id));
+      })()
+    : rows;
+
   // Satu kueri untuk semua kaitan grup sekaligus, bukan satu per catatan.
   const kaitan = db
     .prepare(
@@ -58,7 +94,7 @@ notesRouter.get('/', (req, res) => {
   }
 
   res.json({
-    notes: rows.map((n) => ({
+    notes: tersaring.map((n) => ({
       id: n.id,
       title: n.title,
       excerpt: excerpt(n.content),

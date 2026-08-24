@@ -43,7 +43,15 @@ export const api = {
   acceptInvite: (token, email) =>
     request(`/auth/invite/${encodeURIComponent(token)}/accept`, { method: 'POST', body: { email } }),
 
-  listNotes: (q) => request(`/notes${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  listNotes: (q, tag = []) => {
+    // Dirangkai lewat URLSearchParams, bukan sambungan teks: kata kunci bisa
+    // memuat & dan =, dan nama tag bisa memuat huruf non-Latin.
+    const p = new URLSearchParams();
+    if (q) p.set('q', q);
+    if (tag.length) p.set('tag', tag.join(','));
+    const s = p.toString();
+    return request(`/notes${s ? `?${s}` : ''}`);
+  },
   getNote: (id) => request(`/notes/${id}`),
   createNote: (isi = {}) => request('/notes', { method: 'POST', body: isi }),
   updateNote: (id, patch) => request(`/notes/${id}`, { method: 'PATCH', body: patch }),
