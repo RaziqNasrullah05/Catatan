@@ -525,7 +525,9 @@ export default function Home({ user, onSignOut }) {
                         {g.nama}
                         {g.peran === 'leader' && <span className="m3-status">Pemimpin</span>}
                       </span>
-                      <span className="m3-desc blok">{g.jumlahAnggota} anggota</span>
+                      <span className="m3-desc blok">
+                        {g.jumlahAnggota} anggota · {g.jumlahCatatan ?? 0} catatan
+                      </span>
                     </span>
                     <span className="m3-action">
                       <ChevronRight size={18} strokeWidth={1.75} />

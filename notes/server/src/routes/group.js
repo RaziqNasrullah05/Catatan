@@ -43,6 +43,8 @@ groupRouter.get('/', (req, res) => {
     .prepare(
       `SELECT g.id, g.nama, g.created_at, a.peran,
               (SELECT COUNT(*) FROM grup_anggota x WHERE x.grup_id = g.id) AS jumlah_anggota
+              ,(SELECT COUNT(*) FROM grup_catatan c JOIN notes n ON n.id = c.note_id
+                 WHERE c.grup_id = g.id AND n.deleted_at IS NULL) AS jumlah_catatan
          FROM grup_anggota a JOIN grup g ON g.id = a.grup_id
         WHERE a.user_id = ?
         ORDER BY g.created_at DESC`
@@ -55,6 +57,7 @@ groupRouter.get('/', (req, res) => {
       nama: r.nama,
       peran: r.peran,
       jumlahAnggota: r.jumlah_anggota,
+      jumlahCatatan: r.jumlah_catatan,
       createdAt: r.created_at,
     })),
   });

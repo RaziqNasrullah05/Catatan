@@ -36,6 +36,11 @@
   color: var(--s-on);
 }
 
+/* Jaring pengaman: apa pun yang lolos tetap tidak boleh membuat halaman ini
+   bisa digeser mendatar. Dipasang di daerah gulirnya, bukan di `.app`, supaya
+   tidak mengubah induk penampung bagi elemen sticky di halaman lain. */
+.settings-page .scroll { overflow-x: hidden; }
+
 .settings-page .topbar { background: var(--s-bg); }
 .settings-page .topbar .wordmark { color: var(--s-on); font-family: var(--sans); font-size: 19px; font-weight: 600; }
 .settings-page .icon-btn { color: var(--s-on-variant); }
@@ -119,7 +124,18 @@
   color: var(--s-primary);
 }
 .m3-body { flex: 1; min-width: 0; }
+/*
+ * `min-width: 0` dan pemenggalan kata wajib di sini.
+ *
+ * `.m3-title` sebuah wadah flex, dan isi flex secara bawaan menolak menyempit
+ * lebih kecil dari isinya (`min-width: auto`). Satu email panjang tanpa spasi
+ * karenanya melebarkan barisnya, lalu melebarkan halaman, lalu membuat seluruh
+ * layar bisa digeser ke kanan dan diperkecil — gejalanya jauh dari sebabnya,
+ * dan tidak pernah muncul sampai ada yang mendaftar dengan alamat panjang.
+ */
 .m3-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 15.5px;
   font-weight: 500;
   line-height: 1.35;
@@ -129,7 +145,10 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+.m3-title > * { min-width: 0; }
+
 .m3-desc {
+  overflow-wrap: anywhere;
   margin: 3px 0 0;
   font-size: 13.5px;
   line-height: 1.5;
@@ -322,4 +341,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .m3-chevron svg { transition: none; }
-} 
+}

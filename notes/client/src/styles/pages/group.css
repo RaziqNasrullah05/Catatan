@@ -197,12 +197,15 @@
   border: 1px solid var(--rule);
   border-radius: 12px;
 }
+/* `cursor: pointer` sengaja tidak dipasang di sini. Barisnya sendiri tidak bisa
+   diketuk — yang bisa cuma tombol Ajak/Cabut di ujungnya — dan penunjuk tangan
+   pada daerah yang tidak melakukan apa-apa membuat peramban seluler menganggap
+   seluruh baris ini tempat ketukan, lalu mengecatnya biru saat disentuh. */
 .pilih-baris {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  cursor: pointer;
 }
 .pilih-baris + .pilih-baris { border-top: 1px solid var(--rule); }
 .pilih-baris input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }

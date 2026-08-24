@@ -38,3 +38,21 @@
   -webkit-user-select: text;
   -webkit-touch-callout: default;
 }
+
+/*
+ * Kilatan biru saat mengetuk, ronde kedua.
+ *
+ * v1.37 memasangnya di `html` dengan alasan sifat ini diwariskan. Ternyata itu
+ * tidak cukup di semua peramban seluler: sebagian menghitung kilatannya dari
+ * elemen yang dianggap "bisa diketuk", dan nilai warisan di akar dokumen tidak
+ * selalu ikut terbawa ke perhitungan itu. Dipasang lagi lewat pemilih semesta,
+ * yang tidak bergantung pada pewarisan sama sekali.
+ *
+ * Ongkosnya tidak ada: ini properti yang tidak memicu tata letak maupun
+ * penggambaran ulang, cuma mematikan efek bawaan.
+ */
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+}

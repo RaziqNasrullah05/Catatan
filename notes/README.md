@@ -159,6 +159,25 @@ cd ../server && NODE_ENV=production npm start
 Express otomatis melayani `client/dist`, jadi antarmuka dan API satu origin. Nginx cukup diarahkan ke
 port 3000 saja.
 
+### Mencadangkan
+
+```bash
+cd notes/server
+npm run backup                  # ke ./backups, menyimpan 7 terakhir
+node scripts/backup.mjs /media/hdd/catatan   # ke folder lain
+SIMPAN=14 npm run backup        # simpan 14 terakhir
+```
+
+Aman dijalankan selagi server hidup. Untuk menjadwalkannya tiap malam pukul 02.00, tambahkan ke
+crontab (`crontab -e`), dengan jalur mutlak karena cron tidak mewarisi PATH milikmu:
+
+```
+0 2 * * * cd /path/ke/notes/server && /usr/bin/node scripts/backup.mjs >> /var/log/catatan-backup.log 2>&1
+```
+
+**Uji pemulihannya sesekali.** Cadangan yang belum pernah dipulihkan belum tentu cadangan. Langkahnya
+ada di `INFO.txt` dalam setiap folder cadangan.
+
 ### Memeriksa kode
 
 ```bash
@@ -490,6 +509,49 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.45** — Tiga perbaikan kecil dan satu tambahan.
+
+**Kilatan biru saat mengetuk, ronde kedua.** v1.37 memasang `-webkit-tap-highlight-color: transparent`
+di `html` dengan alasan sifat ini diwariskan; ternyata itu tidak cukup di semua peramban seluler.
+Sekarang dipasang lagi lewat pemilih semesta, yang tidak bergantung pada pewarisan sama sekali.
+Sekalian, `cursor: pointer` dilepas dari `.pilih-baris` di lembar kolaborasi: barisnya sendiri tidak
+bisa diketuk — yang bisa cuma tombol Ajak/Cabut di ujungnya — dan penunjuk tangan pada daerah mati
+membuat peramban menganggap seluruh baris itu tempat ketukan, lalu mengecatnya biru.
+
+**Halaman Pengaturan tidak lagi bisa digeser mendatar dan diperkecil.** `.m3-title` adalah wadah flex,
+dan isi flex menolak menyempit lebih kecil dari isinya (`min-width: auto`). Satu email panjang tanpa
+spasi karenanya melebarkan barisnya, lalu halamannya, lalu seluruh layar — gejalanya jauh dari
+sebabnya, dan tidak pernah muncul sampai ada yang mendaftar dengan alamat panjang. Ditambah
+`min-width: 0` dan `overflow-wrap: anywhere`, plus `overflow-x: hidden` pada daerah gulir halaman itu
+sebagai jaring pengaman — sengaja di `.settings-page .scroll`, bukan di `.app`, supaya tidak mengubah
+induk penampung bagi elemen sticky di halaman lain.
+
+**Kartu grup menampilkan jumlah catatan** di samping jumlah anggota. `GET /api/groups` kini ikut
+mengembalikan `jumlahCatatan`; catatan yang ada di tempat sampah tidak dihitung.
+
+**v1.44** — Pencadangan (`server/scripts/backup.mjs`).
+
+Satu-satunya item yang risikonya bertambah setiap hari aplikasinya dipakai, dan sampai sekarang tidak
+ada sama sekali. Sekali perintah, `npm run backup` di folder `server`, menghasilkan satu folder
+bertanggal berisi salinan basis data, arsip gambar, dan `INFO.txt` dengan langkah pemulihannya.
+
+**Berkas `.db` tidak boleh disalin begitu saja.** Basis data ini berjalan dalam mode WAL, jadi
+sebagian tulisan terbaru berada di berkas `-wal` yang terpisah. Diuji pada basis data yang sedang
+dilayani: `catatan.db` berukuran 462 KB sementara `-wal`-nya 4,1 MB, dan `cp catatan.db` menghasilkan
+salinan berisi **245 dari 500 catatan** — lulus `integrity_check`, jadi kerusakannya tidak akan
+ketahuan sampai datanya dicari. Skrip ini memakai `VACUUM INTO`, yang menuliskan satu berkas utuh dan
+konsisten dari dalam SQLite sendiri; hasilnya 500 catatan, sama persis dengan aslinya, dan aman
+dijalankan selagi server melayani permintaan. Sambungannya dibuka baca-saja supaya skrip ini tidak
+bisa menyentuh apa pun bahkan tidak sengaja.
+
+**Urutannya disengaja: basis data dulu, gambar sesudahnya.** Kalau ada gambar diunggah di antara
+keduanya, ia ikut tersalin tapi tidak dirujuk basis data — berkas nganggur, tidak merusak apa pun.
+Urutan sebaliknya menghasilkan kerusakan sungguhan: basis data merujuk gambar yang tidak ada di
+cadangan.
+
+Cadangan lama dibuang otomatis; `SIMPAN` menentukan berapa yang ditahan (bawaan 7). Nama foldernya
+`TTTT-BB-HH_JJMM`, sehingga urut abjad sama dengan urut waktu.
 
 **v1.43** — Halaman kini juga beranimasi saat keluar.
 
