@@ -292,3 +292,60 @@
 }
 .acara-form input[type='date']::-webkit-date-and-time-value,
 .acara-form input[type='time']::-webkit-date-and-time-value { text-align: left; }
+/* ---------- Tanggal merah ---------- */
+
+/*
+ * Angkanya yang merah, bukan latarnya.
+ *
+ * Latar merah akan berebut dengan penanda "hari ini" dan "dipilih", yang
+ * dua-duanya sudah memakai latar. Warna angka bebas dari perebutan itu: sebuah
+ * sel bisa sekaligus hari ini, terpilih, dan tanggal merah tanpa satu pun
+ * penanda menutupi yang lain.
+ */
+.sel.libur .angka { color: var(--danger); font-weight: 600; }
+
+/* Kecuali saat selnya terpilih — di situ latarnya sudah gelap, dan merah di
+   atasnya tidak terbaca. Putih menang atas warna apa pun di sana. */
+.sel.dipilih.libur .angka { color: inherit; }
+
+/* Daftar tanggal merah bulan berjalan, di atas daftar acara. */
+.libur-blok {
+  margin: 6px 16px 4px;
+  padding: 10px 12px 8px;
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+}
+.libur-blok h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--danger);
+}
+
+.libur-baris {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+/* Angka tanggalnya dilebarkan tetap supaya nama-namanya berbaris lurus,
+   dan tabular-nums menjaga "1" selebar "8". */
+.libur-tanggal {
+  flex: none;
+  width: 22px;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--danger);
+}
+.libur-nama { line-height: 1.4; }
+
+/* Yang sudah lewat tetap ditampilkan — daftar ini menerangkan bulannya, bukan
+   apa yang akan datang — tapi diredupkan supaya tidak berebut perhatian. */
+.libur-baris.lewat { opacity: 0.45; }

@@ -40,6 +40,12 @@ function petakBulan(tahun, bulan) {
   return sel;
 }
 
+/** "Agustus 2026" dari teks TTTT-BB. */
+function namaBulan(bulan) {
+  const [t, b] = bulan.split('-');
+  return `${BULAN[+b - 1]} ${t}`;
+}
+
 function tanggalPanjang(s) {
   const d = new Date(`${s}T00:00:00`);
   return d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -73,6 +79,43 @@ export default function Agenda({ aktif = true }) {
   const rafId = useRef(0);
 
   const sel = useMemo(() => petakBulan(kursor.tahun, kursor.bulan), [kursor]);
+
+  /**
+   * Hari libur nasional bulan yang sedang dilihat.
+   *
+   * Diambil per bulan, bukan per tahun, karena yang perlu ditandai hanya bulan
+   * di layar — dan bulan yang tidak pernah dibuka tidak perlu membebani siapa
+   * pun. Server yang menyinggahnya; di sini cukup diminta.
+   *
+   * Kegagalan diabaikan dengan sengaja: tanggal merah itu tambahan, dan
+   * kalender tanpa penanda merah masih berguna. Menampilkan pesan galat untuk
+   * ini justru membuat sesuatu yang tidak penting terlihat seperti kerusakan.
+   */
+  const bulanKursor = `${kursor.tahun}-${String(kursor.bulan + 1).padStart(2, '0')}`;
+  const [libur, setLibur] = useState([]);
+
+  useEffect(() => {
+    let hidup = true;
+    api
+      .liburBulan(bulanKursor)
+      .then((d) => hidup && setLibur(d.libur))
+      .catch(() => hidup && setLibur([]));
+    return () => {
+      hidup = false;
+    };
+  }, [bulanKursor]);
+
+  /** Urut tanggal, dan hanya yang benar-benar jatuh di bulan yang tampil. */
+  const liburBulanIni = useMemo(
+    () => libur.filter((l) => l.tanggal.startsWith(bulanKursor)).sort((a, b) => a.tanggal.localeCompare(b.tanggal)),
+    [libur, bulanKursor]
+  );
+
+  const liburPerTanggal = useMemo(() => {
+    const m = new Map();
+    for (const l of libur) m.set(l.tanggal, l.nama);
+    return m;
+  }, [libur]);
 
   useEffect(() => {
     const isiSel = sel.filter(Boolean);
@@ -206,12 +249,21 @@ export default function Agenda({ aktif = true }) {
             // menunggu apa pun lagi, jadi titiknya dilepas — kisi bulan berjalan
             // jadi hanya berisi penanda yang masih berarti.
             const jumlah = tgl >= ini ? perTanggal.get(tgl)?.length ?? 0 : 0;
+            const namaLibur = liburPerTanggal.get(tgl);
             return (
               <button
                 key={tgl}
                 role="gridcell"
-                className={`sel ${tgl === ini ? 'ini' : ''} ${tgl === dipilih ? 'dipilih' : ''}`}
-                aria-label={`${tanggalPanjang(tgl)}${jumlah ? `, ${jumlah} acara` : ''}`}
+                className={`sel ${tgl === ini ? 'ini' : ''} ${tgl === dipilih ? 'dipilih' : ''} ${
+                  namaLibur ? 'libur' : ''
+                }`}
+                // Nama liburnya masuk ke aria-label, bukan cuma jadi warna:
+                // merah saja tidak memberi tahu apa-apa bagi yang memakai
+                // pembaca layar, dan tidak semua orang membedakan merah.
+                aria-label={`${tanggalPanjang(tgl)}${namaLibur ? `, ${namaLibur}` : ''}${
+                  jumlah ? `, ${jumlah} acara` : ''
+                }`}
+                title={namaLibur || undefined}
                 aria-pressed={tgl === dipilih}
                 onClick={() => setDipilih((lama) => (lama === tgl ? null : tgl))}
               >
@@ -246,6 +298,27 @@ export default function Agenda({ aktif = true }) {
       </div>
 
       {error && <p className="notice bad" style={{ margin: '10px 16px' }}>{error}</p>}
+
+      {/*
+        Tanggal merah bulan yang sedang dilihat.
+        
+        Hanya bulan ini, bukan seluruh tahun: daftar ini menemani kalender di
+        atasnya, dan menampilkan libur bulan-bulan lain berarti menyebut tanggal
+        yang tidak terlihat di kisi mana pun. Ikut hilang saat sebuah tanggal
+        diketuk, karena di situ pertanyaannya sudah berubah jadi "ada apa di
+        hari ini", bukan "apa saja libur bulan ini".
+      */}
+      {!dipilih && liburBulanIni.length > 0 && (
+        <section className="libur-blok">
+          <h4>Tanggal merah {namaBulan(bulanKursor)}</h4>
+          {liburBulanIni.map((l) => (
+            <div key={l.tanggal} className={`libur-baris ${l.tanggal < ini ? 'lewat' : ''}`}>
+              <span className="libur-tanggal">{+l.tanggal.slice(8, 10)}</span>
+              <span className="libur-nama">{l.nama}</span>
+            </div>
+          ))}
+        </section>
+      )}
 
       {acara === null ? (
         <p className="agenda-kosong">Memuat…</p>

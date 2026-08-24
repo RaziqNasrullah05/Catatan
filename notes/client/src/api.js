@@ -113,6 +113,8 @@ export const api = {
     return data.gambar;
   },
 
+  liburBulan: (bulan) => request(`/holidays?bulan=${bulan}`),
+
   listAcara: (dari, sampai) => request(`/events?dari=${dari}&sampai=${sampai}`),
   buatAcara: (isi) => request('/events', { method: 'POST', body: isi }),
   ubahAcara: (id, isi) => request(`/events/${id}`, { method: 'PATCH', body: isi }),

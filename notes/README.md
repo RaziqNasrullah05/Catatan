@@ -511,6 +511,53 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.53** — Pengerasan rute hari libur.
+
+Dua celah yang ketahuan saat memeriksa ulang v1.52, keduanya soal memercayai layanan pihak ketiga
+lebih dari seharusnya.
+
+**Besar jawaban tidak dibatasi.** `res.json()` membaca sampai habis tanpa bertanya berapa panjangnya.
+Satu bulan berisi segelintir hari libur, jadi jawaban wajar cuma ratusan byte — tapi layanan gratis
+bisa berpindah tangan, disusupi, atau sekadar mengembalikan halaman galat raksasa. Sekarang badannya
+dibaca potong demi potong dengan batas 256 KB dan sambungannya diputus begitu lewat. Diuji dengan
+cermin yang mengirim 50 MB sampah tanpa `content-length`: permintaannya gagal rapi, dan memori server
+tidak bergerak.
+
+**Rentang bulan tidak dibatasi.** Bentuk `TTTT-BB` saja tidak cukup — siapa pun yang sudah masuk bisa
+meminta sepuluh ribu bulan berbeda, dan tiap bulan yang belum tersinggah memicu satu permintaan
+keluar. Itu menjadikan server ini pengeras serangan terhadap layanan orang lain, sekaligus mengisi
+tabel `libur` dengan baris yang tidak akan dilihat siapa pun. Sekarang dibatasi lima tahun ke belakang
+dan ke depan, dan bulan di luar 01–12 ditolak.
+
+**v1.52** — Tanggal merah di Agenda, diambil dari API.
+
+**Tanggalnya tidak pernah ditulis di dalam kode.** Idul Fitri, Nyepi, dan Waisak bergeser tiap tahun
+mengikuti kalender Hijriah, Saka, dan lunar, dan cuti bersama ditetapkan lewat SKB yang kadang berubah
+di tengah tahun. Apa pun yang ditulis sekarang akan salah dalam dua belas bulan — dan salahnya
+diam-diam, sebab tidak ada yang gagal, cuma tanggalnya keliru.
+
+Sumbernya **api-harilibur**, yang menyediakan tiga domain cermin untuk layanan yang sama; ketiganya
+dicoba berurutan, karena layanan gratis mati bukan kejadian langka. Bisa diganti lewat `HOLIDAY_API`
+di `.env` (dipisah koma) kalau suatu saat sumbernya berpindah.
+
+**Diambil server, bukan peramban.** Dua alasan: CSP tidak perlu dibuka ke domain luar, dan jawabannya
+bisa disinggah di tabel `libur` — satu baris per bulan, dianggap segar tujuh hari. Kalau pengambilan
+baru gagal, **singgahan yang sudah basi tetap dipakai**: hari libur tidak berubah sesering itu, dan
+yang tersimpan minggu lalu hampir pasti masih benar. Kalau tidak ada singgahan sama sekali, balasannya
+daftar kosong dengan status 200, bukan galat — kalender yang kehilangan tanggal merahnya masih
+berguna, kalender yang gagal dimuat tidak.
+
+**Hanya libur nasional.** Sumber ini juga memuat hari raya daerah Bali; menampilkannya sebagai merah
+akan salah memberi tahu siapa pun di luar Bali. Sumbernya juga kadang menulis `2026-8-1` tanpa nol di
+depan, jadi tanggalnya dinormalkan supaya klien bisa membandingkannya sebagai teks biasa.
+
+Di kisi kalender, **angkanya yang merah, bukan latarnya** — latar merah akan berebut dengan penanda
+"hari ini" dan "dipilih" yang dua-duanya sudah memakai latar. Nama liburnya masuk ke `aria-label` dan
+`title`, sebab warna saja tidak memberi tahu apa pun bagi pembaca layar, dan tidak semua orang
+membedakan merah. Di bawah kalender ada blok **tanggal merah bulan yang sedang dilihat** — hanya bulan
+itu, sebab menampilkan libur bulan lain berarti menyebut tanggal yang tidak terlihat di kisi mana pun.
+Blok itu ikut hilang saat sebuah tanggal diketuk, karena di situ pertanyaannya sudah berubah.
+
 **v1.51** — Perbaikan: pengecilan gagal diam-diam, dan galatnya ditelan.
 
 Pesan yang muncul di lapangan: *"Gambar terlalu besar (2,3 MB). Peramban ini tidak bisa membacanya

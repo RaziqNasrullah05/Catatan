@@ -205,6 +205,24 @@ CREATE TABLE IF NOT EXISTS tugas (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tugas_user ON tugas(user_id, selesai, created_at);
+
+-- Singgahan hari libur nasional, satu baris per bulan.
+--
+-- Datanya datang dari API luar, dan tanggalnya memang tidak boleh ditulis di
+-- dalam kode: tanggal Idul Fitri, Nyepi, dan Waisak bergeser tiap tahun, dan
+-- cuti bersama ditetapkan pemerintah lewat SKB yang kadang berubah di tengah
+-- tahun. Apa pun yang ditulis sekarang akan salah dalam dua belas bulan.
+--
+-- Tapi bergantung pada layanan luar pada setiap kali kalender dibuka juga tidak
+-- bisa: kalau layanannya mati, kalendernya ikut kosong. Karena itu jawabannya
+-- disimpan di sini, dan yang kedaluwarsa tetap dipakai kalau pengambilan baru
+-- gagal — lebih baik menampilkan libur bulan lalu yang masih benar daripada
+-- tidak menampilkan apa pun.
+CREATE TABLE IF NOT EXISTS libur (
+  bulan      TEXT PRIMARY KEY,   -- 'TTTT-BB'
+  data       TEXT NOT NULL,      -- JSON: [{ tanggal, nama }]
+  diambil_at TEXT NOT NULL
+);
 `);
 
 // Migrasi: kolom-kolom ini ditambahkan belakangan, jadi dicek dulu agar
