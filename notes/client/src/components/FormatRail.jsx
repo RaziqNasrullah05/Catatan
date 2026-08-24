@@ -31,6 +31,7 @@ import { templates } from '../templates.js';
 import TableEditor from './TableEditor.jsx';
 import { emptyTable, findTableAtOffset } from '../cm/table.js';
 import { api } from '../api.js';
+import { kecilkanGambar, ukuranTerbaca } from '../image.js';
 
 /** 2 MB, sama dengan batas di server. */
 const BATAS_GAMBAR = 2 * 1024 * 1024;
@@ -43,6 +44,9 @@ export default function FormatRail({ view, noteId }) {
   const [sebutan, setSebutan] = useState(null);
   const [gambarSibuk, setGambarSibuk] = useState(false);
   const [gambarError, setGambarError] = useState('');
+  // Kabar yang bukan galat, mis. "gambar dikecilkan". Dipisah dari gambarError
+  // supaya tidak tampil merah — ini keterangan, bukan kegagalan.
+  const [gambarKabar, setGambarKabar] = useState('');
   const berkasRef = useRef(null);
   const guard = (fn) => () => view && fn(view);
 
@@ -71,19 +75,38 @@ export default function FormatRail({ view, noteId }) {
 
   async function unggah(file) {
     setGambarError('');
+    setGambarKabar('');
     if (!noteId) return setGambarError('Simpan catatannya dulu sebelum menambahkan gambar.');
-
-    // Diperiksa juga di sini, bukan hanya di server: menolak 2 MB setelah
-    // terkirim berarti membuang kuota data penggunanya lebih dulu.
-    if (file.size > BATAS_GAMBAR) {
-      return setGambarError(`Gambar terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB). Maksimal 2 MB.`);
-    }
 
     setGambarSibuk(true);
     try {
-      const g = await api.unggahGambar(noteId, file);
+      // Dikecilkan dulu di peramban. Foto ponsel lazimnya 3–6 MB, jadi tanpa
+      // langkah ini jalur yang paling wajar — memotret lalu menyisipkannya —
+      // hampir selalu berakhir ditolak, dan penggunanya tidak punya cara
+      // memperbaikinya dari dalam aplikasi.
+      const { berkas, dikecilkan, asal } = await kecilkanGambar(file, BATAS_GAMBAR);
+
+      // Batas tetap diperiksa di sini walau server juga memeriksanya: menolak
+      // setelah terkirim berarti membuang kuota data penggunanya lebih dulu.
+      // Yang sampai sini artinya pengecilan tidak menolong — GIF beranimasi,
+      // atau gambar yang kanvasnya gagal diproses.
+      if (berkas.size > BATAS_GAMBAR) {
+        setGambarSibuk(false);
+        return setGambarError(
+          `Gambar terlalu besar (${ukuranTerbaca(berkas.size)}). Maksimal 2 MB.` +
+            (berkas.type === 'image/gif' ? ' GIF beranimasi tidak bisa dikecilkan otomatis.' : '')
+        );
+      }
+
+      const g = await api.unggahGambar(noteId, berkas);
       const nama = file.name?.replace(/\.[^.]+$/, '') || 'gambar';
       insertBlock(view, `![${nama}](${g.url})`);
+
+      // Diberitahukan, tidak diam-diam: yang terunggah bukan berkas yang dipilih
+      // penggunanya, dan mutunya memang turun.
+      if (dikecilkan) {
+        setGambarKabar(`Dikecilkan dari ${ukuranTerbaca(asal)} ke ${ukuranTerbaca(berkas.size)}.`);
+      }
     } catch (err) {
       setGambarError(err.message);
     } finally {
@@ -189,9 +212,9 @@ export default function FormatRail({ view, noteId }) {
         }}
       />
 
-      {(gambarSibuk || gambarError) && (
+      {(gambarSibuk || gambarError || gambarKabar) && (
         <p className={`rail-kabar ${gambarError ? 'bad' : ''}`} aria-live="polite">
-          {gambarError || 'Mengunggah gambar…'}
+          {gambarError || gambarKabar || 'Menyiapkan gambar…'}
         </p>
       )}
 

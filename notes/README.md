@@ -47,6 +47,7 @@ notes/
 │       ├── utils.js                # withMinDelay — jeda minimum kerangka pemuatan
 │       ├── templates.js            # 6 template catatan siap pakai
 │       ├── nav.js                  # tujuan navigasi yang dipakai lebih dari satu halaman
+│       ├── image.js                # mengecilkan gambar sebelum diunggah
 │       ├── panel.js                # usePanel: animasi masuk & keluar halaman
 │       │
 │       ├── cm/                     # semua yang menempel ke CodeMirror
@@ -509,6 +510,40 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.49** — Gambar dikecilkan sebelum diunggah, dan halaman grup dirombak.
+
+**Gambar dikecilkan di peramban** (`client/src/image.js`). Foto ponsel lazimnya 3–6 MB dan 4000 piksel
+lebih di sisi panjangnya, sementara server menolak apa pun di atas 2 MB — artinya jalur yang paling
+wajar, memotret lalu menyisipkannya, hampir selalu berakhir ditolak tanpa jalan keluar dari dalam
+aplikasi. Sekarang gambarnya digambar ulang ke kanvas dengan sisi panjang dibatasi 2000 piksel lalu
+diekspor sebagai JPEG; kalau masih terlalu besar, mutunya diturunkan bertahap (0,85 → 0,55) dan dicoba
+lagi. Diuji dengan PNG 4032×3024 sungguhan: **33,9 MB → 1,5 MB**.
+
+Empat keputusan yang mudah salah kalau tidak ditulis: **GIF tidak disentuh** (menggambarnya ke kanvas
+hanya menyalin frame pertama, jadi animasinya hilang tanpa peringatan — lebih baik ditolak karena besar
+daripada diterima dalam keadaan rusak); **yang sudah di bawah batas dibiarkan** (memproses ulang berkas
+yang tidak bermasalah cuma menurunkan mutunya); **latar putih digambar dulu** karena JPEG tidak punya
+alfa dan bagian tembus pandang pada PNG akan keluar hitam pekat; dan **kalau pengecilan gagal, berkas
+aslinya dikembalikan** supaya server yang menolak dengan pesannya sendiri. Pengecilan yang terjadi
+diberitahukan ke pengguna, tidak diam-diam — yang terunggah memang bukan berkas yang ia pilih.
+
+**Halaman grup punya dua bagian: Catatan dan Pengumuman.** Pengumuman masih tempat kosong yang
+disiapkan lebih dulu. Rencana "Agenda masuk grup" dibatalkan dan digantikan ini.
+
+**Daftar catatan grup dirombak untuk isi yang banyak.** Bentuk lamanya memakai empat baris per catatan
+ditambah avatar dan dua tombol ikon; pada dua puluh catatan itu berarti empat puluh tombol yang hampir
+tidak pernah disentuh, semuanya memakan lebar yang dibutuhkan judul, dan layar cuma memuat empat
+entri. Sekarang: dua baris per catatan, muat kira-kira dua kali lipat, dan tindakannya pindah ke
+tekan-lama seperti kartu tugas (v1.39).
+
+Catatan **dikelompokkan menurut penulis**, kelompok sendiri di puncak, kepala kelompoknya lengket.
+Pada isi sebanyak ini "punya siapa" adalah cara orang mengingat isinya, jauh lebih sering daripada
+"kapan ditambahkan" yang jadi dasar urutan sebelumnya — dan kelompok memberi mata tempat beristirahat,
+sebab daftar rata dua puluh baris terbaca sebagai satu tembok. Nama penulis karenanya hilang dari
+barisnya sendiri. **Kolom pencarian** ditambahkan, mencocokkan judul, penulis, dan cuplikan; ia tidak
+muncul-hilang mengikuti gulir seperti di daftar catatan pribadi, karena di sini ia satu-satunya cara
+menemukan sesuatu.
 
 **v1.48** — Dokumen dikunci mendatar, dan daftar akun berhenti beranimasi.
 

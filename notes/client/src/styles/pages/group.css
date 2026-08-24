@@ -293,3 +293,170 @@
   color: var(--ink-soft);
   font-size: 11px;
 }
+/* ---------- Halaman grup: dua bagian, dan daftar yang tahan isi banyak ---------- */
+
+/*
+ * Bilah bagian. Bentuknya sengaja berbeda dari chip di Pengaturan: di sini cuma
+ * ada dua, dan garis bawah membaca lebih cepat sebagai "kamu sedang di mana"
+ * daripada dua pil berdampingan yang sama besar.
+ */
+.grup-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.grup-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px 11px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink-faint);
+}
+.grup-tabs button[aria-selected='true'] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.grup-tab-jumlah {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--rule);
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.grup-tabs button[aria-selected='true'] .grup-tab-jumlah {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Pencarian di sini tidak muncul-hilang mengikuti gulir seperti di daftar
+   catatan pribadi: begitu isinya lewat dua puluhan, ia satu-satunya cara
+   menemukan sesuatu, dan menyembunyikannya berarti menyembunyikan jalan keluar. */
+.grup-cari {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 16px 2px;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink-faint);
+}
+.grup-cari:focus-within { border-color: var(--accent); }
+.grup-cari > svg { flex: none; }
+.grup-cari input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  color: var(--ink);
+  font-size: 15px;
+}
+.icon-btn.kecil { padding: 2px; }
+
+/* Kepala kelompok penulis. Lengket supaya saat menggulir jauh ke dalam daftar
+   panjang, "ini punya siapa" tidak ikut hilang di atas layar. */
+.grup-kelompok h3 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px 6px;
+  background: var(--bg);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.grup-kelompok h3 span {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--rule);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/*
+ * Satu catatan: dua baris, tanpa avatar dan tanpa tombol ikon.
+ *
+ * Bentuk lamanya memakai empat baris per catatan (judul, penanda, penulis +
+ * cuplikan, kolaborator) ditambah avatar dan dua tombol. Pada dua puluh catatan
+ * itu berarti empat puluh tombol yang hampir tidak pernah disentuh, semuanya
+ * memakan lebar yang dibutuhkan judul, dan layar cuma memuat empat entri.
+ * Sekarang muat kira-kira dua kali lipat, dan tindakannya pindah ke tekan-lama.
+ * Nama penulis ikut hilang dari baris karena sudah jadi kepala kelompoknya.
+ */
+.grup-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px 10px;
+  text-align: left;
+}
+.grup-item:active { background: var(--rule); }
+.grup-item + .grup-item { border-top: 1px solid var(--rule); }
+
+.grup-item-judul {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.grup-item-kolab {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Satu baris, dipotong. Cuplikan di sini untuk mengenali, bukan untuk dibaca —
+   membiarkannya membungkus dua baris menghapus separuh keuntungan padatnya. */
+.grup-item-cuplik {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Baris tindakan di lembar tekan-lama. */
+.grup-aksi-baris {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  text-align: left;
+  font-size: 15px;
+  color: var(--ink);
+}
+.grup-aksi-baris + .grup-aksi-baris { border-top: 1px solid var(--rule); }
+.grup-aksi-baris:active { background: var(--rule); }
+.grup-aksi-baris.bahaya { color: var(--danger); }
