@@ -16,6 +16,9 @@ import {
   Moon,
   Palette,
   Check,
+  FolderTree,
+  Folders,
+  FileText,
   Rows3,
   Search,
   ShieldCheck,
@@ -25,12 +28,16 @@ import {
   Users,
 } from 'lucide-react';
 import { api } from '../api.js';
-import { LAYOUTS, THEMES, readLayout, readTheme, writeLayout, writeTheme } from '../prefs.js';
+import { FOLDER_MODES,
+  LAYOUTS, THEMES, readFolderMode,
+  readLayout, readTheme, writeFolderMode,
+  writeLayout, writeTheme } from '../prefs.js';
 import { PeopleSkeleton } from '../components/Skeleton.jsx';
 import { withMinDelay } from '../utils.js';
 
 const LAYOUT_ICONS = { list: Rows3, 'grid-2': Columns2, 'grid-3': Columns3 };
 const THEME_ICONS = { auto: Monitor, light: Sun, dark: Moon };
+const FOLDER_ICONS = { catatan: FileText, folder: Folders, keduanya: FolderTree };
 
 /* ---------- Bagian yang dipakai ulang ---------- */
 
@@ -417,10 +424,12 @@ function Security({ user, onUserChange }) {
 
 function Appearance() {
   const [layout, setLayout] = useState(readLayout);
+  const [folderMode, setFolderMode] = useState(readFolderMode);
   const [theme, setTheme] = useState(readTheme);
   const [dialog, setDialog] = useState(null);
 
   const layoutLabel = LAYOUTS.find((l) => l.id === layout)?.label;
+  const folderLabel = FOLDER_MODES.find((f) => f.id === folderMode)?.label;
   const themeLabel = THEMES.find((t) => t.id === theme)?.label;
 
   return (
@@ -437,6 +446,23 @@ function Appearance() {
           </span>
           <span className="m3-action">
             <span className="m3-status">{layoutLabel}</span>
+          </span>
+        </button>
+
+        <div className="m3-divider" />
+
+        <button className="m3-row tappable" onClick={() => setDialog('folder')}>
+          <span className="m3-icon">
+            <FolderTree size={19} strokeWidth={1.7} />
+          </span>
+          <span className="m3-body">
+            <span className="m3-title">Manajemen folder</span>
+            <p className="m3-desc">
+              Folder dibentuk dari tag catatanmu. Catatan tanpa tag masuk ke “Tidak Terkategori”.
+            </p>
+          </span>
+          <span className="m3-action">
+            <span className="m3-status">{folderLabel}</span>
           </span>
         </button>
 
@@ -470,6 +496,21 @@ function Appearance() {
           onPick={(id) => {
             setLayout(id);
             writeLayout(id);
+          }}
+          onClose={() => setDialog(null)}
+        />
+      )}
+
+      {dialog === 'folder' && (
+        <ChoiceDialog
+          title="Manajemen folder"
+          subtitle="Folder dibentuk dari tag, bukan wadah tersendiri — satu catatan bertag dua muncul di dua folder."
+          options={FOLDER_MODES}
+          icons={FOLDER_ICONS}
+          value={folderMode}
+          onPick={(id) => {
+            setFolderMode(id);
+            writeFolderMode(id);
           }}
           onClose={() => setDialog(null)}
         />

@@ -93,9 +93,27 @@ notesRouter.get('/', (req, res) => {
     perCatatan.get(k.note_id).push(k.nama);
   }
 
+  /*
+   * Tag semua catatan sekaligus, satu kueri. Dipakai halaman utama untuk
+   * menyusun catatan ke dalam folder (v1.55) — tanpa ini, folder harus dibangun
+   * dari satu permintaan per catatan.
+   */
+  const barisTag = db
+    .prepare(
+      `SELECT note_id, nama FROM catatan_tag
+        WHERE user_id = ? ORDER BY nama`
+    )
+    .all(req.user.id);
+  const tagPerCatatan = new Map();
+  for (const t of barisTag) {
+    if (!tagPerCatatan.has(t.note_id)) tagPerCatatan.set(t.note_id, []);
+    tagPerCatatan.get(t.note_id).push(t.nama);
+  }
+
   res.json({
     notes: tersaring.map((n) => ({
       id: n.id,
+      tag: tagPerCatatan.get(n.id) || [],
       title: n.title,
       excerpt: excerpt(n.content),
       pinned: Boolean(n.pinned),

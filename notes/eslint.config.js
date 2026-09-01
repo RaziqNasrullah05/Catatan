@@ -14,6 +14,7 @@
 
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
+import react from 'eslint-plugin-react';
 
 /** Aturan yang berlaku sama di klien maupun server. */
 const aturanUmum = {
@@ -50,7 +51,7 @@ export default [
         ecmaFeatures: { jsx: true },
       },
     },
-    plugins: { 'react-hooks': reactHooks },
+    plugins: { 'react-hooks': reactHooks, react },
     rules: {
       ...aturanUmum,
       // JSX memakai nama komponen sebagai nilai; tanpa ini `no-unused-vars`
@@ -59,6 +60,19 @@ export default [
         'error',
         { args: 'none', varsIgnorePattern: '^(_|[A-Z])' },
       ],
+      /*
+       * `no-undef` bawaan **tidak** melihat komponen di dalam JSX: `<Foo />`
+       * menghasilkan JSXIdentifier, yang tidak dihubungkan ke variabel oleh
+       * penganalisis lingkup inti. Akibatnya komponen yang dipakai tanpa
+       * diimpor lolos lint **dan** lolos build, lalu meledak di layar saat
+       * baris itu dirender. Itu sudah terjadi sekali (v1.55, `ArrowLeft`).
+       *
+       * Dua aturan ini menutupnya: `jsx-no-undef` menangkap yang tidak
+       * terdefinisi, `jsx-uses-vars` mencegah impor yang hanya dipakai di JSX
+       * salah dilaporkan sebagai tak terpakai.
+       */
+      'react/jsx-no-undef': 'error',
+      'react/jsx-uses-vars': 'error',
       'react-hooks/rules-of-hooks': 'error',
       // Diturunkan ke peringatan, bukan galat: beberapa efek di proyek ini
       // memang sengaja tidak menyebut seluruh dependensinya (mis. penempatan

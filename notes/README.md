@@ -65,6 +65,7 @@ notes/
 │       │   ├── PullRefresh.jsx     # tarik untuk muat ulang, efek ketapel
 │       │   ├── GroupConfirm.jsx    # lembar konfirmasi, dipakai dua halaman grup
 │       │   ├── Sheet.jsx         # lembar yang naik dan turun; tangani Esc
+│       │   ├── FolderList.jsx    # folder dari tag; ikon kisi / baris arsip
 │       │   ├── TagRow.jsx        # deret tag + grup di antara judul dan isi
 │       │   ├── TaskCard.jsx      # kontainer tugas + formulirnya
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
@@ -510,6 +511,46 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.55** — Catatan tampil dalam folder, dibentuk dari tag.
+
+**Folder bukan wadah tersendiri.** Tidak ada tabel folder, dan sebuah catatan tidak "berada di dalam"
+satu folder — yang ada tetap tag, dan folder cuma cara melihatnya. Dua akibatnya disengaja dan perlu
+diingat: catatan bertag dua muncul di dua folder, dan menghapus folder tidak masuk akal karena yang
+ada untuk dihapus cuma tagnya. Membuka folder pun bukan berpindah halaman, melainkan menyalakan
+saringan tag yang sudah ada sejak v1.46.
+
+**Tiga mode di Pengaturan › Tampilan › Manajemen folder:**
+
+| Mode | Yang tampil |
+| --- | --- |
+| Tampil catatan | Tidak ada folder; semua catatan datar, seperti sebelumnya |
+| Hanya folder | Folder per tag, plus "Tidak Terkategori" yang menampung catatan tanpa tag |
+| Folder + catatan | Folder per tag, dan catatan tanpa tag tampil langsung sebagai catatan |
+
+"Tidak Terkategori" ada supaya catatan yang belum sempat diberi tag tidak hilang dari layar tanpa
+jejak. Ia satu-satunya folder yang isinya disaring di peramban, sebab ia tidak punya tag untuk diminta
+ke server. Warnanya abu-abu, bukan beraksen: ia bukan folder yang dibuat orang, melainkan tempat sisa.
+
+Folder diurutkan **abjad, bukan menurut jumlah isi** — urutan yang berubah tiap kali sebuah catatan
+ditambahkan membuat folder yang sama berpindah tempat, dan ingatan otot soal "folderku ada di kiri
+atas" jadi tidak berlaku. Catatan tersemat tetap ikut dihitung di foldernya: menyematkan berarti
+"sering kubuka", bukan "pindahkan ke luar". Saat kolom pencarian berisi, folder disembunyikan — yang
+dicari orang di situ satu catatan, bukan cara menyusunnya.
+
+**Bentuknya mengikuti tata letak daftar.** Pada kisi, ikon folder besar dengan nama di bawahnya,
+seperti pengelola berkas mana pun. Pada daftar baris, ikon besar akan merusak irama baris yang rapat,
+jadi yang membedakan folder dari catatan bukan ukurannya melainkan tepi kiri tebal bergaya map arsip.
+
+`GET /api/notes` kini ikut mengembalikan `tag` tiap catatan, diambil satu kueri untuk semuanya.
+
+**Ikutannya: ESLint kini memeriksa komponen di dalam JSX.** `no-undef` bawaan **tidak** melihat
+`<Foo />` — JSX menghasilkan JSXIdentifier, yang tidak dihubungkan ke variabel oleh penganalisis
+lingkup inti. Akibatnya komponen yang dipakai tanpa diimpor lolos lint **dan** lolos build, lalu
+meledak di layar saat baris itu dirender. Itu terjadi di batch ini juga: `ArrowLeft` sempat dipakai
+tanpa diimpor dan tidak satu pun pemeriksa mengeluh. `eslint-plugin-react` ditambahkan dengan dua
+aturan, `react/jsx-no-undef` dan `react/jsx-uses-vars`; keduanya diuji dengan sengaja menghapus impor
+itu lagi, dan lint memang menangkapnya.
 
 **v1.54** — Kalender: Minggu merah, titik mengikuti jumlah, dan libur setahun sekali ambil.
 

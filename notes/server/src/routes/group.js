@@ -156,7 +156,7 @@ groupRouter.post('/:id/invite', (req, res) => {
   if (!raw) return res.status(400).json({ error: 'Isi nama pengguna atau email orang yang diundang.' });
 
   // Tanda @ menandai email; selain itu dianggap nama pengguna. Awalan @ pada
-  // nama pengguna dilepas supaya "@sigit" dan "sigit" sama saja.
+  // nama pengguna dilepas supaya "@Ajiq" dan "Ajiq" sama saja.
   const sasaran = raw.includes('@') && !raw.startsWith('@')
     ? db.prepare('SELECT * FROM users WHERE email = ? AND disabled = 0').get(raw)
     : db.prepare('SELECT * FROM users WHERE username = ? AND disabled = 0').get(raw.replace(/^@/, ''));

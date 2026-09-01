@@ -228,3 +228,124 @@
 @media (prefers-reduced-motion: reduce) {
   .note-row { transition: none; }
 }
+
+/* ---------- Folder ---------- */
+
+/*
+ * Folder mengikuti tata letak daftar catatan, karena ia berdiri sejajar dengan
+ * kartu catatan di layar yang sama. Kalau bentuknya tidak ikut berubah, folder
+ * pada tampilan kisi akan terlihat seperti sesuatu yang salah tempat.
+ */
+.folder-list.layout-list { padding: 4px 0 0; }
+.folder-list.layout-grid-2,
+.folder-list.layout-grid-3 {
+  display: grid;
+  gap: 10px;
+  padding: 10px 16px 2px;
+}
+.folder-list.layout-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.folder-list.layout-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+/*
+ * Bentuk kisi: ikon folder besar dengan nama di bawahnya, seperti pengelola
+ * berkas mana pun. Yang dikenali orang di sini bentuknya, bukan tulisannya,
+ * jadi ikonnya yang diberi ruang paling banyak.
+ */
+.folder.kisi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--paper);
+  text-align: center;
+}
+.folder.kisi .folder-ikon { color: var(--accent); }
+.folder.kisi .folder-nama {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.folder.kisi .folder-jumlah { font-size: 11.5px; color: var(--ink-faint); }
+
+/*
+ * Bentuk baris: bergaya map arsip, bertepi tebal di sisi kiri.
+ *
+ * Ikon besar akan merusak irama baris yang rapat, jadi yang membedakan folder
+ * dari catatan di sini bukan ukurannya melainkan tepi kirinya — sama seperti
+ * map berwarna yang mencuat di laci arsip.
+ */
+.folder.baris {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 16px 11px 13px;
+  border-left: 3px solid var(--accent);
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  text-align: left;
+}
+.folder.baris .folder-ikon { display: flex; flex: none; color: var(--accent); }
+.folder.baris .folder-teks {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.folder.baris .folder-nama {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder.baris .folder-jumlah {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.folder:active { background: var(--rule); }
+
+/* "Tidak Terkategori" bukan tag, dan sengaja tidak beraksen: ia bukan folder
+   yang dibuat orang, melainkan tempat sisa. Abu-abu mengatakan itu tanpa perlu
+   penjelasan. */
+.folder.yatim .folder-ikon { color: var(--ink-faint); }
+.folder.baris.yatim {
+  border-left-color: var(--rule-strong);
+  background: none;
+}
+
+/* Bilah kembali saat berada di dalam folder. */
+.folder-kembali {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--accent);
+  text-align: left;
+}
+.folder-kembali span {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}

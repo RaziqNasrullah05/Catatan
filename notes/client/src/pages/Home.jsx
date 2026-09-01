@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  ArrowLeft,
   Bell,
   CalendarDays,
   ChevronRight,
@@ -20,10 +21,11 @@ import NoteMenu from '../components/NoteMenu.jsx';
 import PullRefresh from '../components/PullRefresh.jsx';
 import TaskCard, { TaskForm } from '../components/TaskCard.jsx';
 import TagFilter from '../components/TagFilter.jsx';
+import { FolderItem, YATIM, susunFolder } from '../components/FolderList.jsx';
 import Agenda from '../components/Agenda.jsx';
 import { NoteListSkeleton, PeopleSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
 import { api } from '../api.js';
-import { readLayout } from '../prefs.js';
+import { readFolderMode, readLayout } from '../prefs.js';
 import { withMinDelay } from '../utils.js';
 
 const TABS = [
@@ -79,6 +81,7 @@ export default function Home({ user, onSignOut }) {
   const [formTugas, setFormTugas] = useState(null);
   // Tag yang sedang dipakai menyaring daftar catatan, dan apakah pemilihnya
   // sedang terbuka.
+  const [modeFolder, setModeFolder] = useState(readFolderMode);
   const [tagAktif, setTagAktif] = useState([]);
   const [pilihTag, setPilihTag] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -103,11 +106,16 @@ export default function Home({ user, onSignOut }) {
   const settleTimer = useRef(null);
 
   useEffect(() => {
-    const sync = () => setLayout(readLayout());
+    const sync = () => {
+      setLayout(readLayout());
+      setModeFolder(readFolderMode());
+    };
     window.addEventListener('catatan:tampilan', sync);
+    window.addEventListener('catatan:folder', sync);
     window.addEventListener('storage', sync);
     return () => {
       window.removeEventListener('catatan:tampilan', sync);
+      window.removeEventListener('catatan:folder', sync);
       window.removeEventListener('storage', sync);
     };
   }, []);
@@ -457,6 +465,57 @@ export default function Home({ user, onSignOut }) {
     }
   }
 
+  /**
+   * Folder yang tampil di akar, dan catatan mana yang tampil di bawahnya.
+   *
+   * Tiga mode dari Pengaturan menentukan keduanya:
+   *   - `catatan`  : tidak ada folder sama sekali, semua catatan tampil datar.
+   *   - `folder`   : hanya folder. Catatan tanpa tag tetap terjangkau lewat
+   *                  folder "Tidak Terkategori" — kalau tidak, catatan yang
+   *                  belum sempat diberi tag akan hilang dari layar tanpa jejak.
+   *   - `keduanya` : folder untuk yang bertag, dan catatan tanpa tag tampil
+   *                  langsung sebagai catatan.
+   *
+   * Saat sedang berada di dalam sebuah folder, semuanya tidak berlaku: yang
+   * tampil adalah hasil saringan dari server, apa adanya.
+   */
+  const [yatimDibuka, setYatimDibuka] = useState(false);
+  const folderDibuka = yatimDibuka ? YATIM : tagAktif.length === 1 ? tagAktif[0] : null;
+
+  const { daftarFolder, catatanTampil } = useMemo(() => {
+    // "Tidak Terkategori" tidak punya tag untuk disaring server, jadi ia
+    // disaring di sini — satu-satunya folder yang isinya tidak datang langsung
+    // dari hasil saringan.
+    if (yatimDibuka) {
+      return { daftarFolder: [], catatanTampil: notes.filter((n) => !n.tag?.length) };
+    }
+    if (folderDibuka || modeFolder === 'catatan' || query) {
+      return { daftarFolder: [], catatanTampil: notes };
+    }
+
+    const { folder, yatim } = susunFolder(notes);
+
+    if (modeFolder === 'folder') {
+      const semua = yatim.length ? [...folder, { nama: YATIM, jumlah: yatim.length }] : folder;
+      return { daftarFolder: semua, catatanTampil: [] };
+    }
+    return { daftarFolder: folder, catatanTampil: yatim };
+  }, [notes, modeFolder, folderDibuka, yatimDibuka, query]);
+
+  /** Membuka folder berarti menyalakan saringan, bukan berpindah halaman. */
+  const bukaFolder = (nama) => {
+    if (nama === null) {
+      setTagAktif([]);
+      setYatimDibuka(false);
+      return;
+    }
+    if (nama === YATIM) {
+      setYatimDibuka(true);
+      return;
+    }
+    setTagAktif([nama]);
+  };
+
   const open = tasks.filter((t) => !t.selesai);
   const done = tasks.filter((t) => t.selesai);
 
@@ -586,14 +645,42 @@ export default function Home({ user, onSignOut }) {
           {loading ? (
             <NoteListSkeleton layout={layout} />
           ) : (
+          <>
+          {/* Bilah kembali saat sedang berada di dalam sebuah folder. Folder
+              tidak punya halamannya sendiri: yang berubah cuma saringan tag,
+              jadi jalan keluarnya juga cukup mengosongkan saringan itu. */}
+          {folderDibuka && (
+            <button className="folder-kembali" onClick={() => bukaFolder(null)}>
+              <ArrowLeft size={16} strokeWidth={2} />
+              {folderDibuka === YATIM ? 'Tidak Terkategori' : folderDibuka}
+              <span>{notes.length}</span>
+            </button>
+          )}
+
+          {/* Folder hanya muncul di akar, bukan di dalam folder lain — tidak ada
+              folder bersarang, sebab tag tidak bersarang. */}
+          {!folderDibuka && modeFolder !== 'catatan' && !query && (
+            <div className={`folder-list layout-${layout}`}>
+              {daftarFolder.map((f) => (
+                <FolderItem
+                  key={f.nama}
+                  nama={f.nama}
+                  jumlah={f.jumlah}
+                  layout={layout}
+                  onBuka={bukaFolder}
+                />
+              ))}
+            </div>
+          )}
+
           <div className={`note-list layout-${layout}`}>
-            {notes.length === 0 && (
+            {catatanTampil.length === 0 && daftarFolder.length === 0 && (
               <div className="empty">
                 <h2>{query ? 'Tidak ada yang cocok' : 'Belum ada catatan'}</h2>
                 <p>{query ? 'Coba kata kunci lain.' : 'Ketuk Tulis untuk memulai catatan pertama.'}</p>
               </div>
             )}
-            {notes.map((note) => (
+            {catatanTampil.map((note) => (
               <button
                 key={note.id}
                 className={`note-row ${held === note.id ? 'is-held' : ''} ${
@@ -661,6 +748,7 @@ export default function Home({ user, onSignOut }) {
               </button>
             ))}
           </div>
+          </>
           )}
         </PullRefresh>
 
