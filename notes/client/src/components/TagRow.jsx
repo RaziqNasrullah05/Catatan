@@ -40,10 +40,22 @@ export default function TagRow({ noteId, tagAwal, grup = [], bisaSunting = true 
     setTag(tagAwal);
   }, [tagAwal]);
 
+  /*
+   * Saran dicocokkan tanpa peduli huruf besar-kecil.
+   *
+   * Sejak v1.58 nama tag disimpan apa adanya — "Pekerjaan Rumah", bukan
+   * "pekerjaan-rumah". Versi lama mengecilkan huruf yang diketik lalu
+   * membandingkannya apa adanya dengan nama tersimpan, jadi mengetik "peker"
+   * tidak pernah cocok dengan "Pekerjaan Rumah" dan sarannya menghilang sama
+   * sekali. Yang dikecilkan sekarang kedua sisinya, bukan salah satu.
+   */
   const saran = useMemo(() => {
-    const kata = teks.trim().toLowerCase().replace(/^#/, '');
+    const kata = teks.trim().replace(/^#/, '').toLowerCase();
     if (!kata) return [];
-    return semua.filter((t) => t.startsWith(kata) && !tag.includes(t)).slice(0, 6);
+    const dipakai = new Set(tag.map((t) => t.toLowerCase()));
+    return semua
+      .filter((t) => t.toLowerCase().startsWith(kata) && !dipakai.has(t.toLowerCase()))
+      .slice(0, 6);
   }, [teks, semua, tag]);
 
   /**
@@ -69,12 +81,18 @@ export default function TagRow({ noteId, tagAwal, grup = [], bisaSunting = true 
   }
 
   function tambah(mentah) {
+    // Huruf yang diketik dipertahankan: server menyimpan nama tag apa adanya
+    // sejak v1.58, dan mengecilkannya di sini akan membuat "Produktivitastung"
+    // tersimpan sebagai "Produktivitastung" tanpa alasan.
     const kata = String(mentah || teks)
-      .trim()
-      .toLowerCase()
-      .replace(/^#/, '');
+      .replace(/^\s*#+/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
     setTeks('');
-    if (!kata || tag.includes(kata)) return;
+    // Pemeriksaan kembar tetap tanpa peduli huruf besar-kecil, sama seperti
+    // server — kalau tidak, "Jantung" tampak bisa ditambahkan padahal server
+    // akan membuangnya sebagai kembaran, dan chip-nya hilang tanpa penjelasan.
+    if (!kata || tag.some((t) => t.toLowerCase() === kata.toLowerCase())) return;
     if (tag.length >= MAX_TAG) {
       setError(`Paling banyak ${MAX_TAG} tag per catatan.`);
       return;
@@ -112,6 +130,9 @@ export default function TagRow({ noteId, tagAwal, grup = [], bisaSunting = true 
 
       {bisaSunting &&
         (menulis ? (
+          // autoCapitalize sengaja tidak dipasang: nama tag kini bebas huruf
+          // besar (v1.58), dan memaksa huruf kecil di papan ketik membuat
+          // "Produktivitastung" merepotkan diketik tanpa alasan.
           <span className="chip-isian">
             <Hash size={11} strokeWidth={2.2} />
             <input
@@ -137,9 +158,8 @@ export default function TagRow({ noteId, tagAwal, grup = [], bisaSunting = true 
                 // dulu; tanpa itu daftarnya lenyap sebelum jarinya mendarat.
                 setTimeout(() => setMenulis(false), 140);
               }}
-              placeholder="tag baru"
+              placeholder="Tag baru"
               aria-label="Tambah tag"
-              autoCapitalize="none"
               autoCorrect="off"
               spellCheck="false"
             />

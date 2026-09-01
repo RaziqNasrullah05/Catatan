@@ -12,7 +12,7 @@ import rateLimit from 'express-rate-limit';
  * Versi kode server. Dinaikkan bersamaan dengan `VERSI` di `client/src/api.js`;
  * keduanya harus sama, dan klien memperingatkan kalau tidak.
  */
-const VERSI = '1.59';
+const VERSI = '1.60';
 
 import { purgeExpired } from './db.js';
 import { mailAktif, verifikasiSmtp } from './mailer.js';

@@ -516,6 +516,26 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.60** — Perbaikan: saran tag hilang saat mengetik.
+
+Akibat susulan dari v1.58, yang membuat nama tag disimpan apa adanya — "Pekerjaan Rumah", bukan
+"pekerjaan-rumah". Baris tag di penyunting masih memakai aturan lama: ia mengecilkan huruf yang
+diketik, lalu membandingkannya **apa adanya** dengan nama tersimpan. Jadi mengetik "peker" dicocokkan
+dengan "Pekerjaan Rumah" dan tidak pernah cocok, dan sarannya menghilang sama sekali.
+
+Sekarang kedua sisinya dikecilkan saat dibandingkan. Ikutannya di berkas yang sama, semuanya sisa
+aturan lama yang sama:
+
+- **Huruf yang diketik dipertahankan.** Sebelumnya `tambah()` mengecilkannya, jadi mengetik "Gagal
+  Jantung" tersimpan sebagai "Produktivitastung" — melawan keputusan v1.58 dari sisi klien.
+- **Pemeriksaan kembar jadi tak peka huruf**, sama seperti server. Tanpa itu "Jantung" tampak bisa
+  ditambahkan padahal server membuangnya sebagai kembaran, dan chip-nya hilang tanpa penjelasan.
+- **`autoCapitalize="none"` dilepas** dari isiannya: memaksa huruf kecil di papan ketik membuat nama
+  berhuruf besar merepotkan diketik tanpa alasan.
+
+Ini tempat kelima yang harus sepakat soal perbandingan tak peka huruf, setelah empat yang dicatat di
+v1.58 — dan yang terlewat justru satu-satunya yang dilihat pengguna saat mengetik.
+
 **v1.59** — Klien dan server saling menyebutkan versinya.
 
 Dua laporan bug berturut-turut ternyata bukan bug: `PUT /notes/folders/style/:tag` dan
@@ -543,7 +563,7 @@ senyap.
 
 **Tag tidak lagi dipaksa jadi `nama-tag`.** Huruf besar dan spasi dibiarkan apa adanya: "Gagal
 Jantung" tersimpan begitu. Aturan lama masuk akal selama tag cuma penanda kecil di bawah judul, dan
-berhenti masuk akal begitu tag jadi nama folder — orang menamai foldernya "Produktivitas", dan tidak
+berhenti masuk akal begitu tag jadi nama folder — orang menamai foldernya "Produktivitastung", dan tidak
 ada alasan komputer memaksakan bentuknya. Yang tersisa hanya kerapian yang memang perlu: spasi tepi
 dibuang, spasi beruntun dijadikan satu, pagar di depan dilepas, karakter kendali dibuang (ia tak
 terlihat tapi membuat dua tag yang tampak identik jadi berbeda), panjang dibatasi 40.

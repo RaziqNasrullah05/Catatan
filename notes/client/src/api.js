@@ -9,7 +9,7 @@ const BASE = '/api';
  * fitur yang jelas-jelas ada kodenya, dan dari luar tidak ada bedanya dengan
  * bug sungguhan.
  */
-export const VERSI = '1.59';
+export const VERSI = '1.60';
 
 /**
  * Membandingkan versi klien dan server.
