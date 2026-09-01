@@ -125,3 +125,32 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Peringatan versi tidak cocok ---------- */
+
+/*
+ * Bilah ini muncul saat berkas server tertinggal dari berkas klien.
+ *
+ * Sengaja mencolok dan tidak bisa ditutup: selama keadaannya belum dibetulkan,
+ * sebagian fitur akan membalas "Alamat tidak dikenal" dan terlihat seperti bug
+ * di kodenya. Peringatan yang bisa disingkirkan akan disingkirkan, lalu
+ * gejalanya muncul lagi tanpa penjelasan.
+ */
+.versi-beda {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 90;
+  padding: 10px 16px calc(10px + env(safe-area-inset-top));
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: var(--danger);
+  color: #fff;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.versi-beda code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.18);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}

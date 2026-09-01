@@ -516,6 +516,29 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.59** — Klien dan server saling menyebutkan versinya.
+
+Dua laporan bug berturut-turut ternyata bukan bug: `PUT /notes/folders/style/:tag` dan
+`PUT /notes/folders/rename` membalas "Alamat tidak dikenal" karena berkas server belum tersalin —
+kodenya berjalan benar saat diuji langsung. Ini sudah terjadi berkali-kali dalam bentuk lain
+(`components/sheet.css` tertimpa di v1.41), dan sebabnya sama: **dari luar, kode yang salah dan kode
+yang belum tersalin terlihat persis sama.**
+
+Karena itu yang diperbaiki bukan satu rute melainkan cara keadaan itu terlihat:
+
+- **`GET /api/version`** membalas versi kode server, tanpa perlu sesi — menyembunyikannya di balik
+  sesi justru membuatnya tidak berguna saat masuk pun gagal.
+- **Klien membandingkannya** saat dipasang dan menampilkan bilah merah kalau berbeda, lengkap dengan
+  apa yang harus dilakukan. Bilahnya tidak bisa ditutup: peringatan yang bisa disingkirkan akan
+  disingkirkan, lalu gejalanya muncul lagi tanpa penjelasan. Kegagalan jaringan tidak dianggap
+  ketidakcocokan — yang sedang tidak tersambung tidak perlu diberi tahu soal versi.
+- **Balasan 404 server kini menyebut metode, jalur, dan versinya sendiri**, jadi pesan yang muncul di
+  layar sudah cukup untuk mendiagnosis tanpa membuka kode.
+
+Angkanya ada di dua tempat: `VERSI` di `server/src/index.js` dan `VERSI` di `client/src/api.js`.
+Keduanya harus dinaikkan bersamaan — dan kalau lupa, yang muncul peringatan palsu, bukan kegagalan
+senyap.
+
 **v1.58** — Nama tag jadi bebas, folder punya menu, dan rute folder dipindah ke atas.
 
 **Tag tidak lagi dipaksa jadi `nama-tag`.** Huruf besar dan spasi dibiarkan apa adanya: "Gagal

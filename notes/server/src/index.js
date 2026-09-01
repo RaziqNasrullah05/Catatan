@@ -8,6 +8,12 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 
+/**
+ * Versi kode server. Dinaikkan bersamaan dengan `VERSI` di `client/src/api.js`;
+ * keduanya harus sama, dan klien memperingatkan kalau tidak.
+ */
+const VERSI = '1.59';
+
 import { purgeExpired } from './db.js';
 import { mailAktif, verifikasiSmtp } from './mailer.js';
 import { attachUser, isProd, requireFetchHeader } from './security.js';
@@ -71,7 +77,26 @@ app.use('/api/notifications', notificationRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/images', imagesRouter);
 
-app.use('/api', (_req, res) => res.status(404).json({ error: 'Alamat tidak dikenal.' }));
+/*
+ * Versi kode server, dibalas tanpa perlu sesi.
+ *
+ * Ada karena satu jenis kebingungan yang sudah terjadi berkali-kali: berkas
+ * klien tersalin, berkas server tidak (atau servernya belum dijalankan ulang),
+ * lalu fitur baru membalas "Alamat tidak dikenal" dan tampak seperti bug di
+ * kodenya. Dari luar, kode yang benar dan kode yang belum tersalin terlihat
+ * persis sama.
+ *
+ * Klien membandingkan angka ini dengan miliknya sendiri dan memberi tahu kalau
+ * berbeda. Tidak ada yang rahasia di sini — cuma satu angka, dan menyembunyikan
+ * di balik sesi justru membuatnya tidak berguna saat masuk pun gagal.
+ */
+app.get('/api/version', (_req, res) => res.json({ versi: VERSI }));
+
+app.use('/api', (req, res) =>
+  res.status(404).json({
+    error: `Alamat tidak dikenal (${req.method} ${req.path}). Server ini versi ${VERSI}.`,
+  })
+);
 
 // Melayani hasil build antarmuka bila tersedia (satu origin saat produksi).
 const clientDir = path.resolve(process.cwd(), process.env.CLIENT_DIR || '../client/dist');

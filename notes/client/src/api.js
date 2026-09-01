@@ -1,5 +1,37 @@
 const BASE = '/api';
 
+/**
+ * Versi kode klien. Harus sama dengan `VERSI` di `server/src/index.js`.
+ *
+ * Dipakai `periksaVersi` di bawah untuk menangkap keadaan yang sudah beberapa
+ * kali membuang waktu: berkas klien tersalin, berkas server tidak — atau
+ * servernya belum dijalankan ulang. Gejalanya "Alamat tidak dikenal" pada
+ * fitur yang jelas-jelas ada kodenya, dan dari luar tidak ada bedanya dengan
+ * bug sungguhan.
+ */
+export const VERSI = '1.59';
+
+/**
+ * Membandingkan versi klien dan server.
+ *
+ * Balasannya `null` kalau cocok atau kalau tidak bisa diperiksa — server lama
+ * belum punya rute ini, dan itu justru berarti ia jauh tertinggal, tapi
+ * pesannya tetap harus bisa dibaca. Kegagalan jaringan tidak dianggap
+ * ketidakcocokan; yang sedang tidak tersambung tidak perlu diberi tahu soal
+ * versi.
+ */
+export async function periksaVersi() {
+  try {
+    const res = await fetch(`${BASE}/version`, { credentials: 'same-origin' });
+    if (res.status === 404) return { klien: VERSI, server: 'lebih lama dari 1.59' };
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.versi === VERSI ? null : { klien: VERSI, server: data?.versi || 'tidak diketahui' };
+  } catch {
+    return null;
+  }
+}
+
 async function request(path, { method = 'GET', body } = {}) {
   const res = await fetch(BASE + path, {
     method,

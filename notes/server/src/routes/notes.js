@@ -437,7 +437,7 @@ notesRouter.put('/:id/tags', (req, res) => {
   }
   if (!Array.isArray(req.body?.tag)) return res.status(400).json({ error: 'Daftar tag tidak valid.' });
 
-  // Set membuang kembaran yang muncul setelah dirapikan: "" dan
+  // Set membuang kembaran yang muncul setelah dirapikan: "Produktivitas" dan
   // "gagal-jantung" jadi satu tag yang sama.
   // Dedupe memakai kunci tak peka huruf, tapi yang disimpan bentuk aslinya:
   // mengetik "Jantung" setelah "jantung" tidak menghasilkan dua tag, dan yang

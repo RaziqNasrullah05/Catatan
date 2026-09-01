@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { api } from './api.js';
+import { api, periksaVersi } from './api.js';
 import { NoteListSkeleton } from './components/Skeleton.jsx';
 import { withMinDelay } from './utils.js';
 import Home from './pages/Home.jsx';
@@ -15,7 +15,15 @@ import People from './pages/People.jsx';
 
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = belum diketahui
+  const [bedaVersi, setBedaVersi] = useState(null);
   const location = useLocation();
+
+  // Diperiksa sekali saat aplikasi dipasang. Kalau berkas server tertinggal,
+  // fitur baru akan membalas "Alamat tidak dikenal" dan tampak seperti bug —
+  // bilah ini menyebut sebabnya sebelum waktu terbuang mencarinya di kode.
+  useEffect(() => {
+    periksaVersi().then(setBedaVersi);
+  }, []);
 
   useEffect(() => {
     withMinDelay(api.me())
@@ -49,6 +57,14 @@ export default function App() {
   if (!user && !publicRoute) return <Navigate to="/login" replace />;
 
   return (
+    <>
+    {bedaVersi && (
+      <div className="versi-beda" role="status">
+        Server masih versi {bedaVersi.server}, aplikasi ini {bedaVersi.klien}. Salin ulang berkas di
+        <code>server/src</code> lalu jalankan ulang servernya — sebagian fitur baru akan membalas
+        “Alamat tidak dikenal” sampai itu dilakukan.
+      </div>
+    )}
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login onSignedIn={setUser} />} />
       <Route path="/invite/:token" element={<Invite />} />
@@ -61,5 +77,6 @@ export default function App() {
       <Route path="/pengaturan/orang" element={<People user={user} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
