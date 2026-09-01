@@ -30,109 +30,145 @@ Domain produksi: `https://catatan.warkophajisobirin.fun`
 ```
 notes/
 ├── README.md
-├── package.json                    # hanya untuk lint; klien dan server tetap paket terpisah
-├── eslint.config.js                # no-undef untuk client/src dan server/src
 ├── CONTEXT.md                      # orientasi untuk sesi lanjutan: keputusan,
 │                                   #   cara kerja, dan hal yang masih menggantung
-├── .gitignore                      # dist/, data/, .env, node_modules/
+├── package.json                    # hanya untuk lint; klien dan server tetap paket terpisah
+├── eslint.config.js                # no-undef + react/jsx-no-undef; mencakup client/src,
+│                                   #   server/src, dan server/scripts
+├── .gitignore                      # dist/, data/, backups/, .env, node_modules/
+│
 ├── client/
 │   ├── package.json                # Vite 8, plugin-react 6, React Router 7
 │   ├── index.html                  # font Google, meta theme-color
 │   ├── vite.config.js              # proxy /api, allowedHosts, manualChunks (fungsi!)
 │   └── src/
 │       ├── main.jsx                # entry; applyTheme() dipanggil sebelum render
-│       ├── App.jsx                 # routing + status sesi + kerangka pemuatan awal
-│       ├── api.js                  # klien fetch, menyisipkan header anti-CSRF
-│       ├── prefs.js                # preferensi tata letak & tema (localStorage)
+│       ├── App.jsx                 # routing + status sesi + bilah peringatan versi
+│       ├── api.js                  # klien fetch, header anti-CSRF, konstanta VERSI
+│       ├── prefs.js                # tata letak, tema, mode folder (localStorage)
+│       ├── panel.js                # usePanel: animasi masuk & keluar halaman
+│       ├── nav.js                  # tujuan navigasi yang dipakai lebih dari satu halaman
 │       ├── utils.js                # withMinDelay — jeda minimum kerangka pemuatan
 │       ├── templates.js            # 6 template catatan siap pakai
-│       ├── nav.js                  # tujuan navigasi yang dipakai lebih dari satu halaman
 │       ├── image.js                # mengecilkan gambar sebelum diunggah
 │       ├── folderStyle.js          # 8 warna + 32 ikon folder
-│       ├── panel.js                # usePanel: animasi masuk & keluar halaman
+│       ├── wikilink.js             # tautan [[antar catatan]]
+│       ├── stylesold.txt           # sisa v1.11, tidak dirujuk siapa pun — aman dihapus
 │       │
 │       ├── cm/                     # semua yang menempel ke CodeMirror
-│       │   ├── livePreview.js      # ViewPlugin dekorasi: sembunyikan sintaks, checkbox, tabel
+│       │   ├── livePreview.js      # dekorasi: sembunyikan sintaks, checkbox; StateField tabel
 │       │   ├── actions.js          # perintah format (tebal, heading, indent, dll)
-│       │   ├── tableWidget.js      # widget tabel yang bisa disunting di dalam editor
-│       │   └── table.js            # baca/tulis tabel markdown ⇄ data kisi
+│       │   ├── mention.js          # sumber sebutan @nama
+│       │   ├── numbering.js        # penomoran ulang daftar bernomor
+│       │   ├── table.js            # baca/tulis tabel markdown ⇄ data kisi
+│       │   └── tableWidget.js      # widget tabel yang bisa disunting di dalam editor
 │       │
 │       ├── components/
 │       │   ├── Editor.jsx          # instance CodeMirror
-│       │   ├── FormatRail.jsx      # rail format bawah + baris template
+│       │   ├── FormatRail.jsx      # rail format bawah + baris template + unggah gambar
 │       │   ├── Preview.jsx         # render markdown tersanitasi + tombol sunting tabel
 │       │   ├── TableEditor.jsx     # penyunting tabel berbentuk kisi (tanpa CodeMirror)
+│       │   ├── Agenda.jsx          # kalender + daftar acara; tanggal merah
+│       │   ├── TagRow.jsx          # deret tag + grup di antara judul dan isi
+│       │   ├── TaskCard.jsx        # kontainer tugas + formulirnya
+│       │   ├── FolderList.jsx      # folder dari tag; kotak map (kisi) / baris arsip
+│       │   ├── FolderMenu.jsx      # menu tekan-lama folder: ganti nama, kustomisasi
+│       │   ├── FolderStyleSheet.jsx# ubah warna dan ikon folder
+│       │   ├── SortSheet.jsx       # dasar dan arah pengurutan daftar
 │       │   ├── NoteMenu.jsx        # menu kontekstual: sematkan / hapus
-│       │   ├── PullRefresh.jsx     # tarik untuk muat ulang, efek ketapel
 │       │   ├── GroupConfirm.jsx    # lembar konfirmasi, dipakai dua halaman grup
-│       │   ├── Sheet.jsx         # lembar yang naik dan turun; tangani Esc
-│       │   ├── FolderList.jsx    # folder dari tag; ikon kisi / baris arsip
-│       │   ├── FolderMenu.jsx    # menu tekan-lama folder: ganti nama, kustomisasi
-│       │   ├── FolderStyleSheet.jsx # ubah warna dan ikon folder
-│       │   ├── SortSheet.jsx     # dasar dan arah pengurutan daftar
-│       │   ├── TagRow.jsx        # deret tag + grup di antara judul dan isi
-│       │   ├── TaskCard.jsx      # kontainer tugas + formulirnya
+│       │   ├── Sheet.jsx           # lembar yang naik dan turun; tangani Esc
+│       │   ├── PullRefresh.jsx     # tarik untuk muat ulang, efek ketapel
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
 │       │   └── ErrorBoundary.jsx   # menangkap error render agar layar tak kosong
 │       │
 │       ├── pages/
-│       │   ├── Home.jsx            # daftar catatan + tugas, panel geser, tekan lama
+│       │   ├── Home.jsx            # catatan, folder, tugas, grup, agenda — panel geser
 │       │   ├── NoteEditor.jsx      # panel naik dari bawah, mode baca/tulis, simpan otomatis
-│       │   ├── GroupNotes.jsx      # halaman utama sebuah grup: catatan di dalamnya
+│       │   ├── GroupNotes.jsx      # halaman utama grup: Catatan / Pengumuman
 │       │   ├── GroupSettings.jsx   # undang, anggota, bubarkan (Material 3)
 │       │   ├── Notification.jsx    # daftar pemberitahuan
+│       │   ├── Settings.jsx        # Keamanan / Tampilan / Undang orang (Material 3)
+│       │   ├── People.jsx          # daftar akun, subhalaman Pengaturan
 │       │   ├── Login.jsx           # kata sandi / magic link
-│       │   ├── Invite.jsx          # penerimaan undangan
-│       │   └── Settings.jsx        # Keamanan / Tampilan / Undang orang (Material 3)
+│       │   └── Invite.jsx          # penerimaan undangan
 │       │
 │       └── styles/                 # URUTAN IMPOR PENTING — lihat index.css
 │           ├── index.css           # titik masuk; mendaftarkan semua modul
+│           ├── print.css           # aturan @media print
 │           ├── base/
 │           │   ├── tokens.css      # variabel warna, font, ukuran; tema gelap
-│           │   ├── reset.css       # dasar dokumen, tipografi, elemen mentah
+│           │   ├── reset.css       # dasar dokumen; kilatan ketuk & gulir mendatar dimatikan
 │           │   └── selection.css   # seleksi teks dimatikan di halaman utama
 │           ├── layout/
-│           │   ├── shell.css       # kerangka .app, topbar, pencarian
-│           │   ├── transitions.css # cara halaman masuk (naik, kiri, kanan)
-│           │   ├── pager.css       # panel geser Catatan/Tugas (menimpa .segmented)
+│           │   ├── shell.css       # kerangka .app, topbar, pencarian, bilah versi
+│           │   ├── transitions.css # cara halaman masuk & keluar (naik, kiri, kanan)
+│           │   ├── pager.css       # panel geser antar tab (menimpa .segmented)
 │           │   └── responsive.css  # penyesuaian layar lebar — dimuat paling akhir
 │           ├── pages/
-│           │   ├── notes-list.css  # kartu catatan, tata letak grid, menu kontekstual
-│           │   ├── tasks.css       # daftar tugas + tambah tugas cepat
+│           │   ├── notes-list.css  # kartu catatan, tata letak grid, folder
+│           │   ├── tasks.css       # kartu tugas + formulirnya
+│           │   ├── group.css       # halaman grup: bilah bagian, daftar padat
+│           │   ├── agenda.css      # kalender, tanggal merah, lapisan "yang akan datang"
 │           │   ├── auth.css        # halaman masuk dan undangan
 │           │   └── settings.css    # komponen Material 3 (token --s-* di sini)
 │           ├── editor/
 │           │   ├── editor.css      # kerangka editor, judul, rail format
+│           │   ├── note-panel.css  # panel catatan naik dari bawah + baris tag
 │           │   ├── codemirror.css  # penimpaan kelas .cm-* dan gaya live preview
 │           │   ├── table-widget.css# tabel yang disunting langsung di editor
-│           │   ├── preview.css     # render markdown mode baca
-│           │   └── sheet.css       # animasi panel catatan naik dari bawah
+│           │   └── preview.css     # render markdown mode baca
 │           └── components/
-│               ├── sheet.css       # lembar konfirmasi
+│               ├── sheet.css       # lembar modal: naik, turun, dan isinya
 │               ├── dialog.css      # dialog pilihan (tata letak, mode warna)
 │               ├── table-editor.css
 │               ├── pull-refresh.css
 │               └── skeleton.css
+│
 └── server/
-    ├── package.json                # Express, better-sqlite3, helmet, nodemailer
+    ├── package.json                # Express, better-sqlite3, helmet, nodemailer, zod
     ├── .env.example
+    ├── scripts/
+    │   └── backup.mjs              # cadangan basis data (VACUUM INTO) + arsip gambar
     └── src/
-        ├── index.js                # middleware keamanan, penyajian client/dist
+        ├── index.js                # middleware keamanan, penyajian client/dist, VERSI
         ├── db.js                   # skema + migrasi + pembersihan token kedaluwarsa
         ├── security.js             # sesi, scrypt, guard CSRF & peran
+        ├── access.js               # siapa boleh membaca/menyunting catatan apa
+        ├── recurrence.js           # penjabaran acara berulang
+        ├── imagetype.js            # pengenalan tipe gambar dari byte pertamanya
         ├── mailer.js               # nodemailer, fallback cetak ke log
         └── routes/
             ├── auth.js             # masuk, kata sandi, profil, undangan, admin
-            ├── events.js           # agenda: acara dan pengulangannya
-            ├── images.js           # unggah, sajikan, hapus gambar
+            ├── notes.js            # CRUD catatan, tag, folder, agregasi tugas lama
+            ├── tasks.js            # tugas sebagai entitas tersendiri
             ├── group.js            # grup, anggota, undangan, catatan di grup
-            ├── notification.js     # daftar, terima, tolak, tandai dibaca
-            └── notes.js            # CRUD catatan + agregasi tugas
+            ├── events.js           # agenda: acara dan pengulangannya
+            ├── holidays.js         # hari libur nasional dari API luar + singgahan
+            ├── images.js           # unggah, sajikan, hapus gambar
+            └── notification.js     # daftar, terima, tolak, tandai dibaca
 ```
+
+**Tidak boleh ada dua berkas bernama sama di seluruh pohon ini**, sekalipun foldernya berbeda. Berkas
+diserahkan sebagai daftar nama, dan nama kembar cepat atau lambat disalin ke tempat yang salah — tanpa
+galat, tanpa peringatan lint, tanpa build gagal. Ini sudah terjadi sekali: `components/sheet.css`
+tertimpa `editor/sheet.css`, dan seluruh lembar modal kehilangan gayanya (v1.41). Yang di penyunting
+karenanya bernama `note-panel.css`. Periksa dengan:
+
+```bash
+find client/src server/src server/scripts -type f | sed 's|.*/||' | sort | uniq -d
+```
+
+Keluarannya harus kosong.
 
 Dua berkas bernama mirip dan mudah tertukar: `cm/table.js` mengurai teks tabel markdown menjadi data
 kisi (dipakai `TableEditor` dan widget editor), sementara `cm/tableWidget.js` adalah widget CodeMirror
 yang menampilkan tabel itu di dalam editor.
+
+Beberapa berkas menyimpan hal yang **harus sama di dua tempat**, dan tidak ada yang memeriksanya:
+`VERSI` di `server/src/index.js` dan `client/src/api.js`; lama animasi di `panel.js` ⇄
+`layout/transitions.css`, `Sheet.jsx` ⇄ `components/sheet.css`, dan `PUDAR_MS` di `Home.jsx` ⇄
+`pages/notes-list.css`.
 
 ---
 
