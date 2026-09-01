@@ -479,17 +479,33 @@ export default function Home({ user, onSignOut }) {
    * Saat sedang berada di dalam sebuah folder, semuanya tidak berlaku: yang
    * tampil adalah hasil saringan dari server, apa adanya.
    */
-  const [yatimDibuka, setYatimDibuka] = useState(false);
-  const folderDibuka = yatimDibuka ? YATIM : tagAktif.length === 1 ? tagAktif[0] : null;
+  /**
+   * Folder yang sedang dibuka: nama tag, YATIM, atau null saat di akar.
+   *
+   * Disaring **di peramban**, bukan dengan meminta ulang ke server.
+   *
+   * Versi pertama menyalakan saringan tag milik server, dan itu keliru dalam
+   * hal yang langsung terlihat: setiap permintaan baru punya jeda, dan selama
+   * jeda itu layar masih memegang daftar yang lama. Yang tampak adalah seluruh
+   * catatan berkelebat dulu sebelum menyusut ke isi folder, dan seluruh folder
+   * lenyap sesaat ketika keluar. Tag tiap catatan sudah ikut terkirim sejak
+   * v1.55, jadi jawabannya sudah ada di tangan — bertanya lagi hanya menambah
+   * jeda tanpa menambah informasi.
+   *
+   * Saringan tag lewat lembar pemilih tetap berjalan di server, dan itu memang
+   * pantas: ia tindakan yang disengaja, lembarnya menutup lebih dulu, dan
+   * jedanya tidak terbaca sebagai kedipan.
+   */
+  const [folderDibuka, setFolderDibuka] = useState(null);
 
   const { daftarFolder, catatanTampil } = useMemo(() => {
-    // "Tidak Terkategori" tidak punya tag untuk disaring server, jadi ia
-    // disaring di sini — satu-satunya folder yang isinya tidak datang langsung
-    // dari hasil saringan.
-    if (yatimDibuka) {
+    if (folderDibuka === YATIM) {
       return { daftarFolder: [], catatanTampil: notes.filter((n) => !n.tag?.length) };
     }
-    if (folderDibuka || modeFolder === 'catatan' || query) {
+    if (folderDibuka) {
+      return { daftarFolder: [], catatanTampil: notes.filter((n) => n.tag?.includes(folderDibuka)) };
+    }
+    if (modeFolder === 'catatan' || query) {
       return { daftarFolder: [], catatanTampil: notes };
     }
 
@@ -500,21 +516,16 @@ export default function Home({ user, onSignOut }) {
       return { daftarFolder: semua, catatanTampil: [] };
     }
     return { daftarFolder: folder, catatanTampil: yatim };
-  }, [notes, modeFolder, folderDibuka, yatimDibuka, query]);
+  }, [notes, modeFolder, folderDibuka, query]);
 
-  /** Membuka folder berarti menyalakan saringan, bukan berpindah halaman. */
-  const bukaFolder = (nama) => {
-    if (nama === null) {
-      setTagAktif([]);
-      setYatimDibuka(false);
-      return;
-    }
-    if (nama === YATIM) {
-      setYatimDibuka(true);
-      return;
-    }
-    setTagAktif([nama]);
-  };
+  const bukaFolder = (nama) => setFolderDibuka(nama);
+
+  // Mengubah mode jadi "tampil catatan" di Pengaturan sementara sebuah folder
+  // terbuka akan meninggalkan bilah kembali yang menunjuk ke folder yang sudah
+  // tidak ada lagi konsepnya. Ditutup sendiri di sini.
+  useEffect(() => {
+    if (modeFolder === 'catatan') setFolderDibuka(null);
+  }, [modeFolder]);
 
   const open = tasks.filter((t) => !t.selesai);
   const done = tasks.filter((t) => t.selesai);

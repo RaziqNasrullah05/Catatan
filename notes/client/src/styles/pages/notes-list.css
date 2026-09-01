@@ -247,21 +247,64 @@
 .folder-list.layout-grid-3 { grid-template-columns: repeat(3, 1fr); }
 
 /*
- * Bentuk kisi: ikon folder besar dengan nama di bawahnya, seperti pengelola
- * berkas mana pun. Yang dikenali orang di sini bentuknya, bukan tulisannya,
- * jadi ikonnya yang diberi ruang paling banyak.
+ * Bentuk kisi: kotaknya sendiri yang berbentuk map, bukan sekadar kotak berisi
+ * ikon map.
+ *
+ * Bedanya penting. Kotak biasa berisi gambar map mengatakan "ini kartu, dan
+ * gambarnya kebetulan map"; kotak yang berbentuk map mengatakan "ini map".
+ * Yang kedua dikenali sebelum tulisannya dibaca, dan itulah gunanya folder.
+ *
+ * Lidahnya dibuat dari ::before, bukan gambar: ia harus ikut berubah warna
+ * mengikuti tema dan ikut menyesuaikan lebar kolom, dan gambar tidak bisa
+ * melakukan keduanya. Sudut kiri atas kotaknya dibuat siku supaya lidah dan
+ * badan menyatu jadi satu bentuk, bukan dua kotak yang bertumpuk.
  */
 .folder.kisi {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 16px 8px 12px;
+  /* Ruang di atas disediakan untuk lidahnya, yang menjorok ke luar kotak. */
+  margin-top: 11px;
+  padding: 14px 8px 12px;
   border: 1px solid var(--rule);
-  border-radius: 14px;
+  border-radius: 0 14px 14px 14px;
   background: var(--paper);
   text-align: center;
 }
+
+.folder.kisi::before {
+  content: '';
+  position: absolute;
+  /* -1px supaya tepinya sebaris dengan tepi kotak, bukan bergeser setebal garis. */
+  left: -1px;
+  top: -11px;
+  width: 44%;
+  height: 12px;
+  border: 1px solid var(--rule);
+  border-bottom: none;
+  border-radius: 7px 7px 0 0;
+  background: var(--paper);
+}
+
+/*
+ * Menutup garis atas kotak di bawah lidahnya, supaya keduanya terbaca sebagai
+ * satu bidang. Tanpa ini ada garis melintang di mulut map — persis bagian yang
+ * seharusnya terbuka.
+ */
+.folder.kisi::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: calc(44% - 1px);
+  height: 1px;
+  background: var(--paper);
+}
+
+.folder.kisi:active::before,
+.folder.kisi:active::after { background: var(--rule); }
 .folder.kisi .folder-ikon { color: var(--accent); }
 .folder.kisi .folder-nama {
   display: block;

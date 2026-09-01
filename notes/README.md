@@ -512,6 +512,33 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 
 ## 12. Riwayat perubahan
 
+**v1.56** — Perbaikan: folder berkedip saat dibuka dan ditutup; kotaknya kini benar-benar berbentuk map.
+
+**Kedua kedipan itu satu sebab.** v1.55 membuka folder dengan menyalakan saringan tag milik server,
+jadi tiap kali folder dibuka atau ditutup ada satu permintaan baru — dan selama jedanya, layar masih
+memegang daftar yang lama. Yang tampak: seluruh catatan berkelebat dulu sebelum menyusut ke isi
+folder, dan seluruh folder lenyap sesaat ketika keluar.
+
+Padahal tag tiap catatan sudah ikut terkirim sejak v1.55, jadi jawabannya sudah ada di tangan.
+Sekarang folder disaring di peramban dan berpindahnya seketika — tidak ada permintaan sama sekali.
+Saringan lewat lembar pemilih tag tetap berjalan di server, dan itu memang pantas: ia tindakan yang
+disengaja, lembarnya menutup lebih dulu, dan jedanya tidak terbaca sebagai kedipan.
+
+Pelajarannya lebih luas dari folder: **kalau data untuk menjawab sudah ada di peramban, meminta ulang
+ke server hanya menambah jeda tanpa menambah informasi** — dan jeda itulah yang terlihat sebagai
+kerusakan.
+
+**Kotak folder kini berbentuk map, bukan kotak berisi gambar map.** Bedanya penting: kotak biasa
+berisi gambar map mengatakan "ini kartu, dan gambarnya kebetulan map"; kotak yang berbentuk map
+mengatakan "ini map" — dan itu dikenali sebelum tulisannya dibaca. Lidahnya dibuat dari `::before`,
+bukan gambar, sebab ia harus ikut berubah warna mengikuti tema dan ikut menyesuaikan lebar kolom.
+Sudut kiri atasnya dibuat siku, dan `::after` menutup garis atas di bawah lidah supaya keduanya
+terbaca sebagai satu bidang — tanpa itu ada garis melintang di mulut map, persis bagian yang
+seharusnya terbuka.
+
+Ikon di dalamnya dibiarkan seperti sekarang; menjadikannya bisa diganti per folder adalah pekerjaan
+tersendiri.
+
 **v1.55** — Catatan tampil dalam folder, dibentuk dari tag.
 
 **Folder bukan wadah tersendiri.** Tidak ada tabel folder, dan sebuah catatan tidak "berada di dalam"
