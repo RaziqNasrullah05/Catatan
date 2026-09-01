@@ -31,17 +31,28 @@ export function susunFolder(notes) {
       continue;
     }
     for (const t of n.tag) {
-      if (!peta.has(t)) peta.set(t, []);
-      peta.get(t).push(n);
+      /*
+       * Dikelompokkan dengan kunci huruf kecil, tapi yang ditampilkan bentuk
+       * asli yang pertama ditemui.
+       *
+       * Sejak v1.58 nama tag bebas huruf besar, jadi dua catatan bisa memuat
+       * "Jantung" dan "jantung". Server memperlakukan keduanya sebagai satu tag
+       * saat menyaring; kalau di sini dipisah, akan muncul dua folder yang
+       * namanya tampak sama dan isinya terbelah — persis jenis kebingungan yang
+       * tidak akan ketahuan sebabnya.
+       */
+      const k = t.toLowerCase();
+      if (!peta.has(k)) peta.set(k, { nama: t, isi: [] });
+      peta.get(k).isi.push(n);
     }
   }
 
   // Urut abjad, bukan menurut jumlah isi: urutan yang berubah setiap kali
   // sebuah catatan ditambahkan membuat folder yang sama berpindah tempat, dan
   // ingatan otot orang soal "folderku ada di kiri atas" jadi tidak berlaku.
-  const folder = [...peta.entries()]
-    .sort(([a], [b]) => a.localeCompare(b, 'id'))
-    .map(([nama, isi]) => ({ nama, jumlah: isi.length }));
+  const folder = [...peta.values()]
+    .sort((a, b) => a.nama.localeCompare(b.nama, 'id', { sensitivity: 'base' }))
+    .map(({ nama, isi }) => ({ nama, jumlah: isi.length }));
 
   return { folder, yatim };
 }

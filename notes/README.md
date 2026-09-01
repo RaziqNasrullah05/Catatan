@@ -67,6 +67,7 @@ notes/
 │       │   ├── GroupConfirm.jsx    # lembar konfirmasi, dipakai dua halaman grup
 │       │   ├── Sheet.jsx         # lembar yang naik dan turun; tangani Esc
 │       │   ├── FolderList.jsx    # folder dari tag; ikon kisi / baris arsip
+│       │   ├── FolderMenu.jsx    # menu tekan-lama folder: ganti nama, kustomisasi
 │       │   ├── FolderStyleSheet.jsx # ubah warna dan ikon folder
 │       │   ├── SortSheet.jsx     # dasar dan arah pengurutan daftar
 │       │   ├── TagRow.jsx        # deret tag + grup di antara judul dan isi
@@ -514,6 +515,41 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.58** — Nama tag jadi bebas, folder punya menu, dan rute folder dipindah ke atas.
+
+**Tag tidak lagi dipaksa jadi `nama-tag`.** Huruf besar dan spasi dibiarkan apa adanya: "Gagal
+Jantung" tersimpan begitu. Aturan lama masuk akal selama tag cuma penanda kecil di bawah judul, dan
+berhenti masuk akal begitu tag jadi nama folder — orang menamai foldernya "Produktivitas", dan tidak
+ada alasan komputer memaksakan bentuknya. Yang tersisa hanya kerapian yang memang perlu: spasi tepi
+dibuang, spasi beruntun dijadikan satu, pagar di depan dilepas, karakter kendali dibuang (ia tak
+terlihat tapi membuat dua tag yang tampak identik jadi berbeda), panjang dibatasi 40.
+
+Perbandingan tetap mengabaikan huruf besar-kecil di **empat** tempat yang harus sepakat: menyimpan tag
+(dedupe), menyaring (`LOWER(nama) IN`), mengelompokkan folder di klien, dan mencocokkan hiasan folder.
+Kalau salah satunya berbeda, akan muncul dua folder yang namanya tampak sama dengan isi terbelah —
+jenis kebingungan yang tidak akan ketahuan sebabnya. Yang ditampilkan adalah bentuk asli yang pertama
+ditemui.
+
+**Tekan lama folder kini membuka menu**, bukan langsung lembar kustomisasi: **Ganti nama** dan
+**Kustomisasi**. Bentuknya mengikuti menu tekan-lama pada catatan. Versi v1.57 langsung membuka
+kustomisasi, dan itu menutup pintu bagi tindakan lain — tidak ada tempat untuk "ganti nama" tanpa
+menambah gerakan baru yang harus dipelajari.
+
+Mengganti nama folder berarti mengganti nama tagnya di semua catatan sekaligus. Kalau nama barunya
+sudah dipakai folder lain, **keduanya dilebur** — bukan ditolak; itu yang sebenarnya diminta orang saat
+mengetik nama yang sudah ada. Hiasannya ikut pindah, kecuali folder tujuan sudah punya hiasan sendiri,
+yang menang — folder itu sudah terlihat begitu, dan mengubahnya diam-diam akan mengejutkan.
+`PUT /api/notes/folders/rename` baru.
+
+**Rute folder dipindah ke atas `/:id`.** Ini jebakan yang sudah tercatat di README sejak awal dan tetap
+terlewat: rute statis harus didaftarkan sebelum rute berparameter. Secara teknis `/folders/style`
+tidak bertabrakan dengan `/:id` karena jumlah segmennya berbeda — tapi mengandalkan itu berarti setiap
+rute baru harus dihitung segmennya satu per satu.
+
+Pesan galat 404 di klien kini menyebut metode dan jalurnya. Pesan server untuk alamat tak dikenal sama
+bunyinya untuk semua rute, jadi tanpa ini tidak ada cara tahu rute mana yang hilang — dan penyebab
+tersering adalah berkas server yang belum tersalin atau server yang belum dijalankan ulang.
 
 **v1.57** — Folder bisa diberi warna dan ikon; saringan tag diganti pengurutan.
 

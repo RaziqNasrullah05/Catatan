@@ -22,6 +22,7 @@ import PullRefresh from '../components/PullRefresh.jsx';
 import TaskCard, { TaskForm } from '../components/TaskCard.jsx';
 import SortSheet, { urutkanCatatan } from '../components/SortSheet.jsx';
 import FolderStyleSheet from '../components/FolderStyleSheet.jsx';
+import FolderMenu from '../components/FolderMenu.jsx';
 import { FolderItem, YATIM, susunFolder } from '../components/FolderList.jsx';
 import Agenda from '../components/Agenda.jsx';
 import { NoteListSkeleton, PeopleSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
@@ -92,6 +93,8 @@ export default function Home({ user, onSignOut }) {
   // Gaya folder (warna dan ikon) milik pengguna, dan folder yang sedang diubah.
   const [gayaFolder, setGayaFolder] = useState({});
   const [ubahFolder, setUbahFolder] = useState(null);
+  // Folder yang menunya sedang terbuka karena ditekan lama.
+  const [menuFolder, setMenuFolder] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [menu, setMenu] = useState(null);
@@ -516,7 +519,13 @@ export default function Home({ user, onSignOut }) {
       return { daftarFolder: [], catatanTampil: notesUrut.filter((n) => !n.tag?.length) };
     }
     if (folderDibuka) {
-      return { daftarFolder: [], catatanTampil: notesUrut.filter((n) => n.tag?.includes(folderDibuka)) };
+      // Dibandingkan tanpa peduli huruf besar-kecil, sama seperti server:
+      // folder "Jantung" harus tetap memuat catatan bertag "jantung".
+      const kunci = folderDibuka.toLowerCase();
+      return {
+        daftarFolder: [],
+        catatanTampil: notesUrut.filter((n) => n.tag?.some((t) => t.toLowerCase() === kunci)),
+      };
     }
     if (modeFolder === 'catatan' || query) {
       return { daftarFolder: [], catatanTampil: notesUrut };
@@ -698,9 +707,9 @@ export default function Home({ user, onSignOut }) {
                   nama={f.nama}
                   jumlah={f.jumlah}
                   layout={layout}
-                  gaya={gayaFolder[f.nama]}
+                  gaya={gayaFolder[f.nama.toLowerCase()]}
                   onBuka={bukaFolder}
-                  onUbah={setUbahFolder}
+                  onUbah={setMenuFolder}
                 />
               ))}
             </div>
@@ -961,14 +970,40 @@ export default function Home({ user, onSignOut }) {
         />
       )}
 
+      {menuFolder && (
+        <FolderMenu
+          nama={menuFolder}
+          onTutup={() => setMenuFolder(null)}
+          onKustomisasi={() => {
+            setUbahFolder(menuFolder);
+            setMenuFolder(null);
+          }}
+          onGantiNama={async (baru) => {
+            await api.gantiNamaFolder(menuFolder, baru);
+            setMenuFolder(null);
+            // Nama tag berubah di banyak catatan sekaligus, jadi daftarnya
+            // diminta ulang alih-alih ditambal di tempat.
+            setReloadKey((k) => k + 1);
+            api.semuaGayaFolder().then((d) => setGayaFolder(d.gaya)).catch(() => {});
+            // Kalau folder yang dibuka adalah yang barusan diganti namanya,
+            // ikut pindah — kalau tidak, layarnya menunjuk folder yang sudah
+            // tidak ada dan tampak kosong.
+            setFolderDibuka((f) => (f === menuFolder ? baru : f));
+          }}
+        />
+      )}
+
       {ubahFolder && (
         <FolderStyleSheet
           nama={ubahFolder}
-          gaya={gayaFolder[ubahFolder]}
+          gaya={gayaFolder[ubahFolder.toLowerCase()]}
           onTutup={() => setUbahFolder(null)}
           onSimpan={async (pilihan) => {
             await api.gayaFolder(ubahFolder, pilihan);
-            setGayaFolder((lama) => ({ ...lama, [ubahFolder]: pilihan }));
+            // Kuncinya huruf kecil, mengikuti bentuk yang dikirim server —
+            // nama tag kini bebas huruf besar, jadi mencocokkannya apa adanya
+            // akan meleset untuk folder seperti "".
+            setGayaFolder((lama) => ({ ...lama, [ubahFolder.toLowerCase()]: pilihan }));
             setUbahFolder(null);
           }}
         />

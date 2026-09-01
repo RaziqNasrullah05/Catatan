@@ -19,7 +19,13 @@ async function request(path, { method = 'GET', body } = {}) {
     data = null;
   }
   if (!res.ok) {
-    const err = new Error(data?.error || 'Permintaan gagal. Periksa koneksi lalu coba lagi.');
+    let pesan = data?.error || 'Permintaan gagal. Periksa koneksi lalu coba lagi.';
+    // Jalur ikut disebut pada 404: pesan server untuk alamat tak dikenal sama
+    // bunyinya untuk semua rute, jadi tanpa ini tidak ada cara tahu rute mana
+    // yang hilang — dan penyebab tersering adalah berkas server yang belum
+    // tersalin atau server yang belum dijalankan ulang.
+    if (res.status === 404) pesan += ` (${method} ${path})`;
+    const err = new Error(pesan);
     // Status dan badan balasan dibawa serta: penjaga versi membalas 409 beserta
     // isi catatan terbaru, dan pemanggilnya perlu keduanya.
     err.status = res.status;
@@ -75,6 +81,8 @@ export const api = {
 
   semuaTag: () => request('/notes/tags/all'),
   semuaGayaFolder: () => request('/notes/folders/style'),
+  gantiNamaFolder: (lama, baru) =>
+    request('/notes/folders/rename', { method: 'PUT', body: { lama, baru } }),
   gayaFolder: (tag, pilihan) =>
     request(`/notes/folders/style/${encodeURIComponent(tag)}`, { method: 'PUT', body: pilihan }),
   simpanTag: (id, tag) => request(`/notes/${id}/tags`, { method: 'PUT', body: { tag } }),

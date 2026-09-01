@@ -40,7 +40,7 @@ notesRouter.get('/', (req, res) => {
    */
   const tag = String(req.query.tag || '')
     .split(',')
-    .map(rapikanTag)
+    .map((t) => kunciTag(rapikanTag(t)))
     .filter(Boolean)
     .slice(0, MAX_TAG);
 
@@ -70,7 +70,7 @@ notesRouter.get('/', (req, res) => {
           db
             .prepare(
               `SELECT DISTINCT note_id FROM catatan_tag
-                WHERE user_id = ? AND nama IN (${tag.map(() => '?').join(',')})`
+                WHERE user_id = ? AND LOWER(nama) IN (${tag.map(() => '?').join(',')})`
             )
             .all(req.user.id, ...tag)
             .map((r) => r.note_id)
@@ -185,25 +185,35 @@ notesRouter.get('/index', (req, res) => {
 });
 
 /**
- * Membersihkan satu tag: huruf dikecilkan, spasi jadi tanda hubung, dan hanya
- * huruf-angka-hubung yang bertahan.
+ * Membersihkan satu tag, seluwes mungkin.
  *
- * Dinormalkan di server, bukan di peramban, karena aturan inilah yang menentukan
- * apakah dua tag dianggap sama. Kalau normalisasinya cuma di klien, permintaan
- * dari mana pun selain layar penyunting akan menyelundupkan bentuk lain, dan
- * "Gagal Jantung" jadi tag yang berbeda dari "gagal-jantung".
+ * Sampai v1.57 tag dipaksa jadi huruf kecil dengan tanda hubung: "Gagal
+ * Jantung" jadi "gagal-jantung". Itu masuk akal selama tag cuma penanda kecil
+ * di bawah judul, dan berhenti masuk akal begitu tag jadi nama folder — orang
+ * menamai foldernya "Produktivitas", bukan "gagal-jantung", dan tidak ada
+ * alasan komputer memaksakan bentuknya.
+ *
+ * Yang tersisa hanyalah kerapian yang memang perlu: spasi di tepi dibuang,
+ * spasi beruntun dijadikan satu, pagar di depan dilepas, dan panjangnya
+ * dibatasi. Huruf besar, spasi, dan tanda baca dibiarkan apa adanya.
+ *
+ * Perbandingan antar tag tetap mengabaikan huruf besar-kecil (lihat `kunciTag`),
+ * jadi "Jantung" dan "jantung" tetap satu tag yang sama — yang berubah cuma
+ * bentuk yang disimpan dan ditampilkan.
  */
 function rapikanTag(mentah) {
   return String(mentah || '')
+    .replace(/^\s*#+/, '')
+    // Karakter kendali dibuang: ia tidak terlihat, tapi membuat dua tag yang
+    // tampak identik jadi berbeda dan mustahil disatukan penggunanya.
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/\s+/g, ' ')
     .trim()
-    .toLowerCase()
-    .replace(/^#+/, '')
-    .replace(/\s+/g, '-')
-    .replace(/[^\p{L}\p{N}-]/gu, '')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 32);
+    .slice(0, 40);
 }
+
+/** Bentuk pembanding: dua tag sama kalau kunci ini sama. */
+const kunciTag = (nama) => String(nama || '').toLowerCase();
 
 const MAX_TAG = 12;
 
@@ -214,6 +224,116 @@ function tagCatatan(userId, noteId) {
     .all(noteId, userId)
     .map((r) => r.nama);
 }
+
+notesRouter.get('/folders/style', (req, res) => {
+  const rows = db.prepare('SELECT tag, warna, ikon FROM folder_gaya WHERE user_id = ?').all(req.user.id);
+  const gaya = {};
+  // Kuncinya dikecilkan hurufnya supaya klien bisa mencocokkan tanpa perlu tahu
+  // bentuk persis tag saat hiasannya disimpan — nama tag kini bebas huruf besar.
+  for (const r of rows) gaya[kunciTag(r.tag)] = { warna: r.warna, ikon: r.ikon };
+  res.json({ gaya });
+});
+
+notesRouter.put('/folders/style/:tag', (req, res) => {
+  const tag = rapikanTag(req.params.tag);
+  if (!tag) return res.status(400).json({ error: 'Nama folder tidak valid.' });
+
+  const warna = req.body?.warna ?? null;
+  const ikon = req.body?.ikon ?? null;
+  for (const nilai of [warna, ikon]) {
+    if (nilai !== null && !NAMA_GAYA.test(String(nilai))) {
+      return res.status(400).json({ error: 'Pilihan tidak dikenali.' });
+    }
+  }
+
+  // Keduanya kosong berarti kembali ke bawaan; barisnya dibuang, bukan disimpan
+  // sebagai baris berisi dua NULL yang tidak berarti apa-apa.
+  // Baris lama dibuang lewat perbandingan tak peka huruf: hiasan untuk
+  // "Jantung" dan "jantung" tidak boleh jadi dua baris yang saling menimpa.
+  db.prepare('DELETE FROM folder_gaya WHERE user_id = ? AND LOWER(tag) = ?').run(
+    req.user.id,
+    kunciTag(tag)
+  );
+
+  if (warna === null && ikon === null) return res.json({ tag, warna: null, ikon: null });
+
+  db.prepare('INSERT INTO folder_gaya (user_id, tag, warna, ikon) VALUES (?, ?, ?, ?)').run(
+    req.user.id,
+    tag,
+    warna,
+    ikon
+  );
+
+  res.json({ tag, warna, ikon });
+});
+
+notesRouter.get('/tags/all', (req, res) => {
+  res.json({
+    tag: db
+      .prepare(
+        `SELECT nama, COUNT(*) AS jumlah FROM catatan_tag
+          WHERE user_id = ? GROUP BY nama ORDER BY jumlah DESC, nama`
+      )
+      .all(req.user.id),
+  });
+});
+
+
+/**
+ * Mengganti nama sebuah folder, yang berarti mengganti nama tagnya di semua
+ * catatan sekaligus.
+ *
+ * Kalau nama barunya sudah dipakai tag lain, keduanya dilebur — bukan ditolak.
+ * Itu yang sebenarnya diminta orang saat mengetik nama yang sudah ada: ia ingin
+ * kedua folder itu jadi satu. `INSERT OR IGNORE` lebih dulu memindahkan yang
+ * belum bertabrakan, lalu sisanya dibuang; tanpa itu, catatan yang sudah punya
+ * kedua tag akan melanggar kunci utama dan membatalkan seluruh operasi.
+ */
+notesRouter.put('/folders/rename', (req, res) => {
+  const lama = rapikanTag(req.body?.lama);
+  const baru = rapikanTag(req.body?.baru);
+  if (!lama || !baru) return res.status(400).json({ error: 'Nama folder tidak boleh kosong.' });
+
+  const kLama = kunciTag(lama);
+  const kBaru = kunciTag(baru);
+
+  db.transaction(() => {
+    if (kLama === kBaru) {
+      // Hanya berganti huruf besar-kecil; tidak ada peleburan yang perlu.
+      db.prepare('UPDATE catatan_tag SET nama = ? WHERE user_id = ? AND LOWER(nama) = ?').run(
+        baru,
+        req.user.id,
+        kLama
+      );
+    } else {
+      db.prepare(
+        `INSERT OR IGNORE INTO catatan_tag (note_id, user_id, nama, created_at)
+         SELECT note_id, user_id, ?, created_at FROM catatan_tag
+          WHERE user_id = ? AND LOWER(nama) = ?`
+      ).run(baru, req.user.id, kLama);
+      db.prepare('DELETE FROM catatan_tag WHERE user_id = ? AND LOWER(nama) = ?').run(
+        req.user.id,
+        kLama
+      );
+    }
+
+    // Hiasannya ikut pindah. Kalau nama barunya sudah punya hiasan sendiri,
+    // hiasan itu yang menang — folder tujuan sudah terlihat begitu, dan
+    // mengubahnya diam-diam akan mengejutkan.
+    const gayaLama = db
+      .prepare('SELECT warna, ikon FROM folder_gaya WHERE user_id = ? AND LOWER(tag) = ?')
+      .get(req.user.id, kLama);
+    db.prepare('DELETE FROM folder_gaya WHERE user_id = ? AND LOWER(tag) = ?').run(req.user.id, kLama);
+    if (gayaLama) {
+      db.prepare(
+        `INSERT INTO folder_gaya (user_id, tag, warna, ikon) VALUES (?, ?, ?, ?)
+         ON CONFLICT(user_id, tag) DO NOTHING`
+      ).run(req.user.id, baru, gayaLama.warna, gayaLama.ikon);
+    }
+  })();
+
+  res.json({ nama: baru });
+});
 
 notesRouter.get('/:id', (req, res) => {
   const akses = aksesCatatan(req.user.id, req.params.id);
@@ -317,9 +437,22 @@ notesRouter.put('/:id/tags', (req, res) => {
   }
   if (!Array.isArray(req.body?.tag)) return res.status(400).json({ error: 'Daftar tag tidak valid.' });
 
-  // Set membuang kembaran yang muncul setelah dirapikan: "Gagal Jantung" dan
+  // Set membuang kembaran yang muncul setelah dirapikan: "" dan
   // "gagal-jantung" jadi satu tag yang sama.
-  const bersih = [...new Set(req.body.tag.map(rapikanTag).filter(Boolean))].slice(0, MAX_TAG);
+  // Dedupe memakai kunci tak peka huruf, tapi yang disimpan bentuk aslinya:
+  // mengetik "Jantung" setelah "jantung" tidak menghasilkan dua tag, dan yang
+  // bertahan adalah yang diketik lebih dulu.
+  const terlihat = new Set();
+  const bersih = [];
+  for (const mentah of req.body.tag) {
+    const nama = rapikanTag(mentah);
+    if (!nama) continue;
+    const k = kunciTag(nama);
+    if (terlihat.has(k)) continue;
+    terlihat.add(k);
+    bersih.push(nama);
+    if (bersih.length >= MAX_TAG) break;
+  }
   const now = new Date().toISOString();
 
   db.transaction(() => {
@@ -351,51 +484,6 @@ notesRouter.put('/:id/tags', (req, res) => {
  * yang tidak dikenalinya, lalu jatuh ke tampilan bawaan.
  */
 const NAMA_GAYA = /^[a-z0-9-]{1,32}$/;
-
-notesRouter.get('/folders/style', (req, res) => {
-  const rows = db.prepare('SELECT tag, warna, ikon FROM folder_gaya WHERE user_id = ?').all(req.user.id);
-  const gaya = {};
-  for (const r of rows) gaya[r.tag] = { warna: r.warna, ikon: r.ikon };
-  res.json({ gaya });
-});
-
-notesRouter.put('/folders/style/:tag', (req, res) => {
-  const tag = rapikanTag(req.params.tag);
-  if (!tag) return res.status(400).json({ error: 'Nama folder tidak valid.' });
-
-  const warna = req.body?.warna ?? null;
-  const ikon = req.body?.ikon ?? null;
-  for (const nilai of [warna, ikon]) {
-    if (nilai !== null && !NAMA_GAYA.test(String(nilai))) {
-      return res.status(400).json({ error: 'Pilihan tidak dikenali.' });
-    }
-  }
-
-  // Keduanya kosong berarti kembali ke bawaan; barisnya dibuang, bukan disimpan
-  // sebagai baris berisi dua NULL yang tidak berarti apa-apa.
-  if (warna === null && ikon === null) {
-    db.prepare('DELETE FROM folder_gaya WHERE user_id = ? AND tag = ?').run(req.user.id, tag);
-    return res.json({ tag, warna: null, ikon: null });
-  }
-
-  db.prepare(
-    `INSERT INTO folder_gaya (user_id, tag, warna, ikon) VALUES (?, ?, ?, ?)
-     ON CONFLICT(user_id, tag) DO UPDATE SET warna = excluded.warna, ikon = excluded.ikon`
-  ).run(req.user.id, tag, warna, ikon);
-
-  res.json({ tag, warna, ikon });
-});
-
-notesRouter.get('/tags/all', (req, res) => {
-  res.json({
-    tag: db
-      .prepare(
-        `SELECT nama, COUNT(*) AS jumlah FROM catatan_tag
-          WHERE user_id = ? GROUP BY nama ORDER BY jumlah DESC, nama`
-      )
-      .all(req.user.id),
-  });
-});
 
 notesRouter.patch('/:id', (req, res) => {
   const parsed = noteSchema.safeParse(req.body ?? {});
