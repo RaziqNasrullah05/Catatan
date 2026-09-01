@@ -90,3 +90,82 @@
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Lembar ubah folder ---------- */
+
+.gaya-pratinjau { display: flex; justify-content: center; margin: 4px 0 18px; }
+/* Pratinjau memakai bentuk map yang sama persis dengan di daftar, bukan tiruan
+   yang mirip: kalau bentuknya berbeda sedikit saja, yang dipilih orang di sini
+   bukan yang akan dilihatnya nanti. */
+.folder.kisi.pratinjau { width: 84px; margin-top: 11px; padding: 16px 8px; }
+
+.gaya-blok { margin-bottom: 16px; }
+.gaya-blok h4 {
+  margin: 0 0 9px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.gaya-warna { display: flex; flex-wrap: wrap; gap: 10px; }
+.warna-titik {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  border: 2px solid transparent;
+}
+/* Pilihan "bawaan" tidak punya warna sendiri, jadi ia digambar sebagai lingkaran
+   kosong bergaris — bukan kotak abu-abu yang terbaca seperti warna kesembilan. */
+.warna-titik.bawaan {
+  background: none;
+  border: 1px dashed var(--rule-strong);
+  color: var(--ink-soft);
+}
+.warna-titik.terpilih { border-color: var(--ink); }
+
+.gaya-ikon {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  max-height: 30vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.gaya-ikon::-webkit-scrollbar { display: none; }
+.ikon-pilih {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: var(--ink-soft);
+}
+.ikon-pilih.terpilih {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------- Lembar urutan ---------- */
+
+.urut-daftar { display: flex; flex-direction: column; }
+.urut-baris {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 12px 4px;
+  text-align: left;
+  font-size: 15px;
+  color: var(--ink);
+}
+.urut-baris span { flex: 1; }
+.urut-baris.terpilih { color: var(--accent); font-weight: 500; }
+.urut-pisah { height: 1px; margin: 8px 0; background: var(--rule); }

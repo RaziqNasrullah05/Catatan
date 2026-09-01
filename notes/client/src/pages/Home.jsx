@@ -5,7 +5,7 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
-  ListFilter,
+  ArrowUpDown,
   CircleCheck,
   LogOut,
   MoreVertical,
@@ -20,7 +20,8 @@ import {
 import NoteMenu from '../components/NoteMenu.jsx';
 import PullRefresh from '../components/PullRefresh.jsx';
 import TaskCard, { TaskForm } from '../components/TaskCard.jsx';
-import TagFilter from '../components/TagFilter.jsx';
+import SortSheet, { urutkanCatatan } from '../components/SortSheet.jsx';
+import FolderStyleSheet from '../components/FolderStyleSheet.jsx';
 import { FolderItem, YATIM, susunFolder } from '../components/FolderList.jsx';
 import Agenda from '../components/Agenda.jsx';
 import { NoteListSkeleton, PeopleSkeleton, TaskListSkeleton } from '../components/Skeleton.jsx';
@@ -82,8 +83,15 @@ export default function Home({ user, onSignOut }) {
   // Tag yang sedang dipakai menyaring daftar catatan, dan apakah pemilihnya
   // sedang terbuka.
   const [modeFolder, setModeFolder] = useState(readFolderMode);
-  const [tagAktif, setTagAktif] = useState([]);
-  const [pilihTag, setPilihTag] = useState(false);
+  // Urutan daftar catatan. Bawaannya "terakhir diubah, terbaru dulu" —
+  // pertanyaan yang paling sering dibawa orang ke daftar ini adalah "yang
+  // barusan kukerjakan mana".
+  const [urut, setUrut] = useState('diubah');
+  const [arah, setArah] = useState('turun');
+  const [pilihUrut, setPilihUrut] = useState(false);
+  // Gaya folder (warna dan ikon) milik pengguna, dan folder yang sedang diubah.
+  const [gayaFolder, setGayaFolder] = useState({});
+  const [ubahFolder, setUbahFolder] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [menu, setMenu] = useState(null);
@@ -127,7 +135,7 @@ export default function Home({ user, onSignOut }) {
       try {
         setError('');
         const [noteData, taskData] = await withMinDelay(
-          Promise.all([api.listNotes(query, tagAktif), api.listTugas()])
+          Promise.all([api.listNotes(query), api.listTugas()])
         );
         if (!alive) return;
         setNotes(noteData.notes);
@@ -142,7 +150,7 @@ export default function Home({ user, onSignOut }) {
       alive = false;
       clearTimeout(timer);
     };
-  }, [query, reloadKey, tagAktif]);
+  }, [query, reloadKey]);
 
   /**
    * Menggeser panel saat tombol segmented ditekan.
@@ -299,7 +307,7 @@ export default function Home({ user, onSignOut }) {
     setLoading(true);
     try {
       const [noteData, taskData] = await withMinDelay(
-        Promise.all([api.listNotes(query, tagAktif), api.listTugas()])
+        Promise.all([api.listNotes(query), api.listTugas()])
       );
       setNotes(noteData.notes);
       setTasks(taskData.tugas);
@@ -309,10 +317,7 @@ export default function Home({ user, onSignOut }) {
     } finally {
       setLoading(false);
     }
-    // Saringan tag ikut jadi dependensi: tanpa itu tarik-untuk-muat-ulang
-    // memakai daftar tag yang sudah basi dan mengembalikan catatan yang barusan
-    // disaring keluar.
-  }, [query, tagAktif]);
+  }, [query]);
 
   /**
    * Kolom pencarian muncul saat menggulir ke arah atas dan menyingkir saat
@@ -498,27 +503,45 @@ export default function Home({ user, onSignOut }) {
    */
   const [folderDibuka, setFolderDibuka] = useState(null);
 
+  /*
+   * Diurutkan sebelum dipecah ke folder, bukan sesudah — supaya urutan yang
+   * sama berlaku di akar maupun di dalam folder. Kalau diurutkan sesudahnya,
+   * isi folder akan mengikuti urutan bawaan server dan tidak menghiraukan
+   * pilihan penggunanya.
+   */
+  const notesUrut = useMemo(() => urutkanCatatan(notes, urut, arah), [notes, urut, arah]);
+
   const { daftarFolder, catatanTampil } = useMemo(() => {
     if (folderDibuka === YATIM) {
-      return { daftarFolder: [], catatanTampil: notes.filter((n) => !n.tag?.length) };
+      return { daftarFolder: [], catatanTampil: notesUrut.filter((n) => !n.tag?.length) };
     }
     if (folderDibuka) {
-      return { daftarFolder: [], catatanTampil: notes.filter((n) => n.tag?.includes(folderDibuka)) };
+      return { daftarFolder: [], catatanTampil: notesUrut.filter((n) => n.tag?.includes(folderDibuka)) };
     }
     if (modeFolder === 'catatan' || query) {
-      return { daftarFolder: [], catatanTampil: notes };
+      return { daftarFolder: [], catatanTampil: notesUrut };
     }
 
-    const { folder, yatim } = susunFolder(notes);
+    const { folder, yatim } = susunFolder(notesUrut);
 
     if (modeFolder === 'folder') {
       const semua = yatim.length ? [...folder, { nama: YATIM, jumlah: yatim.length }] : folder;
       return { daftarFolder: semua, catatanTampil: [] };
     }
     return { daftarFolder: folder, catatanTampil: yatim };
-  }, [notes, modeFolder, folderDibuka, query]);
+  }, [notesUrut, modeFolder, folderDibuka, query]);
 
   const bukaFolder = (nama) => setFolderDibuka(nama);
+
+  // Gaya folder dimuat sekali dan tidak ikut disegarkan bersama daftar catatan:
+  // ia hanya berubah kalau penggunanya sendiri yang mengubahnya, dan saat itu
+  // terjadi keadaannya sudah diperbarui di tempat.
+  useEffect(() => {
+    api
+      .semuaGayaFolder()
+      .then((d) => setGayaFolder(d.gaya))
+      .catch(() => setGayaFolder({}));
+  }, []);
 
   // Mengubah mode jadi "tampil catatan" di Pengaturan sementara sebuah folder
   // terbuka akan meninggalkan bilah kembali yang menunjuk ke folder yang sudah
@@ -639,15 +662,12 @@ export default function Home({ user, onSignOut }) {
                   />
                 </div>
                 <button
-                  className={`saring-btn ${tagAktif.length ? 'aktif' : ''}`}
-                  onClick={() => setPilihTag(true)}
-                  aria-label={
-                    tagAktif.length ? `Saring tag, ${tagAktif.length} dipilih` : 'Saring menurut tag'
-                  }
-                  title="Saring menurut tag"
+                  className={`saring-btn ${urut !== 'diubah' || arah !== 'turun' ? 'aktif' : ''}`}
+                  onClick={() => setPilihUrut(true)}
+                  aria-label="Urut berdasarkan"
+                  title="Urut berdasarkan"
                 >
-                  <ListFilter size={18} strokeWidth={1.8} />
-                  {tagAktif.length > 0 && <span className="saring-jumlah">{tagAktif.length}</span>}
+                  <ArrowUpDown size={18} strokeWidth={1.8} />
                 </button>
               </div>
             </div>
@@ -678,7 +698,9 @@ export default function Home({ user, onSignOut }) {
                   nama={f.nama}
                   jumlah={f.jumlah}
                   layout={layout}
+                  gaya={gayaFolder[f.nama]}
                   onBuka={bukaFolder}
+                  onUbah={setUbahFolder}
                 />
               ))}
             </div>
@@ -927,13 +949,27 @@ export default function Home({ user, onSignOut }) {
         </button>
       )}
 
-      {pilihTag && (
-        <TagFilter
-          terpilih={tagAktif}
-          onTutup={() => setPilihTag(false)}
-          onTerapkan={(daftar) => {
-            setTagAktif(daftar);
-            setPilihTag(false);
+      {pilihUrut && (
+        <SortSheet
+          urut={urut}
+          arah={arah}
+          onTutup={() => setPilihUrut(false)}
+          onPilih={(u, a) => {
+            setUrut(u);
+            setArah(a);
+          }}
+        />
+      )}
+
+      {ubahFolder && (
+        <FolderStyleSheet
+          nama={ubahFolder}
+          gaya={gayaFolder[ubahFolder]}
+          onTutup={() => setUbahFolder(null)}
+          onSimpan={async (pilihan) => {
+            await api.gayaFolder(ubahFolder, pilihan);
+            setGayaFolder((lama) => ({ ...lama, [ubahFolder]: pilihan }));
+            setUbahFolder(null);
           }}
         />
       )}

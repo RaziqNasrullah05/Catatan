@@ -218,6 +218,25 @@ CREATE INDEX IF NOT EXISTS idx_tugas_user ON tugas(user_id, selesai, created_at)
 -- disimpan di sini, dan yang kedaluwarsa tetap dipakai kalau pengambilan baru
 -- gagal — lebih baik menampilkan libur bulan lalu yang masih benar daripada
 -- tidak menampilkan apa pun.
+-- Warna dan ikon pilihan untuk sebuah folder.
+--
+-- Folder tidak punya tabelnya sendiri (lihat v1.55): ia dibentuk dari tag, dan
+-- yang benar-benar ada cuma tag. Tabel ini karena itu bukan tabel folder
+-- melainkan tabel *hiasan* folder — barisnya boleh tidak ada, dan folder tetap
+-- tampil dengan warna bawaan. Menghapus tag terakhir membuat folder itu lenyap
+-- sendiri, dan barisnya di sini jadi yatim; itu tidak apa-apa, ia cuma
+-- beberapa puluh byte, dan akan terpakai lagi kalau tagnya dipakai kembali.
+--
+-- Kolom tag dipakai apa adanya sebagai kunci, bukan id: tag sudah dinormalkan saat
+-- disimpan (huruf kecil, spasi jadi hubung), jadi ia sudah stabil.
+CREATE TABLE IF NOT EXISTS folder_gaya (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tag     TEXT NOT NULL,
+  warna   TEXT,
+  ikon    TEXT,
+  PRIMARY KEY (user_id, tag)
+);
+
 CREATE TABLE IF NOT EXISTS libur (
   bulan      TEXT PRIMARY KEY,   -- 'TTTT-BB'
   data       TEXT NOT NULL,      -- JSON: [{ tanggal, nama }]

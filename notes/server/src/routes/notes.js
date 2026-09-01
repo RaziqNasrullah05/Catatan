@@ -117,6 +117,7 @@ notesRouter.get('/', (req, res) => {
       title: n.title,
       excerpt: excerpt(n.content),
       pinned: Boolean(n.pinned),
+      createdAt: n.created_at,
       updatedAt: n.updated_at,
       openTasks: (n.content.match(/^\s*[-+*]\s+\[ \]/gm) || []).length,
       grup: perCatatan.get(n.id) || [],
@@ -340,6 +341,51 @@ notesRouter.put('/:id/tags', (req, res) => {
  * saran saat mengetik, supaya tag yang sudah ada dipakai ulang alih-alih
  * ditulis ulang sedikit berbeda.
  */
+/**
+ * Warna dan ikon pilihan untuk folder.
+ *
+ * Nilainya sengaja tidak divalidasi terhadap daftar warna dan ikon yang ada di
+ * klien: daftar itu akan bertambah, dan menyalin daftarnya ke sini berarti dua
+ * tempat yang harus diubah bersamaan setiap kali. Yang dijaga di sini cuma
+ * bentuknya — teks pendek tanpa apa-apa yang aneh — dan klien mengabaikan nama
+ * yang tidak dikenalinya, lalu jatuh ke tampilan bawaan.
+ */
+const NAMA_GAYA = /^[a-z0-9-]{1,32}$/;
+
+notesRouter.get('/folders/style', (req, res) => {
+  const rows = db.prepare('SELECT tag, warna, ikon FROM folder_gaya WHERE user_id = ?').all(req.user.id);
+  const gaya = {};
+  for (const r of rows) gaya[r.tag] = { warna: r.warna, ikon: r.ikon };
+  res.json({ gaya });
+});
+
+notesRouter.put('/folders/style/:tag', (req, res) => {
+  const tag = rapikanTag(req.params.tag);
+  if (!tag) return res.status(400).json({ error: 'Nama folder tidak valid.' });
+
+  const warna = req.body?.warna ?? null;
+  const ikon = req.body?.ikon ?? null;
+  for (const nilai of [warna, ikon]) {
+    if (nilai !== null && !NAMA_GAYA.test(String(nilai))) {
+      return res.status(400).json({ error: 'Pilihan tidak dikenali.' });
+    }
+  }
+
+  // Keduanya kosong berarti kembali ke bawaan; barisnya dibuang, bukan disimpan
+  // sebagai baris berisi dua NULL yang tidak berarti apa-apa.
+  if (warna === null && ikon === null) {
+    db.prepare('DELETE FROM folder_gaya WHERE user_id = ? AND tag = ?').run(req.user.id, tag);
+    return res.json({ tag, warna: null, ikon: null });
+  }
+
+  db.prepare(
+    `INSERT INTO folder_gaya (user_id, tag, warna, ikon) VALUES (?, ?, ?, ?)
+     ON CONFLICT(user_id, tag) DO UPDATE SET warna = excluded.warna, ikon = excluded.ikon`
+  ).run(req.user.id, tag, warna, ikon);
+
+  res.json({ tag, warna, ikon });
+});
+
 notesRouter.get('/tags/all', (req, res) => {
   res.json({
     tag: db

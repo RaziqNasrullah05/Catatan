@@ -48,6 +48,7 @@ notes/
 │       ├── templates.js            # 6 template catatan siap pakai
 │       ├── nav.js                  # tujuan navigasi yang dipakai lebih dari satu halaman
 │       ├── image.js                # mengecilkan gambar sebelum diunggah
+│       ├── folderStyle.js          # 8 warna + 32 ikon folder
 │       ├── panel.js                # usePanel: animasi masuk & keluar halaman
 │       │
 │       ├── cm/                     # semua yang menempel ke CodeMirror
@@ -66,6 +67,8 @@ notes/
 │       │   ├── GroupConfirm.jsx    # lembar konfirmasi, dipakai dua halaman grup
 │       │   ├── Sheet.jsx         # lembar yang naik dan turun; tangani Esc
 │       │   ├── FolderList.jsx    # folder dari tag; ikon kisi / baris arsip
+│       │   ├── FolderStyleSheet.jsx # ubah warna dan ikon folder
+│       │   ├── SortSheet.jsx     # dasar dan arah pengurutan daftar
 │       │   ├── TagRow.jsx        # deret tag + grup di antara judul dan isi
 │       │   ├── TaskCard.jsx      # kontainer tugas + formulirnya
 │       │   ├── Skeleton.jsx        # kerangka pemuatan untuk tiap jenis daftar
@@ -511,6 +514,48 @@ Tema gelap ditulis dua kali di `base/tokens.css`: satu untuk `@media (prefers-co
 ---
 
 ## 12. Riwayat perubahan
+
+**v1.57** — Folder bisa diberi warna dan ikon; saringan tag diganti pengurutan.
+
+**Tekan lama sebuah folder** untuk mengubah warna dan ikonnya. Keduanya ada di satu lembar, bukan dua
+langkah: orang memilih ikon stetoskop *dan* merah karena keduanya bersama-sama berarti "medis" —
+memisahkannya memaksa mengingat pilihan pertama sambil memilih yang kedua. Pratinjaunya berubah
+seketika, tapi yang dikirim ke server baru terjadi saat Simpan, jadi mencoba-coba tidak menghasilkan
+satu permintaan per ketukan dan Batal benar-benar membatalkan.
+
+**Delapan warna,** bukan lebih: yang dibutuhkan warna folder adalah bisa dibedakan sekilas, dan begitu
+jumlahnya lewat sekitar sepuluh, dua di antaranya pasti terlalu mirip pada ikon sekecil ini. Nilainya
+warna tetap, bukan token tema — maknanya "warna yang kamu pilih", dan kalau ikut berubah mengikuti
+tema, folder biru bisa jadi bukan biru lagi. **Tiga puluh dua ikon,** dipilih untuk menjangkau bidang
+yang lebar: satu ikon untuk satu wilayah hidup, bukan beberapa varian dari hal yang sama. Tiga ikon
+buku yang beda tipis menghabiskan tempat tanpa menambah satu pun hal baru yang bisa ditandai.
+
+Disimpan di tabel `folder_gaya` — tabel *hiasan* folder, bukan tabel folder. Folder tetap tidak ada
+wujudnya sendiri (v1.55); barisnya boleh tidak ada, dan foldernya tetap tampil dengan warna bawaan.
+"Tidak Terkategori" tidak bisa diubah: ia tempat sisa, dan hiasannya tidak punya tempat untuk disimpan
+karena kuncinya nama tag, sedangkan folder itu tidak punya tag. Server sengaja **tidak** memvalidasi
+nama warna dan ikon terhadap daftar di klien — daftar itu akan bertambah, dan menyalinnya ke server
+berarti dua tempat yang harus diubah bersamaan; yang dijaga cuma bentuknya, dan klien mengabaikan nama
+yang tidak dikenalinya lalu jatuh ke tampilan bawaan.
+
+**Tombol saring tag jadi "Urut berdasarkan".** Sejak tag jadi folder, menyaring tag lewat lembar
+terpisah berarti dua cara melakukan hal yang sama — dan yang satu tersembunyi di balik tombol
+sementara yang lain terpampang sebagai folder. `components/TagFilter.jsx` dihapus.
+
+Pilihannya: terakhir diubah, tanggal dibuat, atau nama; menaik atau menurun, dipisah garis karena arah
+bukan pilihan keempat yang sejajar melainkan keterangan atas pilihan di atasnya. Keterangan arahnya
+berubah mengikuti dasarnya — "Terbaru dulu" untuk tanggal, "Z ke A" untuk nama — sebab "Menurun" pada
+tanggal dan pada nama berarti dua hal yang tidak berhubungan. Bawaannya terakhir diubah, terbaru dulu.
+
+Catatan tersemat selalu di puncak apa pun dasarnya: menyematkan berarti "taruh di atas", dan urutan
+yang mengalahkannya membuat penyematan tidak ada gunanya. Pengurutan dilakukan **sebelum** catatan
+dipecah ke folder, supaya pilihan yang sama berlaku di akar maupun di dalam folder. `GET /api/notes`
+kini ikut mengembalikan `createdAt`.
+
+Satu bug tertangkap uji sebelum sampai ke layar: catatan tanpa judul ditangani dengan menggantinya
+jadi karakter tertinggi lalu ikut diurutkan — benar saat menaik, salah saat menurun, sebab membalik
+arah ikut membalik penandanya dan "Tanpa judul" naik ke puncak. Sekarang diperiksa sebelum arah
+dikenakan.
 
 **v1.56** — Perbaikan: folder berkedip saat dibuka dan ditutup; kotaknya kini benar-benar berbentuk map.
 

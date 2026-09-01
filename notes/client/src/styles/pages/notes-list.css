@@ -305,7 +305,7 @@
 
 .folder.kisi:active::before,
 .folder.kisi:active::after { background: var(--rule); }
-.folder.kisi .folder-ikon { color: var(--accent); }
+.folder.kisi .folder-ikon { color: var(--folder-warna, var(--accent)); }
 .folder.kisi .folder-nama {
   display: block;
   font-size: 13.5px;
@@ -332,12 +332,12 @@
   gap: 12px;
   width: 100%;
   padding: 11px 16px 11px 13px;
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--folder-warna, var(--accent));
   border-bottom: 1px solid var(--rule);
-  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  background: color-mix(in srgb, var(--folder-warna, var(--accent)) 5%, transparent);
   text-align: left;
 }
-.folder.baris .folder-ikon { display: flex; flex: none; color: var(--accent); }
+.folder.baris .folder-ikon { display: flex; flex: none; color: var(--folder-warna, var(--accent)); }
 .folder.baris .folder-teks {
   display: flex;
   align-items: baseline;
@@ -391,4 +391,13 @@
   background: var(--accent-soft);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+/* Menciut sedikit selagi ditekan — satu-satunya petunjuk bahwa menahan jari di
+   folder melakukan sesuatu. Sama seperti kartu tugas (v1.39). */
+.folder { transition: transform 0.14s ease; }
+.folder.ditekan { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .folder { transition: none; }
 }

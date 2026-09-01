@@ -1,4 +1,9 @@
-import { Folder, Inbox } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Inbox } from 'lucide-react';
+import { ikonFolder, warnaFolder } from '../folderStyle.js';
+
+/** Lama menekan sebelum lembar ubah folder terbuka. Sama dengan kartu tugas. */
+const HOLD_MS = 420;
 
 /** Nama folder untuk catatan tanpa tag. Bukan tag, jadi tidak bisa dipilih di saringan. */
 export const YATIM = '\u0000yatim';
@@ -50,15 +55,69 @@ export function susunFolder(notes) {
  * yang rapat, jadi yang dipakai baris bergaya map arsip: bertepi tebal di kiri
  * dengan ikon kecil.
  */
-export function FolderItem({ nama, jumlah, layout, onBuka }) {
+export function FolderItem({ nama, jumlah, layout, gaya, onBuka, onUbah }) {
   const yatim = nama === YATIM;
   const label = yatim ? 'Tidak Terkategori' : nama;
-  const Ikon = yatim ? Inbox : Folder;
+
+  /*
+   * "Tidak Terkategori" tidak bisa diubah warna maupun ikonnya. Ia bukan folder
+   * yang dibuat orang melainkan tempat sisa, dan hiasannya tidak punya tempat
+   * untuk disimpan — kuncinya adalah nama tag, dan folder ini tidak punya tag.
+   */
+  const bisaDiubah = !yatim && Boolean(onUbah);
+  const Ikon = yatim ? Inbox : ikonFolder(gaya?.ikon);
+  const warna = yatim ? null : warnaFolder(gaya?.warna);
+
+  const timer = useRef(null);
+  const awal = useRef(null);
+  const tekanTerpakai = useRef(false);
+  const [ditekan, setDitekan] = useState(false);
+
+  const batal = () => {
+    clearTimeout(timer.current);
+    setDitekan(false);
+  };
+
+  const mulaiTekan = (e) => {
+    if (!bisaDiubah) return;
+    awal.current = { x: e.clientX, y: e.clientY };
+    setDitekan(true);
+    timer.current = setTimeout(() => {
+      setDitekan(false);
+      tekanTerpakai.current = true;
+      onUbah(nama);
+    }, HOLD_MS);
+  };
+
+  const gerak = (e) => {
+    const a = awal.current;
+    // Jari yang bergeser sedang menggulir, bukan menekan lama.
+    if (a && Math.hypot(e.clientX - a.x, e.clientY - a.y) > 10) batal();
+  };
 
   return (
     <button
-      className={`folder ${layout === 'list' ? 'baris' : 'kisi'} ${yatim ? 'yatim' : ''}`}
-      onClick={() => onBuka(nama)}
+      className={`folder ${layout === 'list' ? 'baris' : 'kisi'} ${yatim ? 'yatim' : ''} ${
+        ditekan ? 'ditekan' : ''
+      }`}
+      style={warna ? { '--folder-warna': warna } : undefined}
+      onPointerDown={mulaiTekan}
+      onPointerMove={gerak}
+      onPointerUp={batal}
+      onPointerCancel={batal}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        if (bisaDiubah) onUbah(nama);
+      }}
+      onClick={() => {
+        // Tekan lama sudah membuka lembar ubah; ketukan yang menyusul sesudahnya
+        // jangan ikut membuka foldernya.
+        if (tekanTerpakai.current) {
+          tekanTerpakai.current = false;
+          return;
+        }
+        onBuka(nama);
+      }}
       aria-label={`Buka folder ${label}, ${jumlah} catatan`}
     >
       <span className="folder-ikon">

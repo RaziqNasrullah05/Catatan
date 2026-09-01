@@ -1,3 +1,4 @@
+#Tidak Dipakai Lagi - Ignore saja
 :root {
   --bg: #f1f2ee;
   --paper: #fdfdfb;

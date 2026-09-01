@@ -74,6 +74,9 @@ export const api = {
   hapusTugas: (id) => request(`/tasks/${id}`, { method: 'DELETE' }),
 
   semuaTag: () => request('/notes/tags/all'),
+  semuaGayaFolder: () => request('/notes/folders/style'),
+  gayaFolder: (tag, pilihan) =>
+    request(`/notes/folders/style/${encodeURIComponent(tag)}`, { method: 'PUT', body: pilihan }),
   simpanTag: (id, tag) => request(`/notes/${id}/tags`, { method: 'PUT', body: { tag } }),
   undangKeGrup: (id, orang) => request(`/groups/${id}/invite`, { method: 'POST', body: { orang } }),
   saranAnggota: (id, q) => request(`/groups/${id}/candidates?q=${encodeURIComponent(q)}`),
